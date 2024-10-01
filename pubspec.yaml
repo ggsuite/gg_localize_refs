@@ -1,0 +1,23 @@
+name: gg_to_local
+description: gg_to_local allows to switch a local package and its local checkouts to local pathes
+version: 1.0.0
+repository: https://github.com/inlavigo/gg_to_local.git
+
+environment:
+  sdk: ">=3.3.0 <4.0.0"
+
+dependencies:
+  args: ^2.5.0
+  gg_args: ^2.0.4
+  gg_console_colors: ^2.1.4
+  gg_log: ^1.0.6
+  gg_process: ^1.1.6
+  path: ^1.8.0
+
+dev_dependencies:
+  gg_capture_print: ^1.0.9
+  lints: ^3.0.0
+  test: ^1.24.0
+
+executables:
+ gg_to_local:
