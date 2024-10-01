@@ -21,8 +21,8 @@ void main() {
     test('should be executable', () async {
       // Execute bin/gg_to_local.dart and check if it prints help
       final result = await Process.run(
-        './bin/gg_to_local.dart',
-        ['my-command'],
+        'dart',
+        ['./bin/gg_to_local.dart', 'my-command'],
         stdoutEncoding: utf8,
         stderrEncoding: utf8,
       );
