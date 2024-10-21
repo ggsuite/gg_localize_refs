@@ -11,13 +11,27 @@ import 'package:gg_capture_print/gg_capture_print.dart';
 import 'package:gg_to_local/gg_to_local.dart';
 import 'package:test/test.dart';
 import 'package:gg_args/gg_args.dart';
+import 'package:path/path.dart';
 
 void main() {
   final messages = <String>[];
 
-  setUp(() {
+  Directory tempDir =
+      Directory(join('test', 'sample_folder', 'GgToLocal_command_test'));
+
+  setUp(() async {
     messages.clear();
+
+    // create the tempDir
+    Directory workspaceDir = await Directory.systemTemp.createTemp();
+
+    tempDir = Directory(join(workspaceDir.path, 'GgToLocal_command_test'));
+    await tempDir.create(recursive: true);
+
+    expect(await tempDir.exists(), isTrue);
   });
+
+  tearDown(() {});
 
   group('GgToLocal()', () {
     // #########################################################################
@@ -32,10 +46,17 @@ void main() {
       test('should allow to run the code from command line', () async {
         await capturePrint(
           ggLog: messages.add,
-          code: () async =>
-              await runner.run(['ggToLocal', 'my-command', '--input', 'foo']),
+          code: () async => await runner.run([
+            'ggToLocal',
+            'local',
+            '--input',
+            tempDir.path,
+          ]),
         );
-        expect(messages, contains('Running my-command with param foo'));
+        expect(
+          messages,
+          contains('Running local in ${tempDir.path}'),
+        );
       });
 
       // .......................................................................

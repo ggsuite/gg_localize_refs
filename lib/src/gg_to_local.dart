@@ -5,14 +5,14 @@
 // found in the LICENSE file in the root of this package.
 
 import 'package:args/command_runner.dart';
-import './commands/my_command.dart';
+import './commands/local.dart';
 import 'package:gg_log/gg_log.dart';
 
 /// The command line interface for GgToLocal
 class GgToLocal extends Command<dynamic> {
   /// Constructor
   GgToLocal({required this.ggLog}) {
-    addSubcommand(MyCommand(ggLog: ggLog));
+    addSubcommand(Local(ggLog: ggLog));
   }
 
   /// The log function

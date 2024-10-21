@@ -1,8 +1,7 @@
 name: gg_to_local
 description: gg_to_local allows to switch a local package and its local checkouts to local pathes
-version: 1.0.0
+version: 1.0.1
 repository: https://github.com/inlavigo/gg_to_local.git
-publish_to: none
 
 environment:
   sdk: ">=3.3.0 <4.0.0"
@@ -13,19 +12,19 @@ dependencies:
   gg_console_colors: ^2.1.4
   gg_log: ^1.0.6
   gg_process: ^1.1.6
-  path: ^1.8.0
-  yaml: ^3.1.2
-  yaml_edit: ^2.2.1
   gg_local_package_dependencies:
-    git: git@github.com:inlavigo/gg_local_package_dependencies.git
+    git: https://github.com/inlavigo/gg_local_package_dependencies.git
   gg_project_root:
-    git: git@github.com:inlavigo/gg_project_root.git
-  pubspec_parse: ^1.3.0
+    git: https://github.com/inlavigo/gg_project_root
+  path: ^1.8.0
+  pubspec_parse: ^1.2.3
+  yaml_edit: ^2.2.1
+  yaml: ^3.1.2
 
 dev_dependencies:
   gg_capture_print: ^1.0.9
   lints: ^3.0.0
-  test: ^1.25.8
+  test: ^1.24.0
 
 executables:
  gg_to_local:

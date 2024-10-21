@@ -6,7 +6,7 @@
 
 import 'dart:io';
 
-import 'package:args/command_runner.dart';
+import 'package:gg_args/gg_args.dart';
 import 'package:gg_console_colors/gg_console_colors.dart';
 import 'package:gg_local_package_dependencies/gg_local_package_dependencies.dart';
 import 'package:gg_log/gg_log.dart';
@@ -17,38 +17,35 @@ import 'package:yaml_edit/yaml_edit.dart';
 
 // #############################################################################
 /// An example command
-class Local extends Command<dynamic> {
+class Local extends DirCommand<dynamic> {
   /// Constructor
   Local({
-    required this.ggLog,
-  }) {
-    _addArgs();
-  }
-
-  /// The log function
-  final GgLog ggLog;
-
-  /// Then name of the command
-  @override
-  final name = 'local';
-
-  /// The description of the command
-  @override
-  final description = 'Changes dependencies to local dependencies.';
+    required super.ggLog,
+  }) : super(
+          name: 'local',
+          description: 'Changes dependencies to local dependencies.',
+        );
 
   // ...........................................................................
   @override
-  Future<void> run() async {
-    String? root = await GgProjectRoot.get(Directory('.').absolute.path);
+  Future<void> get({required Directory directory, required GgLog ggLog}) async {
+    ggLog('Running local in ${directory.path}');
+
+    String? root = await GgProjectRoot.get(directory.absolute.path);
 
     if (root == null) {
       ggLog('No root found');
       return;
     }
 
-    Directory projectDir = Directory(root).parent;
+    Directory projectDir = Directory(root);
 
     final pubspec = File('${projectDir.path}/pubspec.yaml');
+
+    if (!await pubspec.exists()) {
+      throw Exception(red('pubspec.yaml not found in ${projectDir.path}'));
+    }
+
     final pubspecContent = await pubspec.readAsString();
     late Pubspec pubspecYaml;
     try {
@@ -72,77 +69,69 @@ class Local extends Command<dynamic> {
       return;
     }
 
-    for (MapEntry<String, Node> dependency in node.dependencies.entries) {
-      ggLog('Processing dependency ${dependency.key}');
-    }
-
     // copy pubspec.yaml to pubspec.yaml.original
-    File originalPubspec = File('${projectDir.path}/pubspec.yaml.original');
-    if (await originalPubspec.exists()) {
-      await originalPubspec.delete();
-    }
-    await pubspec.copy(originalPubspec.path);
+    File originalPubspec = File('${projectDir.path}/.gg_to_local_backup.yaml');
+    await _writeFileCopy(
+      source: pubspec,
+      destination: originalPubspec,
+    );
 
-    // change dependencies to local dependencies
-    String newPubspecContent = pubspecContent;
+    // Create a YamlEditor with the current content
+    final editor = YamlEditor(pubspecContent);
+
+    // Load the YAML content as a Map
+    final yamlMap = loadYaml(pubspecContent) as Map;
+
+    // Check if the 'dependencies' section exists
+    if (!yamlMap.containsKey('dependencies')) {
+      throw Exception("The 'dependencies' section was not found.");
+    }
+
     for (MapEntry<String, Node> dependency in node.dependencies.entries) {
       String dependencyName = dependency.key;
       String dependencyPath = dependency.value.directory.path;
       String newDependency = 'path: $dependencyPath';
-      newPubspecContent =
-          changeDependency(newPubspecContent, dependencyName, newDependency);
+
+      ggLog('Processing dependency $dependencyName');
+
+      // Update or add the dependency
+      editor.update(['dependencies', dependencyName], newDependency);
     }
+
+    // Return the updated YAML content
+    String newPubspecContent = editor.toString();
 
     print(newPubspecContent);
 
     // write new pubspec.yaml.modified
     File modifiedPubspec = File('${projectDir.path}/pubspec.yaml.modified');
-    if (await modifiedPubspec.exists()) {
-      await modifiedPubspec.delete();
-    }
-    await modifiedPubspec.writeAsString(newPubspecContent);
-  }
-
-  String changeDependency(
-      String pubspecContent, String dependency, String newValue) {
-    // Erstelle einen YamlEditor mit dem aktuellen Inhalt
-    final editor = YamlEditor(pubspecContent);
-
-    // Lade den YAML-Inhalt als Map
-    final yamlMap = loadYaml(pubspecContent) as Map;
-
-    // Überprüfe, ob die 'dependencies'-Sektion existiert
-    if (!yamlMap.containsKey('dependencies')) {
-      throw Exception("Die 'dependencies'-Sektion wurde nicht gefunden.");
-    }
-
-    // Versuche, newValue als YAML zu parsen
-    dynamic newDependencyValue;
-    try {
-      newDependencyValue = loadYaml(newValue);
-    } catch (e) {
-      // Falls Parsing fehlschlägt, behandle newValue als String
-      newDependencyValue = newValue;
-    }
-
-    // Aktualisiere oder füge die Abhängigkeit hinzu
-    editor.update(['dependencies', dependency], newDependencyValue);
-
-    // Gib den aktualisierten YAML-Inhalt zurück
-    return editor.toString();
-  }
-
-  // ...........................................................................
-  void _addArgs() {
-    argParser.addOption(
-      'input',
-      abbr: 'i',
-      help: 'The subcommands input param.',
-      mandatory: true,
+    await _writeToFile(
+      content: newPubspecContent,
+      file: modifiedPubspec,
     );
   }
 
   // ...........................................................................
-  /// Replace by your parameter
-  late String input;
+  /// Helper method to write content to a file
+  Future<void> _writeToFile({
+    required String content,
+    required File file,
+  }) async {
+    if (await file.exists()) {
+      await file.delete();
+    }
+    await file.writeAsString(content);
+  }
+
+  // ...........................................................................
+  /// Helper method to copy a file
+  Future<void> _writeFileCopy({
+    required File source,
+    required File destination,
+  }) async {
+    if (await destination.exists()) {
+      await destination.delete();
+    }
+    await source.copy(destination.path);
+  }
 }

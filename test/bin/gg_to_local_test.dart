@@ -7,14 +7,32 @@
 import 'dart:convert';
 import 'dart:io';
 
-import 'package:gg_console_colors/gg_console_colors.dart';
 import 'package:gg_capture_print/gg_capture_print.dart';
 
 import 'package:test/test.dart';
-
+import 'package:path/path.dart';
 import '../../bin/gg_to_local.dart';
 
 void main() {
+  Directory tempDir =
+      Directory(join('test', 'sample_folder', 'executable_command_test'));
+
+  setUp(() async {
+    // create the tempDir
+    Directory workspaceDir = await Directory.systemTemp.createTemp();
+
+    tempDir = Directory(join(workspaceDir.path, 'executable_command_test'));
+    await tempDir.create(recursive: true);
+
+    expect(await tempDir.exists(), isTrue);
+  });
+
+  tearDown(() {
+    if (tempDir.existsSync()) {
+      tempDir.deleteSync(recursive: true);
+    }
+  });
+
   group('bin/gg_to_local.dart', () {
     // #########################################################################
 
@@ -22,22 +40,12 @@ void main() {
       // Execute bin/gg_to_local.dart and check if it prints help
       final result = await Process.run(
         'dart',
-        ['./bin/gg_to_local.dart', 'my-command'],
+        ['./bin/gg_to_local.dart', 'local', '--input', tempDir.path],
         stdoutEncoding: utf8,
         stderrEncoding: utf8,
       );
 
-      final expectedMessages = [
-        'Invalid argument(s): Option',
-        red('input'),
-        'is mandatory.',
-      ];
-
-      final stdout = result.stdout as String;
-
-      for (final msg in expectedMessages) {
-        expect(stdout, contains(msg));
-      }
+      expect(result.stdout, contains('No root found'));
     });
   });
 
@@ -47,9 +55,9 @@ void main() {
       test('should print "value"', () async {
         // Execute bin/gg_to_local.dart and check if it prints "value"
         final messages = <String>[];
-        await run(args: ['my-command', '--input', '5'], ggLog: messages.add);
+        await run(args: ['local', '--input', '5'], ggLog: messages.add);
 
-        final expectedMessages = ['Running my-command with param 5'];
+        final expectedMessages = ['Running local in 5'];
 
         for (final msg in expectedMessages) {
           expect(hasLog(messages, msg), isTrue);
