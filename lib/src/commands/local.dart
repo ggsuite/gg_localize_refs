@@ -13,7 +13,6 @@ import 'package:gg_local_package_dependencies/gg_local_package_dependencies.dart
 import 'package:gg_log/gg_log.dart';
 import 'package:gg_project_root/gg_project_root.dart';
 import 'package:pubspec_parse/pubspec_parse.dart';
-import 'package:yaml/yaml.dart';
 import 'package:yaml_edit/yaml_edit.dart';
 
 // #############################################################################
@@ -60,14 +59,8 @@ class Local extends DirCommand<dynamic> {
     final pubspec = File('${projectDir.path}/pubspec.yaml');
 
     final pubspecContent = await pubspec.readAsString();
-    late Pubspec pubspecYaml;
-    try {
-      pubspecYaml = Pubspec.parse(pubspecContent);
-    } catch (e) {
-      throw Exception(red('Error parsing pubspec.yaml:') + e.toString());
-    }
 
-    String packageName = pubspecYaml.name;
+    String packageName = getPackageName(pubspecContent);
 
     // copy pubspec.yaml to pubspec.yaml.original
     File originalPubspec = File('${projectDir.path}/.gg_to_local_backup.yaml');
@@ -79,13 +72,13 @@ class Local extends DirCommand<dynamic> {
     // Create a YamlEditor with the current content
     final editor = YamlEditor(pubspecContent);
 
-    // Load the YAML content as a Map
+    /*// Load the YAML content as a Map
     final yamlMap = loadYaml(pubspecContent) as Map;
 
     // Check if the 'dependencies' section exists
     if (!yamlMap.containsKey('dependencies')) {
       throw Exception("The 'dependencies' section was not found.");
-    }
+    }*/
 
     Node? node = nodes[packageName];
 
@@ -137,6 +130,19 @@ class Local extends DirCommand<dynamic> {
         processedNodes,
       );
     }
+  }
+
+  // ...........................................................................
+  /// Get the package name from the pubspec.yaml file
+  String getPackageName(String pubspecContent) {
+    late Pubspec pubspecYaml;
+    try {
+      pubspecYaml = Pubspec.parse(pubspecContent);
+    } catch (e) {
+      throw Exception(red('Error parsing pubspec.yaml:') + e.toString());
+    }
+
+    return pubspecYaml.name;
   }
 
   Directory _correctDir(Directory directory) {

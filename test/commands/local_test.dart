@@ -42,6 +42,14 @@ void main() {
       'node_not_found',
     ),
   );
+  final dSucceed = Directory(
+    join(
+      'test',
+      'sample_folder',
+      'workspace_succeed',
+      'succeed',
+    ),
+  );
 
   setUp(() async {
     messages.clear();
@@ -51,7 +59,13 @@ void main() {
 
     // create the tempDir
     createDirs(
-      [dNoProjectRootError, dParseError, dNoDependencies, dNodeNotFound],
+      [
+        dNoProjectRootError,
+        dParseError,
+        dNoDependencies,
+        dNodeNotFound,
+        dSucceed,
+      ],
     );
   });
 
@@ -93,42 +107,40 @@ void main() {
           );
         });
 
-        test('when pubspec.yaml cannot be parsed', () async {
-          // Create a pubspec.yaml with invalid content in tempDir
-          File(join(dParseError.path, 'pubspec.yaml'))
-              .writeAsStringSync('invalid yaml');
+        group('when pubspec.yaml cannot be parsed', () {
+          test('when calling command', () async {
+            // Create a pubspec.yaml with invalid content in tempDir
+            File(join(dParseError.path, 'pubspec.yaml'))
+                .writeAsStringSync('invalid yaml');
 
-          await expectLater(
-            runner.run(
-              ['local', '--input', dParseError.path],
-            ),
-            throwsA(
-              isA<Exception>().having(
-                (e) => e.toString(),
-                'message',
-                contains('Error parsing pubspec.yaml'),
+            await expectLater(
+              runner.run(
+                ['local', '--input', dParseError.path],
               ),
-            ),
-          );
-        });
-
-        test('when pubspec.yaml does not contain depencies section', () async {
-          // Create a pubspec.yaml with invalid content in tempDir
-          File(join(dNoDependencies.path, 'pubspec.yaml'))
-              .writeAsStringSync('name: test_package\nversion: 1.0.0\n');
-
-          await expectLater(
-            runner.run(
-              ['local', '--input', dNoDependencies.path],
-            ),
-            throwsA(
-              isA<Exception>().having(
-                (e) => e.toString(),
-                'message',
-                contains('The \'dependencies\' section was not found.'),
+              throwsA(
+                isA<Exception>().having(
+                  (e) => e.toString(),
+                  'message',
+                  contains('Error parsing pubspec.yaml'),
+                ),
               ),
-            ),
-          );
+            );
+          });
+
+          test('when calling parsing method', () async {
+            final messages = <String>[];
+
+            expect(
+              () => Local(ggLog: messages.add).getPackageName('invalid yaml'),
+              throwsA(
+                isA<Exception>().having(
+                  (e) => e.toString(),
+                  'message',
+                  contains('Error parsing pubspec.yaml'),
+                ),
+              ),
+            );
+          });
         });
 
         test('when node not found', () async {
@@ -159,6 +171,24 @@ void main() {
       });
 
       // .......................................................................
+
+      group('should succeed', () {
+        test('when pubspec is correct', () async {
+          File(join(dSucceed.path, 'pubspec.yaml')).writeAsStringSync(
+            '''name: test_package
+version: 1.0.0
+dependencies:
+  test2: ^1.0.0''',
+          );
+
+          await expectLater(
+            runner.run(
+              ['local', '--input', dSucceed.path],
+            ),
+            completes,
+          );
+        });
+      });
     });
   });
 }
