@@ -42,12 +42,11 @@ void main() {
       'node_not_found',
     ),
   );
-  final dSucceed = Directory(
+  final dWorkspaceSucceed = Directory(
     join(
       'test',
       'sample_folder',
       'workspace_succeed',
-      'succeed',
     ),
   );
 
@@ -64,7 +63,7 @@ void main() {
         dParseError,
         dNoDependencies,
         dNodeNotFound,
-        dSucceed,
+        dWorkspaceSucceed,
       ],
     );
   });
@@ -174,21 +173,57 @@ void main() {
 
       group('should succeed', () {
         test('when pubspec is correct', () async {
-          File(join(dSucceed.path, 'pubspec.yaml')).writeAsStringSync(
-            '''name: test_package
+          Directory dProject1 =
+              Directory(join(dWorkspaceSucceed.path, 'project1'));
+          Directory dProject2 =
+              Directory(join(dWorkspaceSucceed.path, 'project2'));
+
+          createDirs([dProject1, dProject2]);
+
+          File(join(dProject1.path, 'pubspec.yaml')).writeAsStringSync(
+            '''name: test1
 version: 1.0.0
 dependencies:
   test2: ^1.0.0''',
           );
 
-          await expectLater(
-            runner.run(
-              ['local', '--input', dSucceed.path],
-            ),
-            completes,
+          File(join(dProject2.path, 'pubspec.yaml')).writeAsStringSync(
+            '''name: test2
+version: 1.0.0''',
+          );
+
+          final messages = <String>[];
+          Local local = Local(ggLog: messages.add);
+          await local.get(directory: dProject1, ggLog: messages.add);
+
+          expect(messages[0], contains('Running local in'));
+          expect(
+            messages[1],
+            contains('Processing dependencies of package test1'),
+          );
+          expect(messages[2], contains('test2'));
+          expect(
+            messages[3],
+            contains('Processing dependencies of package test2'),
           );
         });
       });
+    });
+  });
+
+  group('Helper methods', () {
+    test('correctDir()', () {
+      final messages = <String>[];
+      final local = Local(ggLog: messages.add);
+
+      expect(
+        local.correctDir(Directory('test/')).path,
+        'test',
+      );
+      expect(
+        local.correctDir(Directory('test/.')).path,
+        'test',
+      );
     });
   });
 }

@@ -37,7 +37,7 @@ class Local extends DirCommand<dynamic> {
       throw Exception(red('No project root found'));
     }
 
-    Directory projectDir = _correctDir(Directory(root));
+    Directory projectDir = correctDir(Directory(root));
 
     Graph graph = Graph(ggLog: ggLog);
     Map<String, Node> nodes = await graph.get(
@@ -55,7 +55,7 @@ class Local extends DirCommand<dynamic> {
     Map<String, Node> nodes,
     Set<String> processedNodes,
   ) async {
-    projectDir = _correctDir(projectDir);
+    projectDir = correctDir(projectDir);
     final pubspec = File('${projectDir.path}/pubspec.yaml');
 
     final pubspecContent = await pubspec.readAsString();
@@ -145,10 +145,15 @@ class Local extends DirCommand<dynamic> {
     return pubspecYaml.name;
   }
 
-  Directory _correctDir(Directory directory) {
-    if (directory.path.endsWith('\\.')) {
+  // ...........................................................................
+  /// Helper method to correct a directory
+  Directory correctDir(Directory directory) {
+    if (directory.path.endsWith('\\.') || directory.path.endsWith('/.')) {
       directory =
           Directory(directory.path.substring(0, directory.path.length - 2));
+    } else if (directory.path.endsWith('\\') || directory.path.endsWith('/')) {
+      directory =
+          Directory(directory.path.substring(0, directory.path.length - 1));
     }
     return directory;
   }
