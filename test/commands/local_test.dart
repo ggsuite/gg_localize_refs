@@ -15,6 +15,14 @@ void main() {
   final messages = <String>[];
   late CommandRunner<void> runner;
 
+  final dNoProjectRootError = Directory(
+    join(
+      'test',
+      'sample_folder',
+      'workspace_no_project_root_error',
+      'no_project_root_error',
+    ),
+  );
   final dParseError = Directory(
     join('test', 'sample_folder', 'workspace_parse_error', 'parse_error'),
   );
@@ -26,6 +34,14 @@ void main() {
       'no_dependencies',
     ),
   );
+  final dNodeNotFound = Directory(
+    join(
+      'test',
+      'sample_folder',
+      'workspace_node_not_found',
+      'node_not_found',
+    ),
+  );
 
   setUp(() async {
     messages.clear();
@@ -34,7 +50,9 @@ void main() {
     runner.addCommand(myCommand);
 
     // create the tempDir
-    createDirs([dParseError, dNoDependencies]);
+    createDirs(
+      [dNoProjectRootError, dParseError, dNoDependencies, dNodeNotFound],
+    );
   });
 
   tearDown(() {});
@@ -60,6 +78,21 @@ void main() {
 
       // .......................................................................
       group('should throw', () {
+        test('when project root was not found', () async {
+          await expectLater(
+            runner.run(
+              ['local', '--input', dNoProjectRootError.path],
+            ),
+            throwsA(
+              isA<Exception>().having(
+                (e) => e.toString(),
+                'message',
+                contains('No project root found'),
+              ),
+            ),
+          );
+        });
+
         test('when pubspec.yaml cannot be parsed', () async {
           // Create a pubspec.yaml with invalid content in tempDir
           File(join(dParseError.path, 'pubspec.yaml'))
@@ -94,6 +127,32 @@ void main() {
                 'message',
                 contains('The \'dependencies\' section was not found.'),
               ),
+            ),
+          );
+        });
+
+        test('when node not found', () async {
+          final messages = <String>[];
+
+          // Create a pubspec.yaml with invalid content in tempDir
+          File(join(dNodeNotFound.path, 'pubspec.yaml')).writeAsStringSync(
+            'name: test_package\nversion: 1.0.0\ndependencies:',
+          );
+
+          await expectLater(
+            Local(ggLog: messages.add).modifyYaml(dNodeNotFound, {}, {}),
+            throwsA(
+              isA<Exception>()
+                  .having(
+                    (e) => e.toString(),
+                    'message',
+                    contains('node for the package'),
+                  )
+                  .having(
+                    (e) => e.toString(),
+                    'message',
+                    contains('not found'),
+                  ),
             ),
           );
         });

@@ -4,6 +4,7 @@
 // Use of this source code is governed by terms that can be
 // found in the LICENSE file in the root of this package.
 
+import 'dart:async';
 import 'dart:io';
 
 import 'package:gg_args/gg_args.dart';
@@ -34,17 +35,29 @@ class Local extends DirCommand<dynamic> {
     String? root = await GgProjectRoot.get(directory.absolute.path);
 
     if (root == null) {
-      ggLog('No root found');
-      return;
+      throw Exception(red('No project root found'));
     }
 
-    Directory projectDir = Directory(root);
+    Directory projectDir = _correctDir(Directory(root));
 
+    Graph graph = Graph(ggLog: ggLog);
+    Map<String, Node> nodes = await graph.get(
+      directory: projectDir.parent,
+      ggLog: ggLog,
+    );
+
+    await modifyYaml(projectDir, nodes, {});
+  }
+
+  // ...........................................................................
+  /// Modify the pubspec.yaml file
+  Future<void> modifyYaml(
+    Directory projectDir,
+    Map<String, Node> nodes,
+    Set<String> processedNodes,
+  ) async {
+    projectDir = _correctDir(projectDir);
     final pubspec = File('${projectDir.path}/pubspec.yaml');
-
-    if (!await pubspec.exists()) {
-      throw Exception(red('pubspec.yaml not found in ${projectDir.path}'));
-    }
 
     final pubspecContent = await pubspec.readAsString();
     late Pubspec pubspecYaml;
@@ -55,19 +68,6 @@ class Local extends DirCommand<dynamic> {
     }
 
     String packageName = pubspecYaml.name;
-
-    Graph graph = Graph(ggLog: ggLog);
-    Map<String, Node> nodes = await graph.get(
-      directory: projectDir.parent,
-      ggLog: ggLog,
-    );
-
-    Node? node = nodes[packageName];
-
-    if (node == null) {
-      ggLog('No node found for $packageName');
-      return;
-    }
 
     // copy pubspec.yaml to pubspec.yaml.original
     File originalPubspec = File('${projectDir.path}/.gg_to_local_backup.yaml');
@@ -87,12 +87,30 @@ class Local extends DirCommand<dynamic> {
       throw Exception("The 'dependencies' section was not found.");
     }
 
+    Node? node = nodes[packageName];
+
+    if (node == null) {
+      throw Exception('The node for the package $packageName was not found.');
+    }
+
+    ggLog('Processing dependencies of package $packageName:');
+
     for (MapEntry<String, Node> dependency in node.dependencies.entries) {
       String dependencyName = dependency.key;
       String dependencyPath = dependency.value.directory.path;
-      String newDependency = 'path: $dependencyPath';
+      /*String oldDependency = yamlMap['dependencies'][dependencyName]
+          .toString()
+          .replaceAll('\n', '')
+          .replaceAll('\r', '')
+          .replaceAll('\t', '')
+          .replaceAll('{', '')
+          .replaceAll('}', '');*/
 
-      ggLog('Processing dependency $dependencyName');
+      dynamic newDependency = {
+        'path': dependencyPath,
+      };
+
+      ggLog('\t$dependencyName');
 
       // Update or add the dependency
       editor.update(['dependencies', dependencyName], newDependency);
@@ -101,14 +119,32 @@ class Local extends DirCommand<dynamic> {
     // Return the updated YAML content
     String newPubspecContent = editor.toString();
 
-    print(newPubspecContent);
-
     // write new pubspec.yaml.modified
     File modifiedPubspec = File('${projectDir.path}/pubspec.yaml.modified');
     await _writeToFile(
       content: newPubspecContent,
       file: modifiedPubspec,
     );
+
+    for (MapEntry<String, Node> dependency in node.dependencies.entries) {
+      if (processedNodes.contains(dependency.key)) {
+        continue;
+      }
+      processedNodes.add(dependency.key);
+      await modifyYaml(
+        dependency.value.directory,
+        node.dependencies,
+        processedNodes,
+      );
+    }
+  }
+
+  Directory _correctDir(Directory directory) {
+    if (directory.path.endsWith('\\.')) {
+      directory =
+          Directory(directory.path.substring(0, directory.path.length - 2));
+    }
+    return directory;
   }
 
   // ...........................................................................

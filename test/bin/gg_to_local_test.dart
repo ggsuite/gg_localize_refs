@@ -45,7 +45,7 @@ void main() {
         stderrEncoding: utf8,
       );
 
-      expect(result.stdout, contains('No root found'));
+      expect(result.stdout, contains('No project root found'));
     });
   });
 

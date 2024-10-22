@@ -16,8 +16,14 @@ import 'package:path/path.dart';
 void main() {
   final messages = <String>[];
 
-  Directory tempDir =
-      Directory(join('test', 'sample_folder', 'GgToLocal_command_test'));
+  Directory tempDir = Directory(
+    join(
+      'test',
+      'sample_folder',
+      'workspace_GgToLocal_command',
+      'GgToLocal_command',
+    ),
+  );
 
   setUp(() async {
     messages.clear();
@@ -44,6 +50,10 @@ void main() {
       )..addCommand(ggToLocal);
 
       test('should allow to run the code from command line', () async {
+        File(join(tempDir.path, 'pubspec.yaml')).writeAsStringSync(
+          'name: test_package\nversion: 1.0.0\ndependencies:',
+        );
+
         await capturePrint(
           ggLog: messages.add,
           code: () async => await runner.run([
