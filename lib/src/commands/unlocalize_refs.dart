@@ -16,19 +16,19 @@ import 'package:gg_to_local/src/yaml_to_string.dart';
 
 // #############################################################################
 /// An example command
-class LocalizeRefs extends DirCommand<dynamic> {
+class UnlocalizeRefs extends DirCommand<dynamic> {
   /// Constructor
-  LocalizeRefs({
+  UnlocalizeRefs({
     required super.ggLog,
   }) : super(
-          name: 'localize-refs',
-          description: 'Changes dependencies to local dependencies.',
+          name: 'unlocalize-refs',
+          description: 'Changes dependencies to remote dependencies.',
         );
 
   // ...........................................................................
   @override
   Future<void> get({required Directory directory, required GgLog ggLog}) async {
-    ggLog('Running localize-refs in ${directory.path}');
+    ggLog('Running unlocalize-refs in ${directory.path}');
 
     await processProject(directory, modifyYaml, ggLog);
   }
@@ -45,62 +45,48 @@ class LocalizeRefs extends DirCommand<dynamic> {
   ) async {
     ggLog('Processing dependencies of package $packageName:');
 
-    for (MapEntry<String, Node> dependency in node.dependencies.entries) {
-      if (yamlToString(yamlMap['dependencies'][dependency.key])
-          .startsWith('path:')) {
-        ggLog('Dependencies already localized.');
-        return;
-      }
-    }
-
-    // copy pubspec.yaml to pubspec.yaml.original
-    File originalPubspec = File('${projectDir.path}/.gg_to_local_backup.yaml');
-    await _writeFileCopy(
-      source: pubspec,
-      destination: originalPubspec,
-    );
-
     // Return the updated YAML content
     String newPubspecContent = pubspecContent;
 
-    Map<String, dynamic> replacedDependencies = {};
+    Map<String, dynamic> savedDependencies = readDependenciesFromJson(
+      '${projectDir.path}/.gg_to_local_backup.json',
+    );
 
     for (MapEntry<String, Node> dependency in node.dependencies.entries) {
       String dependencyName = dependency.key;
-      String dependencyPath = dependency.value.directory.path;
       dynamic oldDependency = yamlMap['dependencies'][dependencyName];
       String oldDependencyYaml = yamlToString(oldDependency);
-      String oldDependencyYamlCompressed =
-          oldDependencyYaml.replaceAll(RegExp(r'[\n\r\t{}]'), '');
+
+      if (!savedDependencies.containsKey(dependencyName)) {
+        continue;
+      }
 
       ggLog('\t$dependencyName');
 
       // Update or add the dependency
 
-      if (!oldDependencyYamlCompressed.startsWith('path:')) {
-        replacedDependencies[dependencyName] =
-            yamlMap['dependencies'][dependencyName];
+      if (!oldDependencyYaml.contains('path:')) {
+        ggLog('Dependencies already unlocalized.');
+        return;
       }
 
       String oldDependencyPattern =
           RegExp.escape(oldDependencyYaml).replaceAll(RegExp(r'\s+'), r'\s*');
       RegExp oldDependencyRegex = RegExp(oldDependencyPattern);
 
-      String lineBreak = '\n';
-      /*if (oldDependencyYaml.contains('\n')) {
-        lineBreak = '';
-      }*/
+      String newDependencyYaml =
+          yamlToString(savedDependencies[dependencyName]);
+
+      // set identation for multiline dependencies
+      if (newDependencyYaml.contains('\n')) {
+        newDependencyYaml = '\n$newDependencyYaml'.replaceAll('\n', '\n    ');
+      }
+
       newPubspecContent = newPubspecContent.replaceAll(
         oldDependencyRegex,
-        '$lineBreak    path: $dependencyPath # $oldDependencyYamlCompressed\n  ',
+        newDependencyYaml,
       );
     }
-
-    // Save the replaced dependencies to a JSON file
-    saveDependenciesAsJson(
-      replacedDependencies,
-      '${projectDir.path}/.gg_to_local_backup.json',
-    );
 
     // write new pubspec.yaml.modified
     File modifiedPubspec = File('${projectDir.path}/pubspec.yaml');
@@ -123,30 +109,10 @@ class LocalizeRefs extends DirCommand<dynamic> {
   }
 
   // ...........................................................................
-  /// Helper method to copy a file
-  Future<void> _writeFileCopy({
-    required File source,
-    required File destination,
-  }) async {
-    if (await destination.exists()) {
-      await destination.delete();
-    }
-    await source.copy(destination.path);
-  }
-
-  // ...........................................................................
-  /// Save the dependencies to a JSON file
-  void saveDependenciesAsJson(
-    Map<String, dynamic> replacedDependencies,
-    String filePath,
-  ) async {
-    // Convert the Map to a JSON string
-    String jsonString = jsonEncode(replacedDependencies);
-
-    // Write the JSON data to the file
+  /// Read dependencies from a JSON file
+  Map<String, dynamic> readDependenciesFromJson(String filePath) {
     File file = File(filePath);
-    await file.writeAsString(jsonString);
-
-    print('Dependencies successfully saved to $filePath.');
+    String jsonString = file.readAsStringSync();
+    return jsonDecode(jsonString) as Map<String, dynamic>;
   }
 }
