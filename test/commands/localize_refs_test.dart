@@ -8,6 +8,7 @@ import 'dart:io';
 import 'package:args/command_runner.dart';
 import 'package:gg_capture_print/gg_capture_print.dart';
 import 'package:gg_to_local/src/commands/localize_refs.dart';
+import 'package:gg_to_local/src/process_dependencies.dart';
 import 'package:test/test.dart';
 import 'package:path/path.dart';
 
@@ -125,22 +126,6 @@ void main() {
               ),
             );
           });
-
-          test('when calling parsing method', () async {
-            final messages = <String>[];
-
-            expect(
-              () => LocalizeRefs(ggLog: messages.add)
-                  .getPackageName('invalid yaml'),
-              throwsA(
-                isA<Exception>().having(
-                  (e) => e.toString(),
-                  'message',
-                  contains('Error parsing pubspec.yaml'),
-                ),
-              ),
-            );
-          });
         });
 
         test('when node not found', () async {
@@ -154,7 +139,7 @@ void main() {
           LocalizeRefs loc = LocalizeRefs(ggLog: messages.add);
 
           await expectLater(
-            loc.processNode(dNodeNotFound, {}, {}, loc.modifyYaml),
+            processNode(dNodeNotFound, {}, {}, loc.modifyYaml),
             throwsA(
               isA<Exception>()
                   .having(
@@ -207,22 +192,6 @@ version: 1.0.0''',
           expect(messages[2], contains('test2'));
         });
       });
-    });
-  });
-
-  group('Helper methods', () {
-    test('correctDir()', () {
-      final messages = <String>[];
-      final local = LocalizeRefs(ggLog: messages.add);
-
-      expect(
-        local.correctDir(Directory('test/')).path,
-        'test',
-      );
-      expect(
-        local.correctDir(Directory('test/.')).path,
-        'test',
-      );
     });
   });
 }
