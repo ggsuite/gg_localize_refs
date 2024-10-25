@@ -82,8 +82,9 @@ class LocalizeRefs extends DirCommand<dynamic> {
             yamlMap['dependencies'][dependencyName];
       }
 
-      String oldDependencyPattern =
-          RegExp.escape(oldDependencyYaml).replaceAll(RegExp(r'\s+'), r'\s*');
+      String oldDependencyPattern = r'\s*' +
+          RegExp.escape(oldDependencyYaml).replaceAll(RegExp(r'\s+'), r'\s*') +
+          r'\s*(#([\s\S]*?)\n\s*)?';
       RegExp oldDependencyRegex = RegExp(oldDependencyPattern);
 
       String lineBreak = '\n';

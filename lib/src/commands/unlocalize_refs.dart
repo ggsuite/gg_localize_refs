@@ -70,8 +70,9 @@ class UnlocalizeRefs extends DirCommand<dynamic> {
         return;
       }
 
-      String oldDependencyPattern =
-          RegExp.escape(oldDependencyYaml).replaceAll(RegExp(r'\s+'), r'\s*');
+      String oldDependencyPattern = r'\s*' +
+          RegExp.escape(oldDependencyYaml).replaceAll(RegExp(r'\s+'), r'\s*') +
+          r'\s*(#([\s\S]*?)\n\s*)?';
       RegExp oldDependencyRegex = RegExp(oldDependencyPattern);
 
       String newDependencyYaml =
@@ -80,6 +81,8 @@ class UnlocalizeRefs extends DirCommand<dynamic> {
       // set identation for multiline dependencies
       if (newDependencyYaml.contains('\n')) {
         newDependencyYaml = '\n$newDependencyYaml'.replaceAll('\n', '\n    ');
+        newDependencyYaml =
+            '${newDependencyYaml.substring(0, newDependencyYaml.length - 4)}  ';
       }
 
       newPubspecContent = newPubspecContent.replaceAll(
