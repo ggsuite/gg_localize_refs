@@ -40,7 +40,7 @@ void main() {
       // Execute bin/gg_to_local.dart and check if it prints help
       final result = await Process.run(
         'dart',
-        ['./bin/gg_to_local.dart', 'local', '--input', tempDir.path],
+        ['./bin/gg_to_local.dart', 'localize-refs', '--input', tempDir.path],
         stdoutEncoding: utf8,
         stderrEncoding: utf8,
       );
@@ -55,9 +55,9 @@ void main() {
       test('should print "value"', () async {
         // Execute bin/gg_to_local.dart and check if it prints "value"
         final messages = <String>[];
-        await run(args: ['local', '--input', '5'], ggLog: messages.add);
+        await run(args: ['localize-refs', '--input', '5'], ggLog: messages.add);
 
-        final expectedMessages = ['Running local in 5'];
+        final expectedMessages = ['Running localize-refs in 5'];
 
         for (final msg in expectedMessages) {
           expect(hasLog(messages, msg), isTrue);

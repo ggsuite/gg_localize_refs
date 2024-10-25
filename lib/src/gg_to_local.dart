@@ -12,7 +12,7 @@ import 'package:gg_log/gg_log.dart';
 class GgToLocal extends Command<dynamic> {
   /// Constructor
   GgToLocal({required this.ggLog}) {
-    addSubcommand(Local(ggLog: ggLog));
+    addSubcommand(LocalizeRefs(ggLog: ggLog));
   }
 
   /// The log function

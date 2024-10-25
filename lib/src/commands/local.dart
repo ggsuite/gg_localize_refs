@@ -17,19 +17,19 @@ import 'package:yaml_edit/yaml_edit.dart';
 
 // #############################################################################
 /// An example command
-class Local extends DirCommand<dynamic> {
+class LocalizeRefs extends DirCommand<dynamic> {
   /// Constructor
-  Local({
+  LocalizeRefs({
     required super.ggLog,
   }) : super(
-          name: 'local',
+          name: 'localize-refs',
           description: 'Changes dependencies to local dependencies.',
         );
 
   // ...........................................................................
   @override
   Future<void> get({required Directory directory, required GgLog ggLog}) async {
-    ggLog('Running local in ${directory.path}');
+    ggLog('Running localize-refs in ${directory.path}');
 
     String? root = await GgProjectRoot.get(directory.absolute.path);
 

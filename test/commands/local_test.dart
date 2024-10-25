@@ -53,7 +53,7 @@ void main() {
   setUp(() async {
     messages.clear();
     runner = CommandRunner<void>('local', 'Description of local command.');
-    final myCommand = Local(ggLog: messages.add);
+    final myCommand = LocalizeRefs(ggLog: messages.add);
     runner.addCommand(myCommand);
 
     // create the tempDir
@@ -78,7 +78,7 @@ void main() {
           capturePrint(
             ggLog: messages.add,
             code: () => runner.run(
-              ['local', '--help'],
+              ['localize-refs', '--help'],
             ),
           );
 
@@ -94,7 +94,7 @@ void main() {
         test('when project root was not found', () async {
           await expectLater(
             runner.run(
-              ['local', '--input', dNoProjectRootError.path],
+              ['localize-refs', '--input', dNoProjectRootError.path],
             ),
             throwsA(
               isA<Exception>().having(
@@ -114,7 +114,7 @@ void main() {
 
             await expectLater(
               runner.run(
-                ['local', '--input', dParseError.path],
+                ['localize-refs', '--input', dParseError.path],
               ),
               throwsA(
                 isA<Exception>().having(
@@ -130,7 +130,8 @@ void main() {
             final messages = <String>[];
 
             expect(
-              () => Local(ggLog: messages.add).getPackageName('invalid yaml'),
+              () => LocalizeRefs(ggLog: messages.add)
+                  .getPackageName('invalid yaml'),
               throwsA(
                 isA<Exception>().having(
                   (e) => e.toString(),
@@ -151,7 +152,7 @@ void main() {
           );
 
           await expectLater(
-            Local(ggLog: messages.add).modifyYaml(dNodeNotFound, {}, {}),
+            LocalizeRefs(ggLog: messages.add).modifyYaml(dNodeNotFound, {}, {}),
             throwsA(
               isA<Exception>()
                   .having(
@@ -193,10 +194,10 @@ version: 1.0.0''',
           );
 
           final messages = <String>[];
-          Local local = Local(ggLog: messages.add);
+          LocalizeRefs local = LocalizeRefs(ggLog: messages.add);
           await local.get(directory: dProject1, ggLog: messages.add);
 
-          expect(messages[0], contains('Running local in'));
+          expect(messages[0], contains('Running localize-refs in'));
           expect(
             messages[1],
             contains('Processing dependencies of package test1'),
@@ -214,7 +215,7 @@ version: 1.0.0''',
   group('Helper methods', () {
     test('correctDir()', () {
       final messages = <String>[];
-      final local = Local(ggLog: messages.add);
+      final local = LocalizeRefs(ggLog: messages.add);
 
       expect(
         local.correctDir(Directory('test/')).path,
