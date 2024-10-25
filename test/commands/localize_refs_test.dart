@@ -7,7 +7,7 @@
 import 'dart:io';
 import 'package:args/command_runner.dart';
 import 'package:gg_capture_print/gg_capture_print.dart';
-import 'package:gg_to_local/src/commands/local.dart';
+import 'package:gg_to_local/src/commands/localize_refs.dart';
 import 'package:test/test.dart';
 import 'package:path/path.dart';
 
@@ -151,8 +151,10 @@ void main() {
             'name: test_package\nversion: 1.0.0\ndependencies:',
           );
 
+          LocalizeRefs loc = LocalizeRefs(ggLog: messages.add);
+
           await expectLater(
-            LocalizeRefs(ggLog: messages.add).modifyYaml(dNodeNotFound, {}, {}),
+            loc.processNode(dNodeNotFound, {}, {}, loc.modifyYaml),
             throwsA(
               isA<Exception>()
                   .having(

@@ -47,15 +47,24 @@ class LocalizeRefs extends DirCommand<dynamic> {
       ggLog: ggLog,
     );
 
-    await modifyYaml(projectDir, nodes, {});
+    await processNode(projectDir, nodes, {}, modifyYaml);
   }
 
   // ...........................................................................
-  /// Modify the pubspec.yaml file
-  Future<void> modifyYaml(
+  /// Process the node
+  Future<void> processNode(
     Directory projectDir,
     Map<String, Node> nodes,
     Set<String> processedNodes,
+    // Modify function
+    Future<void> Function(
+      String packageName,
+      File pubspec,
+      String pubspecContent,
+      Map<dynamic, dynamic> yamlMap,
+      Node node,
+      Directory projectDir,
+    ) modifyFunction,
   ) async {
     projectDir = correctDir(projectDir);
     final pubspec = File('${projectDir.path}/pubspec.yaml');
@@ -63,13 +72,6 @@ class LocalizeRefs extends DirCommand<dynamic> {
     final pubspecContent = await pubspec.readAsString();
 
     String packageName = getPackageName(pubspecContent);
-
-    // copy pubspec.yaml to pubspec.yaml.original
-    File originalPubspec = File('${projectDir.path}/.gg_to_local_backup.yaml');
-    await _writeFileCopy(
-      source: pubspec,
-      destination: originalPubspec,
-    );
 
     // Load the YAML content as a Map
     final yamlMap = loadYaml(pubspecContent) as Map;
@@ -85,7 +87,47 @@ class LocalizeRefs extends DirCommand<dynamic> {
       throw Exception('The node for the package $packageName was not found.');
     }
 
+    await modifyFunction(
+      packageName,
+      pubspec,
+      pubspecContent,
+      yamlMap,
+      node,
+      projectDir,
+    );
+
+    for (MapEntry<String, Node> dependency in node.dependencies.entries) {
+      if (processedNodes.contains(dependency.key)) {
+        continue;
+      }
+      processedNodes.add(dependency.key);
+      await processNode(
+        dependency.value.directory,
+        node.dependencies,
+        processedNodes,
+        modifyFunction,
+      );
+    }
+  }
+
+  // ...........................................................................
+  /// Modify the pubspec.yaml file
+  Future<void> modifyYaml(
+    String packageName,
+    File pubspec,
+    String pubspecContent,
+    Map<dynamic, dynamic> yamlMap,
+    Node node,
+    Directory projectDir,
+  ) async {
     ggLog('Processing dependencies of package $packageName:');
+
+    // copy pubspec.yaml to pubspec.yaml.original
+    File originalPubspec = File('${projectDir.path}/.gg_to_local_backup.yaml');
+    await _writeFileCopy(
+      source: pubspec,
+      destination: originalPubspec,
+    );
 
     // Return the updated YAML content
     String newPubspecContent = pubspecContent;
@@ -105,8 +147,10 @@ class LocalizeRefs extends DirCommand<dynamic> {
       // Update or add the dependency
       print(oldDependency);
 
-      replacedDependencies[dependencyName] =
-          yamlMap['dependencies'][dependencyName];
+      if (!oldDependencyYamlCompressed.startsWith('path:')) {
+        replacedDependencies[dependencyName] =
+            yamlMap['dependencies'][dependencyName];
+      }
 
       String oldDependencyPattern =
           RegExp.escape(oldDependencyYaml).replaceAll(RegExp(r'\s+'), r'\s*');
@@ -130,18 +174,6 @@ class LocalizeRefs extends DirCommand<dynamic> {
       content: newPubspecContent,
       file: modifiedPubspec,
     );
-
-    for (MapEntry<String, Node> dependency in node.dependencies.entries) {
-      if (processedNodes.contains(dependency.key)) {
-        continue;
-      }
-      processedNodes.add(dependency.key);
-      await modifyYaml(
-        dependency.value.directory,
-        node.dependencies,
-        processedNodes,
-      );
-    }
   }
 
   // ...........................................................................

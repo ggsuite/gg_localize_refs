@@ -5,7 +5,7 @@
 // found in the LICENSE file in the root of this package.
 
 import 'package:args/command_runner.dart';
-import './commands/local.dart';
+import 'commands/localize_refs.dart';
 import 'package:gg_log/gg_log.dart';
 
 /// The command line interface for GgToLocal
