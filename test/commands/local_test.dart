@@ -203,10 +203,6 @@ version: 1.0.0''',
             contains('Processing dependencies of package test1'),
           );
           expect(messages[2], contains('test2'));
-          expect(
-            messages[3],
-            contains('Processing dependencies of package test2'),
-          );
         });
       });
     });

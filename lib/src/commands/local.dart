@@ -5,6 +5,7 @@
 // found in the LICENSE file in the root of this package.
 
 import 'dart:async';
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:gg_args/gg_args.dart';
@@ -12,8 +13,9 @@ import 'package:gg_console_colors/gg_console_colors.dart';
 import 'package:gg_local_package_dependencies/gg_local_package_dependencies.dart';
 import 'package:gg_log/gg_log.dart';
 import 'package:gg_project_root/gg_project_root.dart';
+import 'package:gg_to_local/src/yaml_to_string.dart';
 import 'package:pubspec_parse/pubspec_parse.dart';
-import 'package:yaml_edit/yaml_edit.dart';
+import 'package:yaml/yaml.dart';
 
 // #############################################################################
 /// An example command
@@ -69,16 +71,13 @@ class LocalizeRefs extends DirCommand<dynamic> {
       destination: originalPubspec,
     );
 
-    // Create a YamlEditor with the current content
-    final editor = YamlEditor(pubspecContent);
-
-    /*// Load the YAML content as a Map
+    // Load the YAML content as a Map
     final yamlMap = loadYaml(pubspecContent) as Map;
 
     // Check if the 'dependencies' section exists
     if (!yamlMap.containsKey('dependencies')) {
-      throw Exception("The 'dependencies' section was not found.");
-    }*/
+      return;
+    }
 
     Node? node = nodes[packageName];
 
@@ -88,29 +87,42 @@ class LocalizeRefs extends DirCommand<dynamic> {
 
     ggLog('Processing dependencies of package $packageName:');
 
+    // Return the updated YAML content
+    String newPubspecContent = pubspecContent;
+
+    Map<String, dynamic> replacedDependencies = {};
+
     for (MapEntry<String, Node> dependency in node.dependencies.entries) {
       String dependencyName = dependency.key;
       String dependencyPath = dependency.value.directory.path;
-      /*String oldDependency = yamlMap['dependencies'][dependencyName]
-          .toString()
-          .replaceAll('\n', '')
-          .replaceAll('\r', '')
-          .replaceAll('\t', '')
-          .replaceAll('{', '')
-          .replaceAll('}', '');*/
-
-      dynamic newDependency = {
-        'path': dependencyPath,
-      };
+      dynamic oldDependency = yamlMap['dependencies'][dependencyName];
+      String oldDependencyYaml = yamlToString(oldDependency);
+      String oldDependencyYamlCompressed =
+          '# ${oldDependencyYaml.replaceAll(RegExp(r'[\n\r\t{}]'), '')}';
 
       ggLog('\t$dependencyName');
 
       // Update or add the dependency
-      editor.update(['dependencies', dependencyName], newDependency);
+      print(oldDependency);
+
+      replacedDependencies[dependencyName] =
+          yamlMap['dependencies'][dependencyName];
+
+      String oldDependencyPattern =
+          RegExp.escape(oldDependencyYaml).replaceAll(RegExp(r'\s+'), r'\s*');
+      RegExp oldDependencyRegex = RegExp(oldDependencyPattern);
+
+      newPubspecContent = newPubspecContent.replaceAll(
+        oldDependencyRegex,
+        '\n    path: $dependencyPath # $oldDependencyYamlCompressed\n  ',
+      );
     }
 
-    // Return the updated YAML content
-    String newPubspecContent = editor.toString();
+    // Save the replaced dependencies to a JSON file
+    saveDependenciesAsJson(
+      replacedDependencies,
+      '${projectDir.path}/.gg_to_local_backup.json',
+    );
 
     // write new pubspec.yaml.modified
     File modifiedPubspec = File('${projectDir.path}/pubspec.yaml.modified');
@@ -180,5 +192,21 @@ class LocalizeRefs extends DirCommand<dynamic> {
       await destination.delete();
     }
     await source.copy(destination.path);
+  }
+
+  // ...........................................................................
+  /// Save the dependencies to a JSON file
+  void saveDependenciesAsJson(
+    Map<String, dynamic> replacedDependencies,
+    String filePath,
+  ) async {
+    // Convert the Map to a JSON string
+    String jsonString = jsonEncode(replacedDependencies);
+
+    // Write the JSON data to the file
+    File file = File(filePath);
+    await file.writeAsString(jsonString);
+
+    print('Dependencies successfully saved to $filePath.');
   }
 }
