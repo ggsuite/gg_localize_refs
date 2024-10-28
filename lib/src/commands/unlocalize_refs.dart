@@ -12,6 +12,7 @@ import 'package:gg_args/gg_args.dart';
 import 'package:gg_local_package_dependencies/gg_local_package_dependencies.dart';
 import 'package:gg_log/gg_log.dart';
 import 'package:gg_to_local/src/process_dependencies.dart';
+import 'package:gg_to_local/src/replace_dependency.dart';
 import 'package:gg_to_local/src/yaml_to_string.dart';
 
 // #############################################################################
@@ -70,23 +71,13 @@ class UnlocalizeRefs extends DirCommand<dynamic> {
         return;
       }
 
-      String oldDependencyPattern = r'\s*' +
-          RegExp.escape(oldDependencyYaml).replaceAll(RegExp(r'\s+'), r'\s*') +
-          r'\s*(#([\s\S]*?)\n\s*)?';
-      RegExp oldDependencyRegex = RegExp(oldDependencyPattern);
-
       String newDependencyYaml =
           yamlToString(savedDependencies[dependencyName]);
 
-      // set identation for multiline dependencies
-      if (newDependencyYaml.contains('\n')) {
-        newDependencyYaml = '\n$newDependencyYaml'.replaceAll('\n', '\n    ');
-        newDependencyYaml =
-            '${newDependencyYaml.substring(0, newDependencyYaml.length - 4)}  ';
-      }
-
-      newPubspecContent = newPubspecContent.replaceAll(
-        oldDependencyRegex,
+      newPubspecContent = replaceDependency(
+        newPubspecContent,
+        dependencyName,
+        oldDependencyYaml,
         newDependencyYaml,
       );
     }

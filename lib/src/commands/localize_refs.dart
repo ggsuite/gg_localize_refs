@@ -12,6 +12,7 @@ import 'package:gg_args/gg_args.dart';
 import 'package:gg_local_package_dependencies/gg_local_package_dependencies.dart';
 import 'package:gg_log/gg_log.dart';
 import 'package:gg_to_local/src/process_dependencies.dart';
+import 'package:gg_to_local/src/replace_dependency.dart';
 import 'package:gg_to_local/src/yaml_to_string.dart';
 
 // #############################################################################
@@ -82,18 +83,11 @@ class LocalizeRefs extends DirCommand<dynamic> {
             yamlMap['dependencies'][dependencyName];
       }
 
-      String oldDependencyPattern = r'\s*' +
-          RegExp.escape(oldDependencyYaml).replaceAll(RegExp(r'\s+'), r'\s*') +
-          r'\s*(#([\s\S]*?)\n\s*)?';
-      RegExp oldDependencyRegex = RegExp(oldDependencyPattern);
-
-      String lineBreak = '\n';
-      /*if (oldDependencyYaml.contains('\n')) {
-        lineBreak = '';
-      }*/
-      newPubspecContent = newPubspecContent.replaceAll(
-        oldDependencyRegex,
-        '$lineBreak    path: $dependencyPath # $oldDependencyYamlCompressed\n  ',
+      newPubspecContent = replaceDependency(
+        newPubspecContent,
+        dependencyName,
+        oldDependencyYaml,
+        'path: $dependencyPath # $oldDependencyYamlCompressed',
       );
     }
 
