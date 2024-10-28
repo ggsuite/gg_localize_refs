@@ -24,15 +24,9 @@ String replaceDependency(
           regexMatch.indexOf(charsBeforeLastChar) + charsBeforeLastChar.length,
         );
 
-  if (newDep.contains('\n') || newDep.contains(RegExp.escape(':'))) {
-    return yamlString.replaceAll(
-      oldDependencyRegex,
-      '\n  $depName: \n    $newDep\n$charsAfterLastChar',
-    );
-  }
+  final newDependency = newDep.contains('\n') || newDep.contains(':')
+      ? '\n  $depName: \n    $newDep\n$charsAfterLastChar'
+      : '\n  $depName: $newDep\n$charsAfterLastChar';
 
-  return yamlString.replaceAll(
-    oldDependencyRegex,
-    '\n  $depName: $newDep\n$charsAfterLastChar',
-  );
+  return yamlString.replaceAll(oldDependencyRegex, newDependency);
 }

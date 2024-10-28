@@ -106,6 +106,13 @@ class UnlocalizeRefs extends DirCommand<dynamic> {
   /// Read dependencies from a JSON file
   Map<String, dynamic> readDependenciesFromJson(String filePath) {
     File file = File(filePath);
+
+    if (!file.existsSync()) {
+      throw Exception(
+        'The json file $filePath with old dependencies does not exist.',
+      );
+    }
+
     String jsonString = file.readAsStringSync();
     return jsonDecode(jsonString) as Map<String, dynamic>;
   }

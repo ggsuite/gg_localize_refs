@@ -37,6 +37,14 @@ void main() {
       'node_not_found',
     ),
   );
+  final dJsonNotFound = Directory(
+    join(
+      'test',
+      'sample_folder',
+      'workspace_unlocalize_json_not_found',
+      'json_not_found',
+    ),
+  );
   final dWorkspaceSucceed = Directory(
     join(
       'test',
@@ -59,6 +67,7 @@ void main() {
         dParseError,
         dNoDependencies,
         dNodeNotFound,
+        dJsonNotFound,
         dWorkspaceSucceed,
       ],
     );
@@ -146,6 +155,47 @@ void main() {
                     (e) => e.toString(),
                     'message',
                     contains('not found'),
+                  ),
+            ),
+          );
+        });
+
+        test('when .gg_to_local_backup.json does not exist', () async {
+          final messages = <String>[];
+
+          Directory dProject1 = Directory(join(dJsonNotFound.path, 'project1'));
+          Directory dProject2 = Directory(join(dJsonNotFound.path, 'project2'));
+
+          createDirs([dProject1, dProject2]);
+
+          File(join(dProject1.path, 'pubspec.yaml')).writeAsStringSync(
+            '''name: test1
+version: 1.0.0
+dependencies:
+  test2:
+    path: ../project2''',
+          );
+
+          File(join(dProject2.path, 'pubspec.yaml')).writeAsStringSync(
+            '''name: test2
+version: 1.0.0''',
+          );
+
+          UnlocalizeRefs unlocal = UnlocalizeRefs(ggLog: messages.add);
+
+          await expectLater(
+            unlocal.get(directory: dProject1, ggLog: messages.add),
+            throwsA(
+              isA<Exception>()
+                  .having(
+                    (e) => e.toString(),
+                    'message',
+                    contains('The json file'),
+                  )
+                  .having(
+                    (e) => e.toString(),
+                    'message',
+                    contains('with old dependencies does not exist.'),
                   ),
             ),
           );
