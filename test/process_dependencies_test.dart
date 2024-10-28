@@ -4,25 +4,22 @@ import 'package:gg_to_local/src/process_dependencies.dart';
 import 'package:path/path.dart';
 import 'package:test/test.dart';
 
+import 'test_helpers.dart';
+
 void main() {
-  final dWorkspaceSucceed = Directory(
-    join(
-      'test',
-      'sample_folder',
-      'workspace_pd_succeed',
-    ),
-  );
+  Directory dWorkspaceSucceed = Directory('');
 
   setUp(() async {
-    // create the tempDir
-    createDirs(
+    dWorkspaceSucceed = createTempDir('pd_succeed');
+  });
+
+  tearDown(() {
+    deleteDirs(
       [
         dWorkspaceSucceed,
       ],
     );
   });
-
-  tearDown(() {});
 
   group('Process dependencies', () {
     group('processProject()', () {
@@ -185,22 +182,4 @@ dependencies:
       });
     });
   });
-}
-
-void createDirs(List<Directory> dirs) {
-  for (final dir in dirs) {
-    if (!dir.existsSync()) {
-      dir.createSync(recursive: true);
-    }
-    expect(dir.existsSync(), isTrue);
-  }
-}
-
-void deleteDirs(List<Directory> dirs) {
-  for (final dir in dirs) {
-    if (dir.existsSync()) {
-      dir.deleteSync(recursive: true);
-    }
-    expect(dir.existsSync(), isFalse);
-  }
 }

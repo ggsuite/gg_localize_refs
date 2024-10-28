@@ -123,9 +123,6 @@ class LocalizeRefs extends DirCommand<dynamic> {
     required File source,
     required File destination,
   }) async {
-    if (await destination.exists()) {
-      await destination.delete();
-    }
     await source.copy(destination.path);
   }
 

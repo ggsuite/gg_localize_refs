@@ -6,59 +6,19 @@ import 'package:gg_to_local/src/process_dependencies.dart';
 import 'package:test/test.dart';
 import 'package:path/path.dart';
 
+import '../test_helpers.dart';
+
 void main() {
   final messages = <String>[];
   late CommandRunner<void> runner;
 
-  final dNoProjectRootError = Directory(
-    join(
-      'test',
-      'sample_folder',
-      'workspace_unlocalize_no_project_root_error',
-      'no_project_root_error',
-    ),
-  );
-  final dParseError = Directory(
-    join('test', 'sample_folder', 'workspace_parse_error', 'parse_error'),
-  );
-  final dNoDependencies = Directory(
-    join(
-      'test',
-      'sample_folder',
-      'workspace_unlocalize_no_dependencies',
-      'no_dependencies',
-    ),
-  );
-  final dNodeNotFound = Directory(
-    join(
-      'test',
-      'sample_folder',
-      'workspace_unlocalize_node_not_found',
-      'node_not_found',
-    ),
-  );
-  final dJsonNotFound = Directory(
-    join(
-      'test',
-      'sample_folder',
-      'workspace_unlocalize_json_not_found',
-      'json_not_found',
-    ),
-  );
-  final dWorkspaceAlreadyUnlocalized = Directory(
-    join(
-      'test',
-      'sample_folder',
-      'workspace_unlocalize_already_unlocalized',
-    ),
-  );
-  final dWorkspaceSucceed = Directory(
-    join(
-      'test',
-      'sample_folder',
-      'workspace_unlocalize_succeed',
-    ),
-  );
+  Directory dNoProjectRootError = Directory('');
+  Directory dParseError = Directory('');
+  Directory dNoDependencies = Directory('');
+  Directory dNodeNotFound = Directory('');
+  Directory dJsonNotFound = Directory('');
+  Directory dWorkspaceAlreadyUnlocalized = Directory('');
+  Directory dWorkspaceSucceed = Directory('');
 
   setUp(() async {
     messages.clear();
@@ -67,8 +27,19 @@ void main() {
     final myCommand = UnlocalizeRefs(ggLog: messages.add);
     runner.addCommand(myCommand);
 
-    // create the tempDir
-    createDirs(
+    dNoProjectRootError =
+        createTempDir('unlocalize_no_project_root_error', 'project1');
+    dParseError = createTempDir('unlocalize_parse_error', 'project1');
+    dNoDependencies = createTempDir('unlocalize_no_dependencies', 'project1');
+    dNodeNotFound = createTempDir('unlocalize_node_not_found', 'project1');
+    dJsonNotFound = createTempDir('unlocalize_json_not_found', 'project1');
+    dWorkspaceSucceed = createTempDir('unlocalize_succeed');
+    dWorkspaceAlreadyUnlocalized =
+        createTempDir('unlocalize_already_unlocalized');
+  });
+
+  tearDown(() {
+    deleteDirs(
       [
         dNoProjectRootError,
         dParseError,
@@ -80,8 +51,6 @@ void main() {
       ],
     );
   });
-
-  tearDown(() {});
 
   group('UnlocalizeRefs Command', () {
     group('run()', () {
@@ -289,22 +258,4 @@ version: 1.0.0''',
       });
     });
   });
-}
-
-void createDirs(List<Directory> dirs) {
-  for (final dir in dirs) {
-    if (!dir.existsSync()) {
-      dir.createSync(recursive: true);
-    }
-    expect(dir.existsSync(), isTrue);
-  }
-}
-
-void deleteDirs(List<Directory> dirs) {
-  for (final dir in dirs) {
-    if (dir.existsSync()) {
-      dir.deleteSync(recursive: true);
-    }
-    expect(dir.existsSync(), isFalse);
-  }
 }

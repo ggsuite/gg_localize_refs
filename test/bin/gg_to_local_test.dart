@@ -8,30 +8,26 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:test/test.dart';
-import 'package:path/path.dart';
 import '../../bin/gg_to_local.dart';
+import '../test_helpers.dart';
 
 void main() {
-  Directory tempDir =
-      Directory(join('test', 'sample_folder', 'executable_command_test'));
+  Directory tempDir = Directory('');
 
-  Directory tempDir2 =
-      Directory(join('test', 'sample_folder', 'executable_command_test2'));
+  Directory tempDir2 = Directory('');
 
   setUp(() async {
-    // create the tempDir
-    createDirs(
+    tempDir = createTempDir('executable_command_test');
+    tempDir2 = createTempDir('executable_command_test2');
+  });
+
+  tearDown(() {
+    deleteDirs(
       [
         tempDir,
         tempDir2,
       ],
     );
-  });
-
-  tearDown(() {
-    if (tempDir.existsSync()) {
-      tempDir.deleteSync(recursive: true);
-    }
   });
 
   group('bin/gg_to_local.dart', () {
@@ -66,22 +62,4 @@ void main() {
       });
     });
   });
-}
-
-void createDirs(List<Directory> dirs) {
-  for (final dir in dirs) {
-    if (!dir.existsSync()) {
-      dir.createSync(recursive: true);
-    }
-    expect(dir.existsSync(), isTrue);
-  }
-}
-
-void deleteDirs(List<Directory> dirs) {
-  for (final dir in dirs) {
-    if (dir.existsSync()) {
-      dir.deleteSync(recursive: true);
-    }
-    expect(dir.existsSync(), isFalse);
-  }
 }

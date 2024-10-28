@@ -13,31 +13,26 @@ import 'package:test/test.dart';
 import 'package:gg_args/gg_args.dart';
 import 'package:path/path.dart';
 
+import 'test_helpers.dart';
+
 void main() {
   final messages = <String>[];
 
-  Directory tempDir = Directory(
-    join(
-      'test',
-      'sample_folder',
-      'workspace_GgToLocal_command',
-      'GgToLocal_command',
-    ),
-  );
+  Directory tempDir = Directory('');
 
   setUp(() async {
     messages.clear();
 
-    // create the tempDir
-    Directory workspaceDir = await Directory.systemTemp.createTemp();
-
-    tempDir = Directory(join(workspaceDir.path, 'GgToLocal_command_test'));
-    await tempDir.create(recursive: true);
-
-    expect(await tempDir.exists(), isTrue);
+    tempDir = createTempDir('GgToLocal_command', 'project1');
   });
 
-  tearDown(() {});
+  tearDown(() {
+    deleteDirs(
+      [
+        tempDir,
+      ],
+    );
+  });
 
   group('GgToLocal()', () {
     // #########################################################################
