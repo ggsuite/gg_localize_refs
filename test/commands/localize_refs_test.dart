@@ -43,6 +43,13 @@ void main() {
       'node_not_found',
     ),
   );
+  final dWorkspaceAlreadyLocalized = Directory(
+    join(
+      'test',
+      'sample_folder',
+      'workspace_already_localized',
+    ),
+  );
   final dWorkspaceSucceed = Directory(
     join(
       'test',
@@ -64,6 +71,7 @@ void main() {
         dParseError,
         dNoDependencies,
         dNodeNotFound,
+        dWorkspaceAlreadyLocalized,
         dWorkspaceSucceed,
       ],
     );
@@ -190,6 +198,42 @@ version: 1.0.0''',
             contains('Processing dependencies of package test1'),
           );
           expect(messages[2], contains('test2'));
+        });
+
+        test('when already localized', () async {
+          Directory dProject1 =
+              Directory(join(dWorkspaceAlreadyLocalized.path, 'project1'));
+          Directory dProject2 =
+              Directory(join(dWorkspaceAlreadyLocalized.path, 'project2'));
+
+          createDirs([dProject1, dProject2]);
+
+          File(join(dProject1.path, 'pubspec.yaml')).writeAsStringSync(
+            '''name: test1
+version: 1.0.0
+dependencies:
+  test2:
+    path: ../project2''',
+          );
+
+          File(join(dProject2.path, 'pubspec.yaml')).writeAsStringSync(
+            '''name: test2
+version: 1.0.0''',
+          );
+
+          final messages = <String>[];
+          LocalizeRefs local = LocalizeRefs(ggLog: messages.add);
+          await local.get(directory: dProject1, ggLog: messages.add);
+
+          expect(messages[0], contains('Running localize-refs in'));
+          expect(
+            messages[1],
+            contains('Processing dependencies of package test1'),
+          );
+          expect(
+            messages[2],
+            contains('Dependencies already localized.'),
+          );
         });
       });
     });

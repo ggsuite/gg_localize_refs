@@ -62,14 +62,14 @@ class UnlocalizeRefs extends DirCommand<dynamic> {
         continue;
       }
 
-      ggLog('\t$dependencyName');
-
       // Update or add the dependency
 
       if (!oldDependencyYaml.contains('path:')) {
         ggLog('Dependencies already unlocalized.');
         return;
       }
+
+      ggLog('\t$dependencyName');
 
       String newDependencyYaml =
           yamlToString(savedDependencies[dependencyName]);
