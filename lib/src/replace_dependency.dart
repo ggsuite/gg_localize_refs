@@ -1,19 +1,4 @@
 /// Replaces the old with a new dependency in the pubspec.yaml file.
-/*String replaceDependency(String yamlString, String oldDep, String newDep) {
-  String oldDependencyPattern = r'\s*' +
-      RegExp.escape(oldDep).replaceAll(RegExp(r'\s+'), r'\s*') +
-      r'\s*(#([\s\S]*?)\n\s*)?';
-  RegExp oldDependencyRegex = RegExp(oldDependencyPattern);
-
-  return yamlString.replaceAll(
-    oldDependencyRegex,
-    newDep,
-  );
-}*/
-
-/// Replaces the old with a new dependency in the pubspec.yaml file.
-library;
-
 String replaceDependency(
   String yamlString,
   String depName,
@@ -26,7 +11,6 @@ String replaceDependency(
   RegExp oldDependencyRegex = RegExp(oldDependencyPattern);
 
   String regexMatch = oldDependencyRegex.firstMatch(yamlString)?.group(0) ?? '';
-  print('~$regexMatch~');
   String charsBeforeLastChar = RegExp(
         r'\s+' +
             RegExp.escape('$depName: $oldDep')
@@ -40,7 +24,7 @@ String replaceDependency(
           regexMatch.indexOf(charsBeforeLastChar) + charsBeforeLastChar.length,
         );
 
-  if (oldDep.contains('\n') || oldDep.contains(RegExp.escape(':'))) {
+  if (newDep.contains('\n') || newDep.contains(RegExp.escape(':'))) {
     return yamlString.replaceAll(
       oldDependencyRegex,
       '\n  $depName: \n    $newDep\n$charsAfterLastChar',

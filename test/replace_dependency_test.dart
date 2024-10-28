@@ -28,8 +28,8 @@ dependencies:
       });
 
       test(
-          'should replace old dependency with new dependency followed by other identation',
-          () {
+          'should replace old dependency with new '
+          'dependency followed by other identation', () {
         String yamlString = '''
 dependencies:
   dependency: ^1.0.0
