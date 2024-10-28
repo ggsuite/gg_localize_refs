@@ -40,7 +40,7 @@ String replaceDependency(
           regexMatch.indexOf(charsBeforeLastChar) + charsBeforeLastChar.length,
         );
 
-  if (depName.contains('\n') || depName.contains(':')) {
+  if (oldDep.contains('\n') || oldDep.contains(RegExp.escape(':'))) {
     return yamlString.replaceAll(
       oldDependencyRegex,
       '\n  $depName: \n    $newDep\n$charsAfterLastChar',
