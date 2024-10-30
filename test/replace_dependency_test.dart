@@ -159,11 +159,41 @@ dependencies:
           yamlString,
           'dependency',
           '''
-  git:
-    url: git://github.com/user/repo.git
-    ref: master
+git:
+  url: git://github.com/user/repo.git
+  ref: master
 ''',
           '^2.0.0',
+        );
+
+        expect(result, equals(expectedYamlString));
+      });
+
+      test(
+          'should preserve the structure of the yaml file with multiline replacement',
+          () {
+        String yamlString = '''
+dependencies:
+  dependency: ^2.0.0
+''';
+
+        String expectedYamlString = '''
+dependencies:
+  dependency: 
+    git:
+      url: git://github.com/user/repo.git
+      ref: master
+''';
+
+        String result = replaceDependency(
+          yamlString,
+          'dependency',
+          '^2.0.0',
+          '''
+git:
+  url: git://github.com/user/repo.git
+  ref: master
+''',
         );
 
         expect(result, equals(expectedYamlString));
