@@ -64,7 +64,8 @@ Future<void> processNode(
   final yamlMap = loadYaml(pubspecContent) as Map;
 
   // Check if the 'dependencies' section exists
-  if (!yamlMap.containsKey('dependencies')) {
+  if (!yamlMap.containsKey('dependencies') &&
+      !yamlMap.containsKey('dev_dependencies')) {
     return;
   }
 

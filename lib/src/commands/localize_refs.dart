@@ -48,8 +48,10 @@ class LocalizeRefs extends DirCommand<dynamic> {
     ggLog('Processing dependencies of package $packageName:');
 
     for (MapEntry<String, Node> dependency in node.dependencies.entries) {
-      if (yamlToString(yamlMap['dependencies'][dependency.key])
-          .startsWith('path:')) {
+      if (yamlToString(
+        yamlMap['dependencies'][dependency.key] ??
+            yamlMap['dev_dependencies'][dependency.key],
+      ).startsWith('path:')) {
         ggLog('Dependencies already localized.');
         return;
       }
@@ -73,7 +75,8 @@ class LocalizeRefs extends DirCommand<dynamic> {
       String dependencyPath = dependency.value.directory.path;
       String relativeDepPath =
           p.relative(dependencyPath, from: projectDir.path);
-      dynamic oldDependency = yamlMap['dependencies'][dependencyName];
+      dynamic oldDependency = yamlMap['dependencies'][dependencyName] ??
+          yamlMap['dev_dependencies'][dependency.key];
       String oldDependencyYaml = yamlToString(oldDependency);
       String oldDependencyYamlCompressed =
           oldDependencyYaml.replaceAll(RegExp(r'[\n\r\t{}]'), '');
@@ -83,8 +86,9 @@ class LocalizeRefs extends DirCommand<dynamic> {
       // Update or add the dependency
 
       if (!oldDependencyYamlCompressed.startsWith('path:')) {
-        replacedDependencies[dependencyName] =
-            yamlMap['dependencies'][dependencyName];
+        replacedDependencies[dependencyName] = yamlMap['dependencies']
+                [dependencyName] ??
+            yamlMap['dev_dependencies'][dependency.key];
       }
 
       newPubspecContent = replaceDependency(

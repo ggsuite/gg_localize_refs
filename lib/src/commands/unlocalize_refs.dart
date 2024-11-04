@@ -55,7 +55,8 @@ class UnlocalizeRefs extends DirCommand<dynamic> {
 
     for (MapEntry<String, Node> dependency in node.dependencies.entries) {
       String dependencyName = dependency.key;
-      dynamic oldDependency = yamlMap['dependencies'][dependencyName];
+      dynamic oldDependency = yamlMap['dependencies'][dependencyName] ??
+          yamlMap['dev_dependencies'][dependency.key];
       String oldDependencyYaml = yamlToString(oldDependency);
 
       if (!savedDependencies.containsKey(dependencyName)) {

@@ -41,7 +41,7 @@ void main() {
           './bin/gg_localize_refs.dart',
           'localize-refs',
           '--input',
-          tempDir.path
+          tempDir.path,
         ],
         stdoutEncoding: utf8,
         stderrEncoding: utf8,

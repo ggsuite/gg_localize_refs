@@ -170,8 +170,8 @@ git:
       });
 
       test(
-          'should preserve the structure of the yaml file with multiline replacement',
-          () {
+          'should preserve the structure of '
+          'the yaml file with multiline replacement', () {
         String yamlString = '''
 dependencies:
   dependency: ^2.0.0
