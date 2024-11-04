@@ -56,13 +56,23 @@ class UnlocalizeRefs extends DirCommand<dynamic> {
     Directory projectDir,
     FileChangesBuffer fileChangesBuffer,
   ) async {
-    ggLog('Processing dependencies of package $packageName:');
+    ggLog('unlocalize refs of $packageName');
 
     // Return the updated YAML content
     String newPubspecContent = pubspecContent;
 
+    File backupFile = File('${projectDir.path}/.gg_localize_refs_backup.json');
+
+    if (!backupFile.existsSync()) {
+      ggLog(
+        'The json file ${backupFile.path} with '
+        'old dependencies does not exist.',
+      );
+      return;
+    }
+
     Map<String, dynamic> savedDependencies = readDependenciesFromJson(
-      '${projectDir.path}/.gg_localize_refs_backup.json',
+      backupFile.path,
     );
 
     for (MapEntry<String, Node> dependency in node.dependencies.entries) {
@@ -74,14 +84,9 @@ class UnlocalizeRefs extends DirCommand<dynamic> {
         continue;
       }
 
-      // Update or add the dependency
-
       if (!oldDependencyYaml.contains('path:')) {
-        ggLog('Dependencies already unlocalized.');
         continue;
       }
-
-      ggLog('\t$dependencyName');
 
       String newDependencyYaml =
           yamlToString(savedDependencies[dependencyName]);
@@ -98,19 +103,19 @@ class UnlocalizeRefs extends DirCommand<dynamic> {
     File modifiedPubspec = File('${projectDir.path}/pubspec.yaml');
     fileChangesBuffer.add(modifiedPubspec, newPubspecContent);
   }
+}
 
-  // ...........................................................................
-  /// Read dependencies from a JSON file
-  Map<String, dynamic> readDependenciesFromJson(String filePath) {
-    File file = File(filePath);
+// ...........................................................................
+/// Read dependencies from a JSON file
+Map<String, dynamic> readDependenciesFromJson(String filePath) {
+  File file = File(filePath);
 
-    if (!file.existsSync()) {
-      throw Exception(
-        'The json file $filePath with old dependencies does not exist.',
-      );
-    }
-
-    String jsonString = file.readAsStringSync();
-    return jsonDecode(jsonString) as Map<String, dynamic>;
+  if (!file.existsSync()) {
+    throw Exception(
+      'The json file $filePath with old dependencies does not exist.',
+    );
   }
+
+  String jsonString = file.readAsStringSync();
+  return jsonDecode(jsonString) as Map<String, dynamic>;
 }

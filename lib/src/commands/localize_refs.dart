@@ -56,7 +56,7 @@ class LocalizeRefs extends DirCommand<dynamic> {
     Directory projectDir,
     FileChangesBuffer fileChangesBuffer,
   ) async {
-    ggLog('Processing dependencies of package $packageName:');
+    ggLog('localize refs of $packageName:');
 
     for (MapEntry<String, Node> dependency in node.dependencies.entries) {
       if (yamlToString(
@@ -89,8 +89,6 @@ class LocalizeRefs extends DirCommand<dynamic> {
       String oldDependencyYaml = yamlToString(oldDependency);
       String oldDependencyYamlCompressed =
           oldDependencyYaml.replaceAll(RegExp(r'[\n\r\t{}]'), '');
-
-      ggLog('\t$dependencyName');
 
       // Update or add the dependency
 

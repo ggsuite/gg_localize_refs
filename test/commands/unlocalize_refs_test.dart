@@ -143,47 +143,6 @@ void main() {
             ),
           );
         });
-
-        test('when .gg_localize_refs_backup.json does not exist', () async {
-          final messages = <String>[];
-
-          Directory dProject1 = Directory(join(dJsonNotFound.path, 'project1'));
-          Directory dProject2 = Directory(join(dJsonNotFound.path, 'project2'));
-
-          createDirs([dProject1, dProject2]);
-
-          File(join(dProject1.path, 'pubspec.yaml')).writeAsStringSync(
-            '''name: test1
-version: 1.0.0
-dependencies:
-  test2:
-    path: ../project2''',
-          );
-
-          File(join(dProject2.path, 'pubspec.yaml')).writeAsStringSync(
-            '''name: test2
-version: 1.0.0''',
-          );
-
-          UnlocalizeRefs unlocal = UnlocalizeRefs(ggLog: messages.add);
-
-          await expectLater(
-            unlocal.get(directory: dProject1, ggLog: messages.add),
-            throwsA(
-              isA<Exception>()
-                  .having(
-                    (e) => e.toString(),
-                    'message',
-                    contains('The json file'),
-                  )
-                  .having(
-                    (e) => e.toString(),
-                    'message',
-                    contains('with old dependencies does not exist.'),
-                  ),
-            ),
-          );
-        });
       });
 
       // .......................................................................
@@ -220,9 +179,8 @@ version: 1.0.0''',
           expect(messages[0], contains('Running unlocalize-refs in'));
           expect(
             messages[1],
-            contains('Processing dependencies of package test1'),
+            contains('unlocalize refs of test1'),
           );
-          expect(messages[2], contains('test2'));
         });
 
         test('when already localized', () async {
@@ -255,14 +213,72 @@ version: 1.0.0''',
           expect(messages[0], contains('Running unlocalize-refs in'));
           expect(
             messages[1],
-            contains('Processing dependencies of package test1'),
+            contains('unlocalize refs of test1'),
+          );
+        });
+
+        test('when .gg_localize_refs_backup.json does not exist', () async {
+          final messages = <String>[];
+
+          Directory dProject1 = Directory(join(dJsonNotFound.path, 'project1'));
+          Directory dProject2 = Directory(join(dJsonNotFound.path, 'project2'));
+
+          createDirs([dProject1, dProject2]);
+
+          File(join(dProject1.path, 'pubspec.yaml')).writeAsStringSync(
+            '''name: test1
+version: 1.0.0
+dependencies:
+  test2:
+    path: ../project2''',
+          );
+
+          File(join(dProject2.path, 'pubspec.yaml')).writeAsStringSync(
+            '''name: test2
+version: 1.0.0''',
+          );
+
+          UnlocalizeRefs unlocal = UnlocalizeRefs(ggLog: messages.add);
+
+          await unlocal.get(directory: dProject1, ggLog: messages.add);
+
+          // The json file .. with old dependencies does not exist.
+
+          expect(messages[0], contains('Running unlocalize-refs in'));
+          expect(
+            messages[1],
+            contains('unlocalize refs of test1'),
           );
           expect(
             messages[2],
-            contains('Dependencies already unlocalized.'),
+            contains('The json file'),
+          );
+          expect(
+            messages[2],
+            contains('with old dependencies does not exist.'),
           );
         });
       });
+    });
+  });
+
+  group('readDependenciesFromJson', () {
+    test('should throw an exception when the json file does not exist', () {
+      const nonExistentFilePath = 'non_existent_file.json';
+
+      expect(
+        () => readDependenciesFromJson(nonExistentFilePath),
+        throwsA(
+          isA<Exception>().having(
+            (e) => e.toString(),
+            'message',
+            contains(
+              'The json file $nonExistentFilePath with old '
+              'dependencies does not exist.',
+            ),
+          ),
+        ),
+      );
     });
   });
 }

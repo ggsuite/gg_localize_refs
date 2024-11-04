@@ -177,9 +177,8 @@ version: 1.0.0''',
           expect(messages[0], contains('Running localize-refs in'));
           expect(
             messages[1],
-            contains('Processing dependencies of package test1'),
+            contains('localize refs of test1'),
           );
-          expect(messages[2], contains('test2'));
         });
 
         test('when already localized', () async {
@@ -210,11 +209,7 @@ version: 1.0.0''',
           expect(messages[0], contains('Running localize-refs in'));
           expect(
             messages[1],
-            contains('Processing dependencies of package test1'),
-          );
-          expect(
-            messages[2],
-            contains('Dependencies already localized.'),
+            contains('localize refs of test1'),
           );
         });
       });
