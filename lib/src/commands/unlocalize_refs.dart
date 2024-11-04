@@ -9,8 +9,10 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:gg_args/gg_args.dart';
+import 'package:gg_console_colors/gg_console_colors.dart';
 import 'package:gg_local_package_dependencies/gg_local_package_dependencies.dart';
 import 'package:gg_localize_refs/src/commands/localize_refs.dart';
+import 'package:gg_localize_refs/src/file_changes_buffer.dart';
 import 'package:gg_log/gg_log.dart';
 import 'package:gg_localize_refs/src/process_dependencies.dart';
 import 'package:gg_localize_refs/src/replace_dependency.dart';
@@ -32,7 +34,15 @@ class UnlocalizeRefs extends DirCommand<dynamic> {
   Future<void> get({required Directory directory, required GgLog ggLog}) async {
     ggLog('Running unlocalize-refs in ${directory.path}');
 
-    await processProject(directory, modifyYaml, ggLog);
+    FileChangesBuffer fileChangesBuffer = FileChangesBuffer();
+
+    try {
+      await processProject(directory, modifyYaml, fileChangesBuffer, ggLog);
+
+      await fileChangesBuffer.apply();
+    } catch (e) {
+      throw Exception(red('An error occurred: $e. No files were changed.'));
+    }
   }
 
   // ...........................................................................
@@ -44,6 +54,7 @@ class UnlocalizeRefs extends DirCommand<dynamic> {
     Map<dynamic, dynamic> yamlMap,
     Node node,
     Directory projectDir,
+    FileChangesBuffer fileChangesBuffer,
   ) async {
     ggLog('Processing dependencies of package $packageName:');
 
@@ -85,22 +96,7 @@ class UnlocalizeRefs extends DirCommand<dynamic> {
 
     // write new pubspec.yaml.modified
     File modifiedPubspec = File('${projectDir.path}/pubspec.yaml');
-    await _writeToFile(
-      content: newPubspecContent,
-      file: modifiedPubspec,
-    );
-  }
-
-  // ...........................................................................
-  /// Helper method to write content to a file
-  Future<void> _writeToFile({
-    required String content,
-    required File file,
-  }) async {
-    if (await file.exists()) {
-      await file.delete();
-    }
-    await file.writeAsString(content);
+    fileChangesBuffer.add(modifiedPubspec, newPubspecContent);
   }
 
   // ...........................................................................

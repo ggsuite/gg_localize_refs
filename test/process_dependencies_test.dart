@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:gg_localize_refs/src/file_changes_buffer.dart';
 import 'package:gg_localize_refs/src/process_dependencies.dart';
 import 'package:path/path.dart';
 import 'package:test/test.dart';
@@ -43,7 +44,9 @@ void main() {
                 yamlMap,
                 node,
                 projectDir,
+                fileChangesBuffer,
               ) async {},
+              FileChangesBuffer(),
               messages.add,
             ),
             throwsA(
@@ -80,7 +83,9 @@ void main() {
                 yamlMap,
                 node,
                 projectDir,
+                fileChangesBuffer,
               ) async {},
+              FileChangesBuffer(),
             ),
             throwsA(
               isA<Exception>()
@@ -130,6 +135,7 @@ version: 1.0.0''',
             yamlMap,
             node,
             projectDir,
+            fileChangesBuffer,
           ) async {
             expect(packageName, 'test1');
             expect(pubspec.path, endsWith('pubspec.yaml'));
@@ -145,6 +151,7 @@ dependencies:
             expect(node.name, 'test1');
             expect(projectDir.path, endsWith('project1'));
           },
+          FileChangesBuffer(),
           messages.add,
         );
       });

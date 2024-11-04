@@ -2,6 +2,7 @@ import 'dart:io';
 import 'package:args/command_runner.dart';
 import 'package:gg_capture_print/gg_capture_print.dart';
 import 'package:gg_localize_refs/src/commands/unlocalize_refs.dart';
+import 'package:gg_localize_refs/src/file_changes_buffer.dart';
 import 'package:gg_localize_refs/src/process_dependencies.dart';
 import 'package:test/test.dart';
 import 'package:path/path.dart';
@@ -120,7 +121,13 @@ void main() {
           UnlocalizeRefs unlocal = UnlocalizeRefs(ggLog: messages.add);
 
           await expectLater(
-            processNode(dNodeNotFound, {}, {}, unlocal.modifyYaml),
+            processNode(
+              dNodeNotFound,
+              {},
+              {},
+              unlocal.modifyYaml,
+              FileChangesBuffer(),
+            ),
             throwsA(
               isA<Exception>()
                   .having(

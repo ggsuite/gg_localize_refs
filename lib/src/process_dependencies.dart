@@ -3,6 +3,7 @@ import 'dart:io';
 
 import 'package:gg_console_colors/gg_console_colors.dart';
 import 'package:gg_local_package_dependencies/gg_local_package_dependencies.dart';
+import 'package:gg_localize_refs/src/file_changes_buffer.dart';
 import 'package:gg_log/gg_log.dart';
 import 'package:gg_project_root/gg_project_root.dart';
 import 'package:pubspec_parse/pubspec_parse.dart';
@@ -18,7 +19,9 @@ Future<void> processProject(
     Map<dynamic, dynamic> yamlMap,
     Node node,
     Directory projectDir,
+    FileChangesBuffer fileChangesBuffer,
   ) modifyFunction,
+  FileChangesBuffer fileChangesBuffer,
   GgLog ggLog,
 ) async {
   String? root = await GgProjectRoot.get(directory.absolute.path);
@@ -35,7 +38,7 @@ Future<void> processProject(
     ggLog: ggLog,
   );
 
-  await processNode(projectDir, nodes, {}, modifyFunction);
+  await processNode(projectDir, nodes, {}, modifyFunction, fileChangesBuffer);
 }
 
 // ...........................................................................
@@ -51,7 +54,9 @@ Future<void> processNode(
     Map<dynamic, dynamic> yamlMap,
     Node node,
     Directory projectDir,
+    FileChangesBuffer fileChangesBuffer,
   ) modifyFunction,
+  FileChangesBuffer fileChangesBuffer,
 ) async {
   projectDir = correctDir(projectDir);
   final pubspec = File('${projectDir.path}/pubspec.yaml');
@@ -82,6 +87,7 @@ Future<void> processNode(
     yamlMap,
     node,
     projectDir,
+    fileChangesBuffer,
   );
 
   for (MapEntry<String, Node> dependency in node.dependencies.entries) {
@@ -94,6 +100,7 @@ Future<void> processNode(
       node.dependencies,
       processedNodes,
       modifyFunction,
+      fileChangesBuffer,
     );
   }
 }
