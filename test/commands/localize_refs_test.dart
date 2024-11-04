@@ -209,7 +209,7 @@ version: 1.0.0''',
           expect(messages[0], contains('Running localize-refs in'));
           expect(
             messages[1],
-            contains('Localize refs of test1'),
+            contains('No files were changed.'),
           );
         });
       });
