@@ -10,7 +10,7 @@ import 'package:gg_capture_print/gg_capture_print.dart';
 import 'package:gg_localize_refs/src/commands/localize_refs.dart';
 import 'package:gg_localize_refs/src/process_dependencies.dart';
 import 'package:test/test.dart';
-import 'package:path/path.dart';
+import 'package:path/path.dart' as p;
 
 import '../test_helpers.dart';
 
@@ -91,7 +91,7 @@ void main() {
         group('when pubspec.yaml cannot be parsed', () {
           test('when calling command', () async {
             // Create a pubspec.yaml with invalid content in tempDir
-            File(join(dParseError.path, 'pubspec.yaml'))
+            File(p.join(dParseError.path, 'pubspec.yaml'))
                 .writeAsStringSync('invalid yaml');
 
             await expectLater(
@@ -113,7 +113,7 @@ void main() {
           final messages = <String>[];
 
           // Create a pubspec.yaml with invalid content in tempDir
-          File(join(dNodeNotFound.path, 'pubspec.yaml')).writeAsStringSync(
+          File(p.join(dNodeNotFound.path, 'pubspec.yaml')).writeAsStringSync(
             'name: test_package\nversion: 1.0.0\ndependencies:',
           );
 
@@ -143,20 +143,22 @@ void main() {
       group('should succeed', () {
         test('when pubspec is correct', () async {
           Directory dProject1 =
-              Directory(join(dWorkspaceSucceed.path, 'project1'));
+              Directory(p.join(dWorkspaceSucceed.path, 'project1'));
           Directory dProject2 =
-              Directory(join(dWorkspaceSucceed.path, 'project2'));
+              Directory(p.join(dWorkspaceSucceed.path, 'project2'));
 
           createDirs([dProject1, dProject2]);
 
-          File(join(dProject1.path, 'pubspec.yaml')).writeAsStringSync(
+          File(p.join(dProject1.path, 'pubspec.yaml')).writeAsStringSync(
             '''name: test1
 version: 1.0.0
 dependencies:
+  test2: ^1.0.0
+dev_dependencies:
   test2: ^1.0.0''',
           );
 
-          File(join(dProject2.path, 'pubspec.yaml')).writeAsStringSync(
+          File(p.join(dProject2.path, 'pubspec.yaml')).writeAsStringSync(
             '''name: test2
 version: 1.0.0''',
           );
@@ -175,13 +177,13 @@ version: 1.0.0''',
 
         test('when already localized', () async {
           Directory dProject1 =
-              Directory(join(dWorkspaceAlreadyLocalized.path, 'project1'));
+              Directory(p.join(dWorkspaceAlreadyLocalized.path, 'project1'));
           Directory dProject2 =
-              Directory(join(dWorkspaceAlreadyLocalized.path, 'project2'));
+              Directory(p.join(dWorkspaceAlreadyLocalized.path, 'project2'));
 
           createDirs([dProject1, dProject2]);
 
-          File(join(dProject1.path, 'pubspec.yaml')).writeAsStringSync(
+          File(p.join(dProject1.path, 'pubspec.yaml')).writeAsStringSync(
             '''name: test1
 version: 1.0.0
 dependencies:
@@ -189,7 +191,7 @@ dependencies:
     path: ../project2''',
           );
 
-          File(join(dProject2.path, 'pubspec.yaml')).writeAsStringSync(
+          File(p.join(dProject2.path, 'pubspec.yaml')).writeAsStringSync(
             '''name: test2
 version: 1.0.0''',
           );
@@ -209,6 +211,72 @@ version: 1.0.0''',
           );
         });
       });
+    });
+  });
+
+  group('getDependency', () {
+    test('should return the dependency from dependencies', () {
+      final yamlMap = {
+        'dependencies': {'some_dependency': '^1.0.0'},
+        'dev_dependencies': <String, dynamic>{},
+      };
+      final result = getDependency('some_dependency', yamlMap);
+      expect(result, equals('^1.0.0'));
+    });
+
+    test(
+        'should return the dependency from dev_dependencies '
+        'when not in dependencies', () {
+      final yamlMap = {
+        'dependencies': <String, dynamic>{},
+        'dev_dependencies': {'some_dependency': '^2.0.0'},
+      };
+      final result = getDependency('some_dependency', yamlMap);
+      expect(result, equals('^2.0.0'));
+    });
+
+    test(
+        'should return the dependency from dependencies when '
+        'in both dependencies and dev_dependencies', () {
+      final yamlMap = {
+        'dependencies': {'some_dependency': '^1.0.0'},
+        'dev_dependencies': {'some_dependency': '^2.0.0'},
+      };
+      final result = getDependency('some_dependency', yamlMap);
+      expect(result, equals('^1.0.0'));
+    });
+
+    test('should return null when the dependency is not present', () {
+      final yamlMap = {
+        'dependencies': <String, dynamic>{},
+        'dev_dependencies': <String, dynamic>{},
+      };
+      final result = getDependency('some_dependency', yamlMap);
+      expect(result, isNull);
+    });
+
+    test('should handle missing dependencies section', () {
+      final yamlMap = {
+        'dev_dependencies': {'some_dependency': '^1.0.0'},
+      };
+      final result = getDependency('some_dependency', yamlMap);
+      expect(result, equals('^1.0.0'));
+    });
+
+    test('should handle missing dev_dependencies section', () {
+      final yamlMap = {
+        'dependencies': {'some_dependency': '^1.0.0'},
+      };
+      final result = getDependency('some_dependency', yamlMap);
+      expect(result, equals('^1.0.0'));
+    });
+
+    test(
+        'should handle both dependencies and dev_dependencies sections missing',
+        () {
+      final yamlMap = <String, dynamic>{};
+      final result = getDependency('some_dependency', yamlMap);
+      expect(result, isNull);
     });
   });
 }

@@ -10,6 +10,7 @@ import 'dart:io';
 
 import 'package:gg_args/gg_args.dart';
 import 'package:gg_local_package_dependencies/gg_local_package_dependencies.dart';
+import 'package:gg_localize_refs/src/commands/localize_refs.dart';
 import 'package:gg_log/gg_log.dart';
 import 'package:gg_localize_refs/src/process_dependencies.dart';
 import 'package:gg_localize_refs/src/replace_dependency.dart';
@@ -55,8 +56,7 @@ class UnlocalizeRefs extends DirCommand<dynamic> {
 
     for (MapEntry<String, Node> dependency in node.dependencies.entries) {
       String dependencyName = dependency.key;
-      dynamic oldDependency = yamlMap['dependencies'][dependencyName] ??
-          yamlMap['dev_dependencies'][dependency.key];
+      dynamic oldDependency = getDependency(dependencyName, yamlMap);
       String oldDependencyYaml = yamlToString(oldDependency);
 
       if (!savedDependencies.containsKey(dependencyName)) {
