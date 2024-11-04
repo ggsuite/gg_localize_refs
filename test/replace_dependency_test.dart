@@ -1,4 +1,4 @@
-import 'package:gg_to_local/src/replace_dependency.dart';
+import 'package:gg_localize_refs/src/replace_dependency.dart';
 import 'package:test/test.dart';
 
 void main() {

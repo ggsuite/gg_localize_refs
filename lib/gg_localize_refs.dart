@@ -6,4 +6,4 @@
 
 library;
 
-export 'src/gg_to_local.dart';
+export 'src/gg_localize_refs.dart';

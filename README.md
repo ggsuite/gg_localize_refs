@@ -1,3 +1,3 @@
-# gg_to_local
+# gg_localize_refs
 
-gg_to_local allows to switch a local package and its local checkouts to local pathes
+gg_localize_refs allows to switch a local package and its local checkouts to local pathes

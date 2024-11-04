@@ -8,7 +8,7 @@ import 'dart:io';
 
 import 'package:args/command_runner.dart';
 import 'package:gg_capture_print/gg_capture_print.dart';
-import 'package:gg_to_local/gg_to_local.dart';
+import 'package:gg_localize_refs/gg_localize_refs.dart';
 import 'package:test/test.dart';
 import 'package:gg_args/gg_args.dart';
 import 'package:path/path.dart';

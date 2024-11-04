@@ -11,9 +11,9 @@ import 'dart:io';
 import 'package:gg_args/gg_args.dart';
 import 'package:gg_local_package_dependencies/gg_local_package_dependencies.dart';
 import 'package:gg_log/gg_log.dart';
-import 'package:gg_to_local/src/process_dependencies.dart';
-import 'package:gg_to_local/src/replace_dependency.dart';
-import 'package:gg_to_local/src/yaml_to_string.dart';
+import 'package:gg_localize_refs/src/process_dependencies.dart';
+import 'package:gg_localize_refs/src/replace_dependency.dart';
+import 'package:gg_localize_refs/src/yaml_to_string.dart';
 
 // #############################################################################
 /// An example command
@@ -55,7 +55,8 @@ class LocalizeRefs extends DirCommand<dynamic> {
     }
 
     // copy pubspec.yaml to pubspec.yaml.original
-    File originalPubspec = File('${projectDir.path}/.gg_to_local_backup.yaml');
+    File originalPubspec =
+        File('${projectDir.path}/.gg_localize_refs_backup.yaml');
     await _writeFileCopy(
       source: pubspec,
       destination: originalPubspec,
@@ -94,7 +95,7 @@ class LocalizeRefs extends DirCommand<dynamic> {
     // Save the replaced dependencies to a JSON file
     saveDependenciesAsJson(
       replacedDependencies,
-      '${projectDir.path}/.gg_to_local_backup.json',
+      '${projectDir.path}/.gg_localize_refs_backup.json',
     );
 
     // write new pubspec.yaml.modified

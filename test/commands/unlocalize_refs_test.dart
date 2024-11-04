@@ -1,8 +1,8 @@
 import 'dart:io';
 import 'package:args/command_runner.dart';
 import 'package:gg_capture_print/gg_capture_print.dart';
-import 'package:gg_to_local/src/commands/unlocalize_refs.dart';
-import 'package:gg_to_local/src/process_dependencies.dart';
+import 'package:gg_localize_refs/src/commands/unlocalize_refs.dart';
+import 'package:gg_localize_refs/src/process_dependencies.dart';
 import 'package:test/test.dart';
 import 'package:path/path.dart';
 
@@ -137,7 +137,7 @@ void main() {
           );
         });
 
-        test('when .gg_to_local_backup.json does not exist', () async {
+        test('when .gg_localize_refs_backup.json does not exist', () async {
           final messages = <String>[];
 
           Directory dProject1 = Directory(join(dJsonNotFound.path, 'project1'));
@@ -198,7 +198,7 @@ dependencies:
     path: ../project2''',
           );
 
-          File(join(dProject1.path, '.gg_to_local_backup.json'))
+          File(join(dProject1.path, '.gg_localize_refs_backup.json'))
               .writeAsStringSync('{"test2":"^2.0.4"}');
 
           File(join(dProject2.path, 'pubspec.yaml')).writeAsStringSync(
@@ -233,7 +233,7 @@ dependencies:
   test2: ^1.0.0''',
           );
 
-          File(join(dProject1.path, '.gg_to_local_backup.json'))
+          File(join(dProject1.path, '.gg_localize_refs_backup.json'))
               .writeAsStringSync('{"test2":"^2.0.4"}');
 
           File(join(dProject2.path, 'pubspec.yaml')).writeAsStringSync(

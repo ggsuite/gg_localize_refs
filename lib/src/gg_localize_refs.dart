@@ -5,7 +5,7 @@
 // found in the LICENSE file in the root of this package.
 
 import 'package:args/command_runner.dart';
-import 'package:gg_to_local/src/commands/unlocalize_refs.dart';
+import 'package:gg_localize_refs/src/commands/unlocalize_refs.dart';
 import 'commands/localize_refs.dart';
 import 'package:gg_log/gg_log.dart';
 

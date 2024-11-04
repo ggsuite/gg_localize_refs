@@ -11,9 +11,9 @@ import 'dart:io';
 import 'package:gg_args/gg_args.dart';
 import 'package:gg_local_package_dependencies/gg_local_package_dependencies.dart';
 import 'package:gg_log/gg_log.dart';
-import 'package:gg_to_local/src/process_dependencies.dart';
-import 'package:gg_to_local/src/replace_dependency.dart';
-import 'package:gg_to_local/src/yaml_to_string.dart';
+import 'package:gg_localize_refs/src/process_dependencies.dart';
+import 'package:gg_localize_refs/src/replace_dependency.dart';
+import 'package:gg_localize_refs/src/yaml_to_string.dart';
 
 // #############################################################################
 /// An example command
@@ -50,7 +50,7 @@ class UnlocalizeRefs extends DirCommand<dynamic> {
     String newPubspecContent = pubspecContent;
 
     Map<String, dynamic> savedDependencies = readDependenciesFromJson(
-      '${projectDir.path}/.gg_to_local_backup.json',
+      '${projectDir.path}/.gg_localize_refs_backup.json',
     );
 
     for (MapEntry<String, Node> dependency in node.dependencies.entries) {
@@ -66,7 +66,7 @@ class UnlocalizeRefs extends DirCommand<dynamic> {
 
       if (!oldDependencyYaml.contains('path:')) {
         ggLog('Dependencies already unlocalized.');
-        return;
+        continue;
       }
 
       ggLog('\t$dependencyName');

@@ -20,22 +20,22 @@ void main() {
 
       final parsedLaunchJson = jsonDecode(launchJson) as Map<String, dynamic>;
 
-      // Ensure there is a configuration for executing bin/gg_to_local.dart
+      // Ensure there is a configuration for executing bin/gg_localize_refs.dart
       final configurations =
           parsedLaunchJson['configurations'] as List<dynamic>;
 
       final ggToLocal = configurations.firstWhere(
         (dynamic configuration) =>
-            configuration['name'].toString() == 'gg_to_local.dart',
+            configuration['name'].toString() == 'gg_localize_refs.dart',
       );
 
       expect(
         ggToLocal,
         isNotNull,
-        reason: 'Item for executing bin/gg_to_local.dart not found',
+        reason: 'Item for executing bin/gg_localize_refs.dart not found',
       );
 
-      expect(ggToLocal['name'], 'gg_to_local.dart');
+      expect(ggToLocal['name'], 'gg_localize_refs.dart');
       expect(ggToLocal['type'], 'dart');
       expect(ggToLocal['request'], 'launch');
 

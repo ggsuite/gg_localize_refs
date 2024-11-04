@@ -1,6 +1,6 @@
 import 'dart:io';
 
-import 'package:gg_to_local/src/process_dependencies.dart';
+import 'package:gg_localize_refs/src/process_dependencies.dart';
 import 'package:path/path.dart';
 import 'package:test/test.dart';
 

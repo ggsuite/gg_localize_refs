@@ -3,14 +3,16 @@
   // Hover to view descriptions of existing attributes.
   // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
   "version": "0.2.0",
-
   "configurations": [
     {
-      "name": "gg_to_local.dart",
+      "name": "gg_localize_refs.dart",
       "type": "dart",
       "request": "launch",
-      "program": "${workspaceFolder}/bin/gg_to_local.dart",
-      "args": ["--param", "value"],
+      "program": "${workspaceFolder}/bin/gg_localize_refs.dart",
+      "args": [
+        "--param",
+        "value"
+      ],
       "console": "debugConsole"
     },
     {
