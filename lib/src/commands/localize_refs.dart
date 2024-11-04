@@ -7,6 +7,7 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
+import 'package:path/path.dart' as p;
 
 import 'package:gg_args/gg_args.dart';
 import 'package:gg_local_package_dependencies/gg_local_package_dependencies.dart';
@@ -70,6 +71,8 @@ class LocalizeRefs extends DirCommand<dynamic> {
     for (MapEntry<String, Node> dependency in node.dependencies.entries) {
       String dependencyName = dependency.key;
       String dependencyPath = dependency.value.directory.path;
+      String relativeDepPath =
+          p.relative(dependencyPath, from: projectDir.path);
       dynamic oldDependency = yamlMap['dependencies'][dependencyName];
       String oldDependencyYaml = yamlToString(oldDependency);
       String oldDependencyYamlCompressed =
@@ -88,7 +91,7 @@ class LocalizeRefs extends DirCommand<dynamic> {
         newPubspecContent,
         dependencyName,
         oldDependencyYaml,
-        'path: $dependencyPath # $oldDependencyYamlCompressed',
+        'path: $relativeDepPath # $oldDependencyYamlCompressed',
       );
     }
 
