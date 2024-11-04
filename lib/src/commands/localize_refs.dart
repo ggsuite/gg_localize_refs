@@ -39,9 +39,14 @@ class LocalizeRefs extends DirCommand<dynamic> {
     try {
       await processProject(directory, modifyYaml, fileChangesBuffer, ggLog);
 
+      if (fileChangesBuffer.files.isEmpty) {
+        ggLog(yellow('No files were changed.'));
+        return;
+      }
+
       await fileChangesBuffer.apply();
     } catch (e) {
-      throw Exception(red('An error occurred: $e. No files were changed.'));
+      throw Exception(yellow('An error occurred: $e. No files were changed.'));
     }
   }
 
@@ -56,15 +61,20 @@ class LocalizeRefs extends DirCommand<dynamic> {
     Directory projectDir,
     FileChangesBuffer fileChangesBuffer,
   ) async {
-    ggLog('localize refs of $packageName:');
+    ggLog('Localize refs of $packageName:');
+
+    bool hasOnlineDependencies = false;
 
     for (MapEntry<String, Node> dependency in node.dependencies.entries) {
-      if (yamlToString(
+      if (!yamlToString(
         getDependency(dependency.key, yamlMap),
       ).startsWith('path:')) {
-        ggLog('Dependencies already localized.');
-        return;
+        hasOnlineDependencies = true;
       }
+    }
+
+    if (!hasOnlineDependencies) {
+      return;
     }
 
     // copy pubspec.yaml to pubspec.yaml.original
@@ -137,8 +147,6 @@ class LocalizeRefs extends DirCommand<dynamic> {
     // Write the JSON data to the file
     File file = File(filePath);
     await file.writeAsString(jsonString);
-
-    print('Dependencies successfully saved to $filePath.');
   }
 }
 

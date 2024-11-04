@@ -39,6 +39,11 @@ class UnlocalizeRefs extends DirCommand<dynamic> {
     try {
       await processProject(directory, modifyYaml, fileChangesBuffer, ggLog);
 
+      if (fileChangesBuffer.files.isEmpty) {
+        ggLog(yellow('No files were changed.'));
+        return;
+      }
+
       await fileChangesBuffer.apply();
     } catch (e) {
       throw Exception(red('An error occurred: $e. No files were changed.'));
@@ -56,17 +61,33 @@ class UnlocalizeRefs extends DirCommand<dynamic> {
     Directory projectDir,
     FileChangesBuffer fileChangesBuffer,
   ) async {
-    ggLog('unlocalize refs of $packageName');
-
     // Return the updated YAML content
     String newPubspecContent = pubspecContent;
+
+    bool hasLocalDependencies = false;
+
+    for (MapEntry<String, Node> dependency in node.dependencies.entries) {
+      String oldDependencyYaml =
+          yamlToString(getDependency(dependency.key, yamlMap));
+
+      if (oldDependencyYaml.contains('path:')) {
+        hasLocalDependencies = true;
+      }
+    }
+
+    if (!hasLocalDependencies) {
+      return;
+    }
+
+    ggLog('Unlocalize refs of $packageName');
 
     File backupFile = File('${projectDir.path}/.gg_localize_refs_backup.json');
 
     if (!backupFile.existsSync()) {
       ggLog(
-        'The json file ${backupFile.path} with '
-        'old dependencies does not exist.',
+        yellow(
+          'The automatic change of dependencies could not be performed. Please change the ${red(projectDir)}/pubspec.yaml file manually.',
+        ),
       );
       return;
     }

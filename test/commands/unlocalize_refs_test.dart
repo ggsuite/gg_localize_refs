@@ -179,7 +179,7 @@ version: 1.0.0''',
           expect(messages[0], contains('Running unlocalize-refs in'));
           expect(
             messages[1],
-            contains('unlocalize refs of test1'),
+            contains('Unlocalize refs of test1'),
           );
         });
 
@@ -211,10 +211,7 @@ version: 1.0.0''',
           await local.get(directory: dProject1, ggLog: messages.add);
 
           expect(messages[0], contains('Running unlocalize-refs in'));
-          expect(
-            messages[1],
-            contains('unlocalize refs of test1'),
-          );
+          expect(messages[1], contains('No files were changed'));
         });
 
         test('when .gg_localize_refs_backup.json does not exist', () async {
@@ -247,15 +244,13 @@ version: 1.0.0''',
           expect(messages[0], contains('Running unlocalize-refs in'));
           expect(
             messages[1],
-            contains('unlocalize refs of test1'),
+            contains('Unlocalize refs of test1'),
           );
           expect(
             messages[2],
-            contains('The json file'),
-          );
-          expect(
-            messages[2],
-            contains('with old dependencies does not exist.'),
+            contains(
+              'The automatic change of dependencies could not be performed',
+            ),
           );
         });
       });
