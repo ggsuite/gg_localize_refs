@@ -43,6 +43,8 @@ analyzer:
     strict-raw-types: true
   errors:
     always_declare_return_types: true
+  exclude:
+    - test/sample_folder/**
 # For more information about the core and recommended set of lints, see
 # https://dart.dev/go/core-lints
 

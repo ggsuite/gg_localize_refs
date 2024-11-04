@@ -7,7 +7,7 @@
 
 import 'package:gg_args/gg_args.dart';
 import 'package:gg_log/gg_log.dart';
-import 'package:gg_to_local/gg_to_local.dart';
+import 'package:gg_localize_refs/gg_localize_refs.dart';
 
 // .............................................................................
 Future<void> run({

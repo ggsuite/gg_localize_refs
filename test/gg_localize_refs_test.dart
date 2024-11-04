@@ -8,15 +8,30 @@ import 'dart:io';
 
 import 'package:args/command_runner.dart';
 import 'package:gg_capture_print/gg_capture_print.dart';
-import 'package:gg_to_local/gg_to_local.dart';
+import 'package:gg_localize_refs/gg_localize_refs.dart';
 import 'package:test/test.dart';
 import 'package:gg_args/gg_args.dart';
+import 'package:path/path.dart';
+
+import 'test_helpers.dart';
 
 void main() {
   final messages = <String>[];
 
-  setUp(() {
+  Directory tempDir = Directory('');
+
+  setUp(() async {
     messages.clear();
+
+    tempDir = createTempDir('GgToLocal_command', 'project1');
+  });
+
+  tearDown(() {
+    deleteDirs(
+      [
+        tempDir,
+      ],
+    );
   });
 
   group('GgToLocal()', () {
@@ -30,12 +45,23 @@ void main() {
       )..addCommand(ggToLocal);
 
       test('should allow to run the code from command line', () async {
+        File(join(tempDir.path, 'pubspec.yaml')).writeAsStringSync(
+          'name: test_package\nversion: 1.0.0\ndependencies:',
+        );
+
         await capturePrint(
           ggLog: messages.add,
-          code: () async =>
-              await runner.run(['ggToLocal', 'my-command', '--input', 'foo']),
+          code: () async => await runner.run([
+            'ggToLocal',
+            'localize-refs',
+            '--input',
+            tempDir.path,
+          ]),
         );
-        expect(messages, contains('Running my-command with param foo'));
+        expect(
+          messages,
+          contains('Running localize-refs in ${tempDir.path}'),
+        );
       });
 
       // .......................................................................
