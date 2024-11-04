@@ -61,8 +61,6 @@ class LocalizeRefs extends DirCommand<dynamic> {
     Directory projectDir,
     FileChangesBuffer fileChangesBuffer,
   ) async {
-    ggLog('Localize refs of $packageName:');
-
     bool hasOnlineDependencies = false;
 
     for (MapEntry<String, Node> dependency in node.dependencies.entries) {
@@ -76,6 +74,8 @@ class LocalizeRefs extends DirCommand<dynamic> {
     if (!hasOnlineDependencies) {
       return;
     }
+
+    ggLog('Localize refs of $packageName');
 
     // copy pubspec.yaml to pubspec.yaml.original
     File originalPubspec =
