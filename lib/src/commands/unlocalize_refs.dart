@@ -17,6 +17,7 @@ import 'package:gg_log/gg_log.dart';
 import 'package:gg_localize_refs/src/process_dependencies.dart';
 import 'package:gg_localize_refs/src/replace_dependency.dart';
 import 'package:gg_localize_refs/src/yaml_to_string.dart';
+import 'package:path/path.dart' as p;
 
 // #############################################################################
 /// An example command
@@ -86,7 +87,9 @@ class UnlocalizeRefs extends DirCommand<dynamic> {
     if (!backupFile.existsSync()) {
       ggLog(
         yellow(
-          'The automatic change of dependencies could not be performed. Please change the ${red(projectDir)}/pubspec.yaml file manually.',
+          'The automatic change of dependencies could not be performed. '
+          'Please change the ${red(p.join(projectDir.path, 'pubspec.yaml'))} '
+          'file manually.',
         ),
       );
       return;
