@@ -222,10 +222,8 @@ version: 1.0.0''',
         });
 
         test('with --git option should succeed', () async {
-          Directory dProject1 =
-              Directory(p.join(dGitSucceed.path, 'project1'));
-          Directory dProject2 =
-              Directory(p.join(dGitSucceed.path, 'project2'));
+          Directory dProject1 = Directory(p.join(dGitSucceed.path, 'project1'));
+          Directory dProject2 = Directory(p.join(dGitSucceed.path, 'project2'));
 
           createDirs([dProject1, dProject2]);
 
@@ -257,13 +255,12 @@ version: 1.0.0''',
             workingDirectory: dProject2.path,
           );
           expect(
-              resultRemote.exitCode,
-              0,
-              reason: resultRemote.stderr.toString(),
+            resultRemote.exitCode,
+            0,
+            reason: resultRemote.stderr.toString(),
           );
 
           // Now run localize-refs --git
-          final messagesGit = <String>[];
           await runner.run([
             'localize-refs',
             '--git',
@@ -272,16 +269,17 @@ version: 1.0.0''',
           ]);
 
           // pubspec.yaml should now contain a git block for test2
-          final resultYaml = File(p.join(dProject1.path, 'pubspec.yaml'))
-              .readAsStringSync();
+          final resultYaml =
+              File(p.join(dProject1.path, 'pubspec.yaml')).readAsStringSync();
           expect(resultYaml, contains('test2:'));
           expect(resultYaml, contains('git:'));
           expect(resultYaml, contains('url: $remoteUrl'));
           expect(resultYaml, contains('ref: main'));
 
-          // .gg_localize_refs_backup.json should still save the previous version
+          // .gg_localize_refs_backup.json
+          // should still save the previous version
           final backupJson = File(
-              p.join(dProject1.path, '.gg_localize_refs_backup.json'),
+            p.join(dProject1.path, '.gg_localize_refs_backup.json'),
           ).readAsStringSync();
           expect(backupJson, contains('^1.0.0'));
         });
@@ -293,25 +291,28 @@ version: 1.0.0''',
           createDirs([dProject1, dProject2]);
 
           File(p.join(dProject1.path, 'pubspec.yaml')).writeAsStringSync(
-              'name: test1\nversion: 1.0.0\ndependencies:\n  test2: ^1.0.0');
+            'name: test1\nversion: 1.0.0\ndependencies:\n  test2: ^1.0.0',
+          );
           File(p.join(dProject2.path, 'pubspec.yaml')).writeAsStringSync(
-              'name: test2\nversion: 1.0.0');
+            'name: test2\nversion: 1.0.0',
+          );
 
           // project2 has no git repo
 
           // Should throw meaningful error
-          await runner
-              .run([
-                'localize-refs',
-                '--git',
-                '--input',
-                dProject1.path,
-              ])
-              .catchError((dynamic e) {
-          expect(
-          e.toString(),
-          contains('Cannot get git remote url for dependency test2'),);
-          },);
+          await runner.run([
+            'localize-refs',
+            '--git',
+            '--input',
+            dProject1.path,
+          ]).catchError(
+            (dynamic e) {
+              expect(
+                e.toString(),
+                contains('Cannot get git remote url for dependency test2'),
+              );
+            },
+          );
         });
       });
     });

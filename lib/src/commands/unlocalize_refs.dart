@@ -109,7 +109,7 @@ class UnlocalizeRefs extends DirCommand<dynamic> {
         continue;
       }
 
-      if (!oldDependencyYaml.contains('path:') &&) {
+      if (!oldDependencyYaml.contains('path:') &&
           !oldDependencyYaml.contains('git:')) {
         continue;
       }

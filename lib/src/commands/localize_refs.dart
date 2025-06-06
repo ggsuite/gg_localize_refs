@@ -43,7 +43,8 @@ class LocalizeRefs extends DirCommand<dynamic> {
   @override
   Future<void> get({required Directory directory, required GgLog ggLog}) async {
     ggLog('Running localize-refs in ${directory.path}');
-    useGit = argResults!['git'] as bool;
+    // Use a safe access for argResults
+    useGit = (argResults?['git'] as bool?) ?? false;
     FileChangesBuffer fileChangesBuffer = FileChangesBuffer();
 
     try {
@@ -224,7 +225,7 @@ class LocalizeRefs extends DirCommand<dynamic> {
       ['rev-parse', '--abbrev-ref', 'HEAD'],
       workingDirectory: depDir.path,
     );
-    String ref = 'HEAD';
+    String ref = 'main';
     if (resultRef.exitCode == 0) {
       ref = resultRef.stdout.toString().trim();
     }

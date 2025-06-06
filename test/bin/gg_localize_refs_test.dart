@@ -10,7 +10,6 @@ import 'dart:io';
 import 'package:test/test.dart';
 import '../../bin/gg_localize_refs.dart';
 import '../test_helpers.dart';
-import 'package:path/path.dart' as p;
 
 void main() {
   Directory tempDir = Directory('');
@@ -53,7 +52,7 @@ void main() {
 
       expect(result.stdout, contains('No project root found'));
     });
-    
+
     test('should be executable with --git', () async {
       final result = await Process.run(
         'dart',
