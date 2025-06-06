@@ -11,3 +11,5 @@ coverage
 build
 *.vm.json
 .DS_Store
+
+.aicode

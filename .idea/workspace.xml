@@ -5,14 +5,16 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="7bb7c532-1775-4077-b89c-85e74cd3e219" name="Changes" comment="">
-      <change afterPath="$PROJECT_DIR$/lib/src/commands/local.dart" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/install.bat" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.gitignore" beforeDir="false" afterPath="$PROJECT_DIR$/.gitignore" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/libraries/Dart_Packages.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/libraries/Dart_Packages.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/libraries/Dart_Packages2.xml" beforeDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/lib/src/commands/my_command.dart" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/lib/src/gg_to_local.dart" beforeDir="false" afterPath="$PROJECT_DIR$/lib/src/gg_to_local.dart" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/pubspec.yaml" beforeDir="false" afterPath="$PROJECT_DIR$/pubspec.yaml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/test/bin/gg_to_local_test.dart" beforeDir="false" afterPath="$PROJECT_DIR$/test/bin/gg_to_local_test.dart" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/test/commands/my_command_test.dart" beforeDir="false" afterPath="$PROJECT_DIR$/test/commands/local_test.dart" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/test/gg_to_local_test.dart" beforeDir="false" afterPath="$PROJECT_DIR$/test/gg_to_local_test.dart" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/README.md" beforeDir="false" afterPath="$PROJECT_DIR$/README.md" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/lib/src/commands/localize_refs.dart" beforeDir="false" afterPath="$PROJECT_DIR$/lib/src/commands/localize_refs.dart" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/lib/src/commands/unlocalize_refs.dart" beforeDir="false" afterPath="$PROJECT_DIR$/lib/src/commands/unlocalize_refs.dart" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/test/bin/gg_localize_refs_test.dart" beforeDir="false" afterPath="$PROJECT_DIR$/test/bin/gg_localize_refs_test.dart" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/test/commands/localize_refs_test.dart" beforeDir="false" afterPath="$PROJECT_DIR$/test/commands/localize_refs_test.dart" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -30,6 +32,11 @@
     </option>
   </component>
   <component name="Git.Settings">
+    <option name="RECENT_BRANCH_BY_REPOSITORY">
+      <map>
+        <entry key="$PROJECT_DIR$" value="main" />
+      </map>
+    </option>
     <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
   </component>
   <component name="MarkdownSettingsMigration">
@@ -48,14 +55,16 @@
   </component>
   <component name="PropertiesComponent"><![CDATA[{
   "keyToString": {
+    "Dart Command Line App.gg_localize_refs.dart.executor": "Run",
     "RunOnceActivity.OpenProjectViewOnStart": "true",
     "RunOnceActivity.ShowReadmeOnStart": "true",
+    "RunOnceActivity.git.unshallow": "true",
     "WebServerToolWindowFactoryState": "false",
     "dart.analysis.tool.window.visible": "false",
-    "git-widget-placeholder": "main",
+    "git-widget-placeholder": "feat__localize__git",
     "ignore.virus.scanning.warn.message": "true",
     "kotlin-language-version-configured": "true",
-    "last_opened_file_path": "P:/grace_cloud/gg_project_root",
+    "last_opened_file_path": "P:/grace_cloud/gg_to_local",
     "node.js.detected.package.eslint": "true",
     "node.js.detected.package.tslint": "true",
     "node.js.selected.package.eslint": "(autodetect)",
@@ -66,7 +75,17 @@
     "vue.rearranger.settings.migration": "true"
   }
 }]]></component>
-  <component name="RunManager">
+  <component name="RecentsManager">
+    <key name="CopyFile.RECENT_KEYS">
+      <recent name="P:\grace_cloud\gg_to_local" />
+    </key>
+  </component>
+  <component name="RunManager" selected="Dart Command Line App.gg_localize_refs.dart">
+    <configuration name="gg_localize_refs.dart" type="DartCommandLineRunConfigurationType" factoryName="Dart Command Line Application" temporary="true" nameIsGenerated="true">
+      <option name="filePath" value="$PROJECT_DIR$/bin/gg_localize_refs.dart" />
+      <option name="workingDirectory" value="$PROJECT_DIR$" />
+      <method v="2" />
+    </configuration>
     <configuration name="Local Command in local_test.dart" type="DartTestRunConfigurationType" factoryName="Dart Test" temporary="true" nameIsGenerated="true">
       <option name="filePath" value="$PROJECT_DIR$/test/commands/local_test.dart" />
       <option name="scope" value="GROUP_OR_TEST_BY_NAME" />
@@ -75,6 +94,7 @@
     </configuration>
     <recent_temporary>
       <list>
+        <item itemvalue="Dart Command Line App.gg_localize_refs.dart" />
         <item itemvalue="Dart Test.Local Command in local_test.dart" />
       </list>
     </recent_temporary>
@@ -82,7 +102,7 @@
   <component name="SharedIndexes">
     <attachedChunks>
       <set>
-        <option value="jdk-22-openjdk-22-4caba194b151-f504ca98" />
+        <option value="bundled-jdk-9823dce3aa75-a94e463ab2e7-intellij.indexing.shared.core-IU-243.25659.59" />
       </set>
     </attachedChunks>
   </component>
@@ -97,6 +117,11 @@
       <workItem from="1727773466303" duration="613000" />
       <workItem from="1729146762896" duration="1029000" />
       <workItem from="1729147921651" duration="7481000" />
+      <workItem from="1737716118721" duration="1841000" />
+      <workItem from="1740230925107" duration="17000" />
+      <workItem from="1749224226879" duration="2679000" />
+      <workItem from="1749227082424" duration="600000" />
+      <workItem from="1749227715894" duration="425000" />
     </task>
     <servers />
   </component>

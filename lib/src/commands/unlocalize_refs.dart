@@ -71,7 +71,8 @@ class UnlocalizeRefs extends DirCommand<dynamic> {
       String oldDependencyYaml =
           yamlToString(getDependency(dependency.key, yamlMap));
 
-      if (oldDependencyYaml.contains('path:')) {
+      if (oldDependencyYaml.contains('path:') ||
+          oldDependencyYaml.contains('git:')) {
         hasLocalDependencies = true;
       }
     }
@@ -108,7 +109,8 @@ class UnlocalizeRefs extends DirCommand<dynamic> {
         continue;
       }
 
-      if (!oldDependencyYaml.contains('path:')) {
+      if (!oldDependencyYaml.contains('path:') &&) {
+          !oldDependencyYaml.contains('git:')) {
         continue;
       }
 
