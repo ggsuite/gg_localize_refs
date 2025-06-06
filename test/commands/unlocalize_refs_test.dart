@@ -40,17 +40,15 @@ void main() {
   });
 
   tearDown(() {
-    deleteDirs(
-      [
-        dNoProjectRootError,
-        dParseError,
-        dNoDependencies,
-        dNodeNotFound,
-        dJsonNotFound,
-        dWorkspaceSucceed,
-        dWorkspaceAlreadyUnlocalized,
-      ],
-    );
+    deleteDirs([
+      dNoProjectRootError,
+      dParseError,
+      dNoDependencies,
+      dNodeNotFound,
+      dJsonNotFound,
+      dWorkspaceSucceed,
+      dWorkspaceAlreadyUnlocalized,
+    ]);
   });
 
   group('UnlocalizeRefs Command', () {
@@ -170,6 +168,36 @@ dependencies:
           File(join(dProject2.path, 'pubspec.yaml')).writeAsStringSync(
             '''name: test2
 version: 1.0.0''',
+          );
+
+          final messages = <String>[];
+          UnlocalizeRefs unlocal = UnlocalizeRefs(ggLog: messages.add);
+          await unlocal.get(directory: dProject1, ggLog: messages.add);
+
+          expect(messages[0], contains('Running unlocalize-refs in'));
+          expect(
+            messages[1],
+            contains('Unlocalize refs of test1'),
+          );
+        });
+
+        test('when pubspec is correct and has git refs', () async {
+          Directory dProject1 =
+              Directory(join(dWorkspaceSucceed.path, 'project1'));
+          Directory dProject2 =
+              Directory(join(dWorkspaceSucceed.path, 'project2'));
+
+          createDirs([dProject1, dProject2]);
+
+          File(join(dProject1.path, 'pubspec.yaml')).writeAsStringSync(
+            '''name: test1\nversion: 1.0.0\ndependencies:\n  test2:\n    git: git_test''',
+          );
+
+          File(join(dProject1.path, '.gg_localize_refs_backup.json'))
+              .writeAsStringSync('{"test2":"^2.0.4"}');
+
+          File(join(dProject2.path, 'pubspec.yaml')).writeAsStringSync(
+            '''name: test2\nversion: 1.0.0''',
           );
 
           final messages = <String>[];

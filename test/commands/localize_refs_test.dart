@@ -4,6 +4,7 @@
 // Use of this source code is governed by terms that can be
 // found in the LICENSE file in the root of this package.
 
+import 'dart:async';
 import 'dart:io';
 import 'package:args/command_runner.dart';
 import 'package:gg_capture_print/gg_capture_print.dart';
@@ -165,17 +166,11 @@ void main() {
           createDirs([dProject1, dProject2]);
 
           File(p.join(dProject1.path, 'pubspec.yaml')).writeAsStringSync(
-            '''name: test1
-version: 1.0.0
-dependencies:
-  test2: ^1.0.0
-dev_dependencies:
-  test2: ^1.0.0''',
+            '''name: test1\nversion: 1.0.0\ndependencies:\n  test2: ^1.0.0\ndev_dependencies:\n  test2: ^1.0.0''',
           );
 
           File(p.join(dProject2.path, 'pubspec.yaml')).writeAsStringSync(
-            '''name: test2
-version: 1.0.0''',
+            '''name: test2\nversion: 1.0.0''',
           );
 
           final messages = <String>[];
@@ -198,16 +193,11 @@ version: 1.0.0''',
           createDirs([dProject1, dProject2]);
 
           File(p.join(dProject1.path, 'pubspec.yaml')).writeAsStringSync(
-            '''name: test1
-version: 1.0.0
-dependencies:
-  test2:
-    path: ../project2''',
+            '''name: test1\nversion: 1.0.0\ndependencies:\n  test2:\n    path: ../project2''',
           );
 
           File(p.join(dProject2.path, 'pubspec.yaml')).writeAsStringSync(
-            '''name: test2
-version: 1.0.0''',
+            '''name: test2\nversion: 1.0.0''',
           );
 
           final messages = <String>[];
@@ -383,4 +373,129 @@ version: 1.0.0''',
       expect(result, isNull);
     });
   });
+
+  group('LocalizeRefs._getGitDependencyYaml falls back to main', () {
+    test(
+      'should use "main" as ref if the git rev-parse fails (exitCode != 0)',
+      () async {
+        // Arrange
+        final fakeDepDir = Directory.systemTemp.createTempSync('fakegit');
+        final fakeRefs = FakeLocalizeRefs(
+          ggLog: (_) {},
+          runProcess: (
+            String executable,
+            List<String> arguments, {
+            String? workingDirectory,
+          }) async {
+            if (arguments.join(' ') == 'remote get-url origin') {
+              // Simulate git remote get-url origin success
+              return ProcessResult(0, 0, 'git@github.com:user/fake.git', '');
+            }
+            if (arguments.join(' ') == 'rev-parse --abbrev-ref HEAD') {
+              // Simulate rev-parse fails (non-zero exit code)
+              return ProcessResult(0, 1, '', 'fail');
+            }
+            throw UnimplementedError('Unknown process for args $arguments');
+          },
+        );
+
+        // Act
+        final yaml = await fakeRefs.rawGitDependencyYaml(
+          fakeDepDir,
+          'somedep',
+        );
+        // Assert
+        expect(yaml, contains('ref: main'));
+        expect(yaml, contains('git:'));
+        expect(yaml, contains('url: git@github.com:user/fake.git'));
+        fakeDepDir.deleteSync(recursive: true);
+      },
+    );
+
+    test(
+      'should fallback to main if git rev-parse returns HEAD as stdout',
+      () async {
+        final fakeDepDir = Directory.systemTemp.createTempSync('fakegit2');
+        final fakeRefs = FakeLocalizeRefs(
+          ggLog: (_) {},
+          runProcess: (
+            String executable,
+            List<String> arguments, {
+            String? workingDirectory,
+          }) async {
+            if (arguments.join(' ') == 'remote get-url origin') {
+              // Simulate git remote get-url origin success
+              return ProcessResult(0, 0, 'git@github.com:user/fake.git', '');
+            }
+            if (arguments.join(' ') == 'rev-parse --abbrev-ref HEAD') {
+              // Simulate rev-parse returns exitCode 0 with stdout 'HEAD'
+              return ProcessResult(0, 0, 'HEAD', '');
+            }
+            throw UnimplementedError('Unknown process for args $arguments');
+          },
+        );
+        final yaml = await fakeRefs.rawGitDependencyYaml(
+          fakeDepDir,
+          'somedep',
+        );
+        expect(yaml, contains('ref: main'));
+        expect(yaml, contains('git:'));
+        expect(yaml, contains('url: git@github.com:user/fake.git'));
+        fakeDepDir.deleteSync(recursive: true);
+      },
+    );
+
+    test(
+      'should fallback to main if git rev-parse returns empty stdout',
+      () async {
+        final fakeDepDir = Directory.systemTemp.createTempSync('fakegit3');
+        final fakeRefs = FakeLocalizeRefs(
+          ggLog: (_) {},
+          runProcess: (
+            String executable,
+            List<String> arguments, {
+            String? workingDirectory,
+          }) async {
+            if (arguments.join(' ') == 'remote get-url origin') {
+              // Simulate git remote get-url origin success
+              return ProcessResult(0, 0, 'git@github.com:user/fake.git', '');
+            }
+            if (arguments.join(' ') == 'rev-parse --abbrev-ref HEAD') {
+              // Simulate rev-parse returns exitCode 0 but no stdout
+              return ProcessResult(0, 0, '', '');
+            }
+            throw UnimplementedError('Unknown process for args $arguments');
+          },
+        );
+        final yaml = await fakeRefs.rawGitDependencyYaml(
+          fakeDepDir,
+          'somedep',
+        );
+        expect(yaml, contains('ref: main'));
+        expect(yaml, contains('git:'));
+        expect(yaml, contains('url: git@github.com:user/fake.git'));
+        fakeDepDir.deleteSync(recursive: true);
+      },
+    );
+  });
+}
+
+// Implements a fake version of LocalizeRefs with injectable runProcess for
+// testing git ref fallback. No runProcess in superclass anymore; assign here.
+class FakeLocalizeRefs extends LocalizeRefs {
+  FakeLocalizeRefs({
+    required super.ggLog,
+    required Future<ProcessResult> Function(
+      String executable,
+      List<String> arguments, {
+      String? workingDirectory,
+    }) runProcess,
+  }) : super() {
+    this.runProcess = runProcess;
+  }
+
+  /// Exposes the getGitDependencyYaml method for testing
+  Future<String> rawGitDependencyYaml(Directory dir, String depName) async {
+    return await getGitDependencyYaml(dir, depName);
+  }
 }

@@ -21,6 +21,14 @@ import 'package:gg_localize_refs/src/yaml_to_string.dart';
 // #############################################################################
 /// Command for localizing references
 class LocalizeRefs extends DirCommand<dynamic> {
+  /// The function used to run processes (injected for testability)
+  /// Defaults to [Process.run]
+  late Future<ProcessResult> Function(
+    String executable,
+    List<String> arguments, {
+    String? workingDirectory,
+  }) runProcess;
+
   /// Constructor
   LocalizeRefs({
     required super.ggLog,
@@ -34,6 +42,17 @@ class LocalizeRefs extends DirCommand<dynamic> {
       negatable: false,
       help: 'Use git references instead of local paths.',
     );
+    runProcess = (
+      String executable,
+      List<String> arguments, {
+      String? workingDirectory,
+    }) {
+      return Process.run(
+        executable,
+        arguments,
+        workingDirectory: workingDirectory,
+      );
+    };
   }
 
   /// Whether to localize to git references
@@ -184,7 +203,7 @@ class LocalizeRefs extends DirCommand<dynamic> {
       String oldDependencyYaml = yamlToString(oldDependency);
       // Only replace if not already git
       if (!oldDependencyYaml.startsWith('git:')) {
-        String newDependencyYaml = await _getGitDependencyYaml(
+        String newDependencyYaml = await getGitDependencyYaml(
           dependency.value.directory,
           dependencyName,
         );
@@ -203,12 +222,12 @@ class LocalizeRefs extends DirCommand<dynamic> {
 
   // ...........................................................................
   /// Get a dependency Yaml for a git repo
-  Future<String> _getGitDependencyYaml(
+  Future<String> getGitDependencyYaml(
     Directory depDir,
     String depName,
   ) async {
     // resolve remote url
-    final resultUrl = await Process.run(
+    final resultUrl = await runProcess(
       'git',
       ['remote', 'get-url', 'origin'],
       workingDirectory: depDir.path,
@@ -220,7 +239,7 @@ class LocalizeRefs extends DirCommand<dynamic> {
     }
     final url = resultUrl.stdout.toString().trim();
     // resolve branch/ref
-    final resultRef = await Process.run(
+    final resultRef = await runProcess(
       'git',
       ['rev-parse', '--abbrev-ref', 'HEAD'],
       workingDirectory: depDir.path,
@@ -228,6 +247,10 @@ class LocalizeRefs extends DirCommand<dynamic> {
     String ref = 'main';
     if (resultRef.exitCode == 0) {
       ref = resultRef.stdout.toString().trim();
+      // Fallback to 'main' if ref is 'HEAD' or empty string
+      if (ref.isEmpty || ref == 'HEAD') {
+        ref = 'main';
+      }
     }
     final gitMap = {
       'git': {
