@@ -7,3 +7,5 @@
 library;
 
 export 'src/gg_localize_refs.dart';
+export 'src/commands/localize_refs.dart';
+export 'src/commands/unlocalize_refs.dart';

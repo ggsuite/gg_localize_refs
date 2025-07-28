@@ -1,0 +1,80 @@
+Index: lib/gg_localize_refs.dart
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+>// @license\r\n// Copyright (c) 2019 - 2024 Dr. Gabriel Gatzsche. All Rights Reserved.\r\n//\r\n// Use of this source code is governed by terms that can be\r\n// found in the LICENSE file in the root of this package.\r\n\r\nlibrary;\r\n\r\nexport 'src/gg_localize_refs.dart';\r\n
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/lib/gg_localize_refs.dart b/lib/gg_localize_refs.dart
+--- a/lib/gg_localize_refs.dart	(revision 064ff6af585e46dad5f28a4b60496809f14971b0)
++++ b/lib/gg_localize_refs.dart	(date 1753686852064)
+@@ -7,3 +7,5 @@
+ library;
+ 
+ export 'src/gg_localize_refs.dart';
++export 'src/commands/localize_refs.dart';
++export 'src/commands/unlocalize_refs.dart';
+Index: .idea/workspace.xml
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+><?xml version=\"1.0\" encoding=\"UTF-8\"?>\r\n<project version=\"4\">\r\n  <component name=\"AutoImportSettings\">\r\n    <option name=\"autoReloadType\" value=\"SELECTIVE\" />\r\n  </component>\r\n  <component name=\"ChangeListManager\">\r\n    <list default=\"true\" id=\"7bb7c532-1775-4077-b89c-85e74cd3e219\" name=\"Changes\" comment=\"\">\r\n      <change afterPath=\"$PROJECT_DIR$/lib/src/commands/local.dart\" afterDir=\"false\" />\r\n      <change beforePath=\"$PROJECT_DIR$/.idea/workspace.xml\" beforeDir=\"false\" afterPath=\"$PROJECT_DIR$/.idea/workspace.xml\" afterDir=\"false\" />\r\n      <change beforePath=\"$PROJECT_DIR$/lib/src/commands/my_command.dart\" beforeDir=\"false\" />\r\n      <change beforePath=\"$PROJECT_DIR$/lib/src/gg_to_local.dart\" beforeDir=\"false\" afterPath=\"$PROJECT_DIR$/lib/src/gg_to_local.dart\" afterDir=\"false\" />\r\n      <change beforePath=\"$PROJECT_DIR$/pubspec.yaml\" beforeDir=\"false\" afterPath=\"$PROJECT_DIR$/pubspec.yaml\" afterDir=\"false\" />\r\n      <change beforePath=\"$PROJECT_DIR$/test/bin/gg_to_local_test.dart\" beforeDir=\"false\" afterPath=\"$PROJECT_DIR$/test/bin/gg_to_local_test.dart\" afterDir=\"false\" />\r\n      <change beforePath=\"$PROJECT_DIR$/test/commands/my_command_test.dart\" beforeDir=\"false\" afterPath=\"$PROJECT_DIR$/test/commands/local_test.dart\" afterDir=\"false\" />\r\n      <change beforePath=\"$PROJECT_DIR$/test/gg_to_local_test.dart\" beforeDir=\"false\" afterPath=\"$PROJECT_DIR$/test/gg_to_local_test.dart\" afterDir=\"false\" />\r\n    </list>\r\n    <option name=\"SHOW_DIALOG\" value=\"false\" />\r\n    <option name=\"HIGHLIGHT_CONFLICTS\" value=\"true\" />\r\n    <option name=\"HIGHLIGHT_NON_ACTIVE_CHANGELIST\" value=\"false\" />\r\n    <option name=\"LAST_RESOLUTION\" value=\"IGNORE\" />\r\n  </component>\r\n  <component name=\"ComposerSettings\">\r\n    <execution />\r\n  </component>\r\n  <component name=\"FileTemplateManagerImpl\">\r\n    <option name=\"RECENT_TEMPLATES\">\r\n      <list>\r\n        <option value=\"Dart File\" />\r\n      </list>\r\n    </option>\r\n  </component>\r\n  <component name=\"Git.Settings\">\r\n    <option name=\"RECENT_GIT_ROOT_PATH\" value=\"$PROJECT_DIR$\" />\r\n  </component>\r\n  <component name=\"MarkdownSettingsMigration\">\r\n    <option name=\"stateVersion\" value=\"1\" />\r\n  </component>\r\n  <component name=\"ProjectCodeStyleSettingsMigration\">\r\n    <option name=\"version\" value=\"2\" />\r\n  </component>\r\n  <component name=\"ProjectColorInfo\">{\r\n  &quot;associatedIndex&quot;: 0\r\n}</component>\r\n  <component name=\"ProjectId\" id=\"2mpVNWJiCkHMQk9jHiZ3vggRxPt\" />\r\n  <component name=\"ProjectViewState\">\r\n    <option name=\"hideEmptyMiddlePackages\" value=\"true\" />\r\n    <option name=\"showLibraryContents\" value=\"true\" />\r\n  </component>\r\n  <component name=\"PropertiesComponent\"><![CDATA[{\r\n  \"keyToString\": {\r\n    \"RunOnceActivity.OpenProjectViewOnStart\": \"true\",\r\n    \"RunOnceActivity.ShowReadmeOnStart\": \"true\",\r\n    \"WebServerToolWindowFactoryState\": \"false\",\r\n    \"dart.analysis.tool.window.visible\": \"false\",\r\n    \"git-widget-placeholder\": \"main\",\r\n    \"ignore.virus.scanning.warn.message\": \"true\",\r\n    \"kotlin-language-version-configured\": \"true\",\r\n    \"last_opened_file_path\": \"P:/grace_cloud/gg_project_root\",\r\n    \"node.js.detected.package.eslint\": \"true\",\r\n    \"node.js.detected.package.tslint\": \"true\",\r\n    \"node.js.selected.package.eslint\": \"(autodetect)\",\r\n    \"node.js.selected.package.tslint\": \"(autodetect)\",\r\n    \"nodejs_package_manager_path\": \"npm\",\r\n    \"settings.editor.selected.configurable\": \"flutter.settings\",\r\n    \"show.migrate.to.gradle.popup\": \"false\",\r\n    \"vue.rearranger.settings.migration\": \"true\"\r\n  }\r\n}]]></component>\r\n  <component name=\"RunManager\">\r\n    <configuration name=\"Local Command in local_test.dart\" type=\"DartTestRunConfigurationType\" factoryName=\"Dart Test\" temporary=\"true\" nameIsGenerated=\"true\">\r\n      <option name=\"filePath\" value=\"$PROJECT_DIR$/test/commands/local_test.dart\" />\r\n      <option name=\"scope\" value=\"GROUP_OR_TEST_BY_NAME\" />\r\n      <option name=\"testName\" value=\"Local Command\" />\r\n      <method v=\"2\" />\r\n    </configuration>\r\n    <recent_temporary>\r\n      <list>\r\n        <item itemvalue=\"Dart Test.Local Command in local_test.dart\" />\r\n      </list>\r\n    </recent_temporary>\r\n  </component>\r\n  <component name=\"SharedIndexes\">\r\n    <attachedChunks>\r\n      <set>\r\n        <option value=\"jdk-22-openjdk-22-4caba194b151-f504ca98\" />\r\n      </set>\r\n    </attachedChunks>\r\n  </component>\r\n  <component name=\"SpellCheckerSettings\" RuntimeDictionaries=\"0\" Folders=\"0\" CustomDictionaries=\"0\" DefaultDictionary=\"application-level\" UseSingleDictionary=\"true\" transferred=\"true\" />\r\n  <component name=\"TaskManager\">\r\n    <task active=\"true\" id=\"Default\" summary=\"Default task\">\r\n      <changelist id=\"7bb7c532-1775-4077-b89c-85e74cd3e219\" name=\"Changes\" comment=\"\" />\r\n      <created>1727773465117</created>\r\n      <option name=\"number\" value=\"Default\" />\r\n      <option name=\"presentableId\" value=\"Default\" />\r\n      <updated>1727773465117</updated>\r\n      <workItem from=\"1727773466303\" duration=\"613000\" />\r\n      <workItem from=\"1729146762896\" duration=\"1029000\" />\r\n      <workItem from=\"1729147921651\" duration=\"7481000\" />\r\n    </task>\r\n    <servers />\r\n  </component>\r\n  <component name=\"TypeScriptGeneratedFilesManager\">\r\n    <option name=\"version\" value=\"3\" />\r\n  </component>\r\n  <component name=\"XSLT-Support.FileAssociations.UIState\">\r\n    <expand />\r\n    <select />\r\n  </component>\r\n</project>
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/.idea/workspace.xml b/.idea/workspace.xml
+--- a/.idea/workspace.xml	(revision 064ff6af585e46dad5f28a4b60496809f14971b0)
++++ b/.idea/workspace.xml	(date 1753686862896)
+@@ -46,26 +46,26 @@
+     <option name="hideEmptyMiddlePackages" value="true" />
+     <option name="showLibraryContents" value="true" />
+   </component>
+-  <component name="PropertiesComponent"><![CDATA[{
+-  "keyToString": {
+-    "RunOnceActivity.OpenProjectViewOnStart": "true",
+-    "RunOnceActivity.ShowReadmeOnStart": "true",
+-    "WebServerToolWindowFactoryState": "false",
+-    "dart.analysis.tool.window.visible": "false",
+-    "git-widget-placeholder": "main",
+-    "ignore.virus.scanning.warn.message": "true",
+-    "kotlin-language-version-configured": "true",
+-    "last_opened_file_path": "P:/grace_cloud/gg_project_root",
+-    "node.js.detected.package.eslint": "true",
+-    "node.js.detected.package.tslint": "true",
+-    "node.js.selected.package.eslint": "(autodetect)",
+-    "node.js.selected.package.tslint": "(autodetect)",
+-    "nodejs_package_manager_path": "npm",
+-    "settings.editor.selected.configurable": "flutter.settings",
+-    "show.migrate.to.gradle.popup": "false",
+-    "vue.rearranger.settings.migration": "true"
++  <component name="PropertiesComponent">{
++  &quot;keyToString&quot;: {
++    &quot;RunOnceActivity.OpenProjectViewOnStart&quot;: &quot;true&quot;,
++    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
++    &quot;WebServerToolWindowFactoryState&quot;: &quot;false&quot;,
++    &quot;dart.analysis.tool.window.visible&quot;: &quot;false&quot;,
++    &quot;git-widget-placeholder&quot;: &quot;main&quot;,
++    &quot;ignore.virus.scanning.warn.message&quot;: &quot;true&quot;,
++    &quot;kotlin-language-version-configured&quot;: &quot;true&quot;,
++    &quot;last_opened_file_path&quot;: &quot;P:/grace_cloud/gg_project_root&quot;,
++    &quot;node.js.detected.package.eslint&quot;: &quot;true&quot;,
++    &quot;node.js.detected.package.tslint&quot;: &quot;true&quot;,
++    &quot;node.js.selected.package.eslint&quot;: &quot;(autodetect)&quot;,
++    &quot;node.js.selected.package.tslint&quot;: &quot;(autodetect)&quot;,
++    &quot;nodejs_package_manager_path&quot;: &quot;npm&quot;,
++    &quot;settings.editor.selected.configurable&quot;: &quot;flutter.settings&quot;,
++    &quot;show.migrate.to.gradle.popup&quot;: &quot;false&quot;,
++    &quot;vue.rearranger.settings.migration&quot;: &quot;true&quot;
+   }
+-}]]></component>
++}</component>
+   <component name="RunManager">
+     <configuration name="Local Command in local_test.dart" type="DartTestRunConfigurationType" factoryName="Dart Test" temporary="true" nameIsGenerated="true">
+       <option name="filePath" value="$PROJECT_DIR$/test/commands/local_test.dart" />
+@@ -75,6 +75,7 @@
+     </configuration>
+     <recent_temporary>
+       <list>
++        <item itemvalue="Dart Test.Local Command in local_test.dart" />
+         <item itemvalue="Dart Test.Local Command in local_test.dart" />
+       </list>
+     </recent_temporary>

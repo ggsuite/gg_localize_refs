@@ -6,6 +6,7 @@
 
 - Initial boilerplate.
 - Add git parameter to localize refs get
+- Add commands to export
 
 ### Changed
 
