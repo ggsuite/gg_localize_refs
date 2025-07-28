@@ -60,10 +60,14 @@ class LocalizeRefs extends DirCommand<dynamic> {
 
   // ...........................................................................
   @override
-  Future<void> get({required Directory directory, required GgLog ggLog}) async {
+  Future<void> get({
+    required Directory directory,
+    required GgLog ggLog,
+    bool? git,
+  }) async {
     ggLog('Running localize-refs in ${directory.path}');
     // Use a safe access for argResults
-    useGit = (argResults?['git'] as bool?) ?? false;
+    useGit = git ?? ((argResults?['git'] as bool?) ?? false);
     FileChangesBuffer fileChangesBuffer = FileChangesBuffer();
 
     try {

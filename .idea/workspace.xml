@@ -4,13 +4,9 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="7bb7c532-1775-4077-b89c-85e74cd3e219" name="Changes" comment="add git option to localize-refs">
+    <list default="true" id="7bb7c532-1775-4077-b89c-85e74cd3e219" name="Changes" comment="add tests for git option">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/analysis_options.yaml" beforeDir="false" afterPath="$PROJECT_DIR$/analysis_options.yaml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/lib/src/commands/localize_refs.dart" beforeDir="false" afterPath="$PROJECT_DIR$/lib/src/commands/localize_refs.dart" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/lib/src/commands/unlocalize_refs.dart" beforeDir="false" afterPath="$PROJECT_DIR$/lib/src/commands/unlocalize_refs.dart" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/test/bin/gg_localize_refs_test.dart" beforeDir="false" afterPath="$PROJECT_DIR$/test/bin/gg_localize_refs_test.dart" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/test/commands/localize_refs_test.dart" beforeDir="false" afterPath="$PROJECT_DIR$/test/commands/localize_refs_test.dart" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -118,12 +114,35 @@
       <workItem from="1749224226879" duration="2679000" />
       <workItem from="1749227082424" duration="600000" />
       <workItem from="1749227715894" duration="425000" />
-      <workItem from="1749230089872" duration="543000" />
+      <workItem from="1749230089872" duration="5054000" />
+      <workItem from="1749547791521" duration="3733000" />
+      <workItem from="1753685593768" duration="415000" />
     </task>
+    <task id="LOCAL-00001" summary="add tests for git option">
+      <option name="closed" value="true" />
+      <created>1749230656431</created>
+      <option name="number" value="00001" />
+      <option name="presentableId" value="LOCAL-00001" />
+      <option name="project" value="LOCAL" />
+      <updated>1749230656431</updated>
+    </task>
+    <task id="LOCAL-00002" summary="add tests for git option">
+      <option name="closed" value="true" />
+      <created>1749234313155</created>
+      <option name="number" value="00002" />
+      <option name="presentableId" value="LOCAL-00002" />
+      <option name="project" value="LOCAL" />
+      <updated>1749234313155</updated>
+    </task>
+    <option name="localTasksCounter" value="3" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
     <option name="version" value="3" />
+  </component>
+  <component name="VcsManagerConfiguration">
+    <MESSAGE value="add tests for git option" />
+    <option name="LAST_COMMIT_MESSAGE" value="add tests for git option" />
   </component>
   <component name="XSLT-Support.FileAssociations.UIState">
     <expand />

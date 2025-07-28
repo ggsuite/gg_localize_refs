@@ -5,6 +5,7 @@
 ### Added
 
 - Initial boilerplate.
+- Add git parameter to localize refs get
 
 ### Changed
 
