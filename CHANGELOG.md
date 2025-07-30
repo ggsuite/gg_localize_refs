@@ -12,6 +12,7 @@
 
 - Automatic checks
 - Collect all nodes in allNodesMap
+- posix style path
 
 ### Fixed
 
