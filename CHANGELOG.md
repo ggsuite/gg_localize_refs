@@ -11,6 +11,7 @@
 ### Changed
 
 - Automatic checks
+- Collect all nodes in allNodesMap
 
 ### Fixed
 

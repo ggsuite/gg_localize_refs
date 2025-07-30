@@ -74,7 +74,21 @@ Future<void> processNode(
     return;
   }
 
-  Node? node = nodes[packageName];
+  // Collect all unique nodes
+  final allNodesMap = <String, Node>{};
+  void collect(Node node) {
+    if (allNodesMap.containsKey(node.name)) return;
+    allNodesMap[node.name] = node;
+    for (final dep in node.dependencies.values) {
+      collect(dep);
+    }
+  }
+
+  for (final root in nodes.values) {
+    collect(root);
+  }
+
+  Node? node = allNodesMap[packageName];
 
   if (node == null) {
     throw Exception('The node for the package $packageName was not found.');
