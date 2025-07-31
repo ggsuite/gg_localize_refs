@@ -179,6 +179,11 @@ version: 1.0.0''',
             messages[1],
             contains('Unlocalize refs of test1'),
           );
+
+          // Check if publish_to: none was removed
+          final resultYaml =
+              File(join(dProject1.path, 'pubspec.yaml')).readAsStringSync();
+          expect(resultYaml, isNot(contains('publish_to: none')));
         });
 
         test('when pubspec is correct and has git refs', () async {

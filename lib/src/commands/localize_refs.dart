@@ -17,6 +17,7 @@ import 'package:gg_log/gg_log.dart';
 import 'package:gg_localize_refs/src/process_dependencies.dart';
 import 'package:gg_localize_refs/src/replace_dependency.dart';
 import 'package:gg_localize_refs/src/yaml_to_string.dart';
+import 'package:gg_localize_refs/src/publish_to_utils.dart';
 
 // #############################################################################
 /// Command for localizing references
@@ -150,6 +151,13 @@ class LocalizeRefs extends DirCommand<dynamic> {
         );
       }
 
+      // Backup publish_to
+      final publishBackup = backupPublishTo(yamlMap);
+      replacedDependencies.addAll(publishBackup);
+
+      // Add publish_to: none
+      newPubspecContent = addPublishToNone(newPubspecContent);
+
       // Save the replaced dependencies to a JSON file
       await saveDependenciesAsJson(
         replacedDependencies,
@@ -195,6 +203,10 @@ class LocalizeRefs extends DirCommand<dynamic> {
             getDependency(dependencyName, yamlMap);
       }
     }
+    // Backup publish_to
+    final publishBackup = backupPublishTo(yamlMap);
+    replacedDependencies.addAll(publishBackup);
+
     await saveDependenciesAsJson(
       replacedDependencies,
       '${projectDir.path}/.gg_localize_refs_backup.json',
@@ -220,6 +232,8 @@ class LocalizeRefs extends DirCommand<dynamic> {
         );
       }
     }
+    // Add publish_to: none
+    newPubspecContent = addPublishToNone(newPubspecContent);
     // write new pubspec.yaml.modified
     File modifiedPubspec = File('${projectDir.path}/pubspec.yaml');
     fileChangesBuffer.add(modifiedPubspec, newPubspecContent);
