@@ -10,7 +10,6 @@ import 'package:gg_args/gg_args.dart';
 import 'package:gg_console_colors/gg_console_colors.dart';
 import 'package:gg_localize_refs/src/yaml_to_string.dart';
 import 'package:gg_log/gg_log.dart';
-import 'package:pubspec_parse/pubspec_parse.dart';
 import 'package:yaml/yaml.dart';
 
 // #############################################################################
@@ -53,14 +52,6 @@ class GetRefVersion extends DirCommand<dynamic> {
 
       // Read pubspec content
       final content = pubspec.readAsStringSync();
-
-      // Validate YAML by parsing with Pubspec.parse to keep consistent errors
-      try {
-        // ignore: unused_local_variable
-        final _ = Pubspec.parse(content);
-      } catch (e) {
-        throw Exception(red('Error parsing pubspec.yaml:') + e.toString());
-      }
 
       // Also load YAML as Map to access dependency values
       final yamlMap = loadYaml(content) as Map<dynamic, dynamic>;

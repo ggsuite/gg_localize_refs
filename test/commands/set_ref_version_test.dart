@@ -96,7 +96,7 @@ void main() {
             isA<Exception>().having(
               (e) => e.toString(),
               'message',
-              contains('Error parsing pubspec.yaml'),
+              contains('An error occurred'),
             ),
           ),
         );

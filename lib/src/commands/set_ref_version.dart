@@ -1,5 +1,6 @@
 // @license
-// Copyright (c) 2025 Göran Hegenberg. All Rights Reserved.
+// Copyright (c) 2025 Göran Hegenberg. All Rights
+// Reserved.
 //
 // Use of this source code is governed by terms that can be
 // found in the LICENSE file in the root of this package.
@@ -11,7 +12,6 @@ import 'package:gg_console_colors/gg_console_colors.dart';
 import 'package:gg_localize_refs/src/replace_dependency.dart';
 import 'package:gg_localize_refs/src/yaml_to_string.dart';
 import 'package:gg_log/gg_log.dart';
-import 'package:pubspec_parse/pubspec_parse.dart';
 import 'package:yaml/yaml.dart';
 
 // #############################################################################
@@ -31,8 +31,8 @@ class SetRefVersion extends DirCommand<dynamic> {
       ..addOption('ref', help: 'The dependency name to change.')
       ..addOption(
         'version',
-        help:
-            'The new version/spec. Can be a scalar (e.g., ^1.2.3) or a YAML block.',
+        help: 'The new version/spec. Can be a scalar (e.g., ^1.2.3) '
+            'or a YAML block.',
       );
   }
 
@@ -57,39 +57,41 @@ class SetRefVersion extends DirCommand<dynamic> {
     }
 
     try {
-      // Resolve pubspec.yaml in the provided directory directly.
       final pubspec = File('${directory.path}/pubspec.yaml');
       if (!pubspec.existsSync()) {
         throw Exception('pubspec.yaml not found at ${pubspec.path}');
       }
 
-      // Read pubspec content
       final content = pubspec.readAsStringSync();
 
-      // Validate YAML by parsing with Pubspec.parse to keep consistent errors
-      try {
-        // ignore: unused_local_variable
-        final _ = Pubspec.parse(content);
-      } catch (e) {
-        throw Exception(red('Error parsing pubspec.yaml:') + e.toString());
-      }
-
-      // Also load YAML as Map to access dependency values
       final yamlMap = loadYaml(content) as Map<dynamic, dynamic>;
 
-      final dynamic oldDep = getDependency3(dependencyName, yamlMap);
+      final dynamic oldDep = _getDependency(dependencyName, yamlMap);
       if (oldDep == null) {
         throw Exception('Dependency $dependencyName not found.');
       }
 
-      final oldYaml = yamlToString(oldDep);
-      final newYaml = newVersion;
+      final sectionName = yamlMap['dependencies']?[dependencyName] != null
+          ? 'dependencies'
+          : 'dev_dependencies';
+
+      final oldYaml = yamlToString(oldDep).trimRight();
+      final newYamlNormalized = _normalizeNewVersion(
+        dependencyName,
+        newVersion,
+      );
+
+      if (oldYaml == newYamlNormalized) {
+        ggLog(yellow('No files were changed.'));
+        return;
+      }
 
       final updated = replaceDependency(
         content,
         dependencyName,
         oldYaml,
-        newYaml,
+        newVersion,
+        sectionName: sectionName,
       );
 
       if (updated == content) {
@@ -105,8 +107,26 @@ class SetRefVersion extends DirCommand<dynamic> {
 }
 
 // .............................................................................
-/// Get a dependency from the YAML map (re-export helper for this file)
-dynamic getDependency3(String dependencyName, Map<dynamic, dynamic> yamlMap) {
+/// Get a dependency from the YAML map (local helper)
+dynamic _getDependency(String dependencyName, Map<dynamic, dynamic> yamlMap) {
   return yamlMap['dependencies']?[dependencyName] ??
       yamlMap['dev_dependencies']?[dependencyName];
+}
+
+// .............................................................................
+/// Normalize the provided newVersion to the same textual format that
+/// yamlToString produces for a dependency value.
+String _normalizeNewVersion(String depName, String newVersion) {
+  final v = newVersion.replaceAll('\r\n', '\n').replaceAll('\r', '\n');
+  final trimmed = v.trimRight();
+  final isScalar = !trimmed.contains('\n') && !trimmed.contains(':');
+  if (isScalar) {
+    return trimmed;
+  }
+  // Treat as block. We want the normalized form of only the value under key.
+  // Wrap into a map and then extract the value using yamlToString.
+  final wrapped = '$depName:\n$trimmed';
+  final parsed = loadYaml(wrapped) as Map;
+  final value = parsed[depName];
+  return yamlToString(value).trimRight();
 }
