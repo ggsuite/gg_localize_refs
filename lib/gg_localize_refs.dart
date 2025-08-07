@@ -9,3 +9,5 @@ library;
 export 'src/gg_localize_refs.dart';
 export 'src/commands/localize_refs.dart';
 export 'src/commands/unlocalize_refs.dart';
+export 'src/commands/get_ref_version.dart';
+export 'src/commands/set_ref_version.dart';
