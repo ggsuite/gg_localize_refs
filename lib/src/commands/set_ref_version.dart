@@ -76,15 +76,6 @@ class SetRefVersion extends DirCommand<dynamic> {
           : 'dev_dependencies';
 
       final oldYaml = yamlToString(oldDep).trimRight();
-      final newYamlNormalized = _normalizeNewVersion(
-        dependencyName,
-        newVersion,
-      );
-
-      if (oldYaml == newYamlNormalized) {
-        ggLog(yellow('No files were changed.'));
-        return;
-      }
 
       final updated = replaceDependency(
         content,
@@ -111,22 +102,4 @@ class SetRefVersion extends DirCommand<dynamic> {
 dynamic _getDependency(String dependencyName, Map<dynamic, dynamic> yamlMap) {
   return yamlMap['dependencies']?[dependencyName] ??
       yamlMap['dev_dependencies']?[dependencyName];
-}
-
-// .............................................................................
-/// Normalize the provided newVersion to the same textual format that
-/// yamlToString produces for a dependency value.
-String _normalizeNewVersion(String depName, String newVersion) {
-  final v = newVersion.replaceAll('\r\n', '\n').replaceAll('\r', '\n');
-  final trimmed = v.trimRight();
-  final isScalar = !trimmed.contains('\n') && !trimmed.contains(':');
-  if (isScalar) {
-    return trimmed;
-  }
-  // Treat as block. We want the normalized form of only the value under key.
-  // Wrap into a map and then extract the value using yamlToString.
-  final wrapped = '$depName:\n$trimmed';
-  final parsed = loadYaml(wrapped) as Map;
-  final value = parsed[depName];
-  return yamlToString(value).trimRight();
 }

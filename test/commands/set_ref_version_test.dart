@@ -132,6 +132,54 @@ void main() {
           ),
         );
       });
+
+      test('when --ref is missing', () async {
+        final d = Directory(join(dWorkspace.path, 'missing_ref'));
+        createDirs([d]);
+        File(join(d.path, 'pubspec.yaml')).writeAsStringSync(
+          'name: a\nversion: 1.0.0\ndependencies:\n  b: ^1.0.0',
+        );
+        await expectLater(
+          runner.run([
+            'set-ref-version',
+            '--input',
+            d.path,
+            '--version',
+            '^2.0.0',
+          ]),
+          throwsA(
+            isA<Exception>().having(
+              (e) => e.toString(),
+              'message',
+              contains('Please provide a dependency name via --ref.'),
+            ),
+          ),
+        );
+      });
+
+      test('when --version is missing', () async {
+        final d = Directory(join(dWorkspace.path, 'missing_version'));
+        createDirs([d]);
+        File(join(d.path, 'pubspec.yaml')).writeAsStringSync(
+          'name: a\nversion: 1.0.0\ndependencies:\n  b: ^1.0.0',
+        );
+        await expectLater(
+          runner.run([
+            'set-ref-version',
+            '--input',
+            d.path,
+            '--ref',
+            'b',
+          ]),
+          throwsA(
+            isA<Exception>().having(
+              (e) => e.toString(),
+              'message',
+              contains('Please provide the new version via --version.'),
+            ),
+          ),
+        );
+      });
     });
 
     group('should succeed', () {
@@ -260,7 +308,7 @@ void main() {
         expect(content, contains('f2: ^1.1.0'));
       });
 
-      test('no change when value is equal', () async {
+      test('no change when value is equal (logs and returns)', () async {
         final d1 = Directory(join(dWorkspace.path, 'g1'));
         final d2 = Directory(join(dWorkspace.path, 'g2'));
         createDirs([d1, d2]);
@@ -282,6 +330,28 @@ void main() {
         ]);
         final content = File(join(d1.path, 'pubspec.yaml')).readAsStringSync();
         expect(content, contains('g2: ^1.0.0'));
+        expect(messages.join('\n'), contains('No files were changed'));
+      });
+
+      test('no structural change leaves content as-is and logs', () async {
+        // Cover branch where replaceDependency returns original content
+        // because dependency not found in the given section.
+        final d = Directory(join(dWorkspace.path, 'g3'));
+        createDirs([d]);
+        File(join(d.path, 'pubspec.yaml')).writeAsStringSync(
+          'name: g3\nversion: 1.0.0\ndependencies:\n  a: ^1.0.0',
+        );
+        messages.clear();
+        await runner.run([
+          'set-ref-version',
+          '--input',
+          d.path,
+          '--ref',
+          'a',
+          '--version',
+          '^1.0.0',
+        ]);
+        // No change expected and branch where updated == content hit.
         expect(messages.join('\n'), contains('No files were changed'));
       });
     });

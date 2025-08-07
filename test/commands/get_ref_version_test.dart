@@ -97,6 +97,29 @@ void main() {
           ),
         );
       });
+
+      test('when --ref is missing', () async {
+        // Create minimal pubspec so that only --ref validation triggers
+        final d = Directory(join(dWorkspace.path, 'missing_ref'));
+        createDirs([d]);
+        File(join(d.path, 'pubspec.yaml')).writeAsStringSync(
+          'name: a\nversion: 1.0.0',
+        );
+        await expectLater(
+          runner.run([
+            'get-ref-version',
+            '--input',
+            d.path,
+          ]),
+          throwsA(
+            isA<Exception>().having(
+              (e) => e.toString(),
+              'message',
+              contains('Please provide a dependency name via --ref.'),
+            ),
+          ),
+        );
+      });
     });
 
     group('should succeed', () {
