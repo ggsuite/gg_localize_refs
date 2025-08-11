@@ -4,10 +4,7 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="7bb7c532-1775-4077-b89c-85e74cd3e219" name="Changes" comment="gg_local_package_dependencies git dependency">
-      <change beforePath="$PROJECT_DIR$/.gg.json" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-    </list>
+    <list default="true" id="7bb7c532-1775-4077-b89c-85e74cd3e219" name="Changes" comment="improved replacement in set_ref_version" />
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
@@ -48,15 +45,18 @@
   <component name="PropertiesComponent">{
   &quot;keyToString&quot;: {
     &quot;Dart Command Line App.gg_localize_refs.dart.executor&quot;: &quot;Run&quot;,
+    &quot;Dart Test.Tests in get_ref_version_test.dart.executor&quot;: &quot;Run&quot;,
+    &quot;Dart Test.Tests in replace_dependency_test.dart.executor&quot;: &quot;Run&quot;,
+    &quot;Dart Test.Tests in set_ref_version_test.dart.executor&quot;: &quot;Run&quot;,
     &quot;RunOnceActivity.OpenProjectViewOnStart&quot;: &quot;true&quot;,
     &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
     &quot;RunOnceActivity.git.unshallow&quot;: &quot;true&quot;,
     &quot;WebServerToolWindowFactoryState&quot;: &quot;false&quot;,
     &quot;dart.analysis.tool.window.visible&quot;: &quot;false&quot;,
-    &quot;git-widget-placeholder&quot;: &quot;main&quot;,
+    &quot;git-widget-placeholder&quot;: &quot;get__set__ref__version&quot;,
     &quot;ignore.virus.scanning.warn.message&quot;: &quot;true&quot;,
     &quot;kotlin-language-version-configured&quot;: &quot;true&quot;,
-    &quot;last_opened_file_path&quot;: &quot;P:/grace_cloud/gg_localize_refs&quot;,
+    &quot;last_opened_file_path&quot;: &quot;P:/grace_cloud/gg_to_local&quot;,
     &quot;node.js.detected.package.eslint&quot;: &quot;true&quot;,
     &quot;node.js.detected.package.tslint&quot;: &quot;true&quot;,
     &quot;node.js.selected.package.eslint&quot;: &quot;(autodetect)&quot;,
@@ -72,7 +72,7 @@
       <recent name="P:\grace_cloud\gg_to_local" />
     </key>
   </component>
-  <component name="RunManager" selected="Dart Command Line App.gg_localize_refs.dart">
+  <component name="RunManager" selected="Dart Test.Tests in get_ref_version_test.dart">
     <configuration name="gg_localize_refs.dart" type="DartCommandLineRunConfigurationType" factoryName="Dart Command Line Application" temporary="true" nameIsGenerated="true">
       <option name="filePath" value="$PROJECT_DIR$/bin/gg_localize_refs.dart" />
       <option name="workingDirectory" value="$PROJECT_DIR$" />
@@ -84,10 +84,28 @@
       <option name="testName" value="Local Command" />
       <method v="2" />
     </configuration>
+    <configuration name="Tests in get_ref_version_test.dart" type="DartTestRunConfigurationType" factoryName="Dart Test" temporary="true" nameIsGenerated="true">
+      <option name="filePath" value="$PROJECT_DIR$/test/commands/get_ref_version_test.dart" />
+      <option name="testName" value="get_ref_version_test.dart" />
+      <method v="2" />
+    </configuration>
+    <configuration name="Tests in replace_dependency_test.dart" type="DartTestRunConfigurationType" factoryName="Dart Test" temporary="true" nameIsGenerated="true">
+      <option name="filePath" value="$PROJECT_DIR$/test/replace_dependency_test.dart" />
+      <option name="testName" value="replace_dependency_test.dart" />
+      <method v="2" />
+    </configuration>
+    <configuration name="Tests in set_ref_version_test.dart" type="DartTestRunConfigurationType" factoryName="Dart Test" temporary="true" nameIsGenerated="true">
+      <option name="filePath" value="$PROJECT_DIR$/test/commands/set_ref_version_test.dart" />
+      <option name="testName" value="set_ref_version_test.dart" />
+      <method v="2" />
+    </configuration>
     <recent_temporary>
       <list>
-        <item itemvalue="Dart Command Line App.gg_localize_refs.dart" />
+        <item itemvalue="Dart Test.Tests in set_ref_version_test.dart" />
+        <item itemvalue="Dart Test.Tests in replace_dependency_test.dart" />
+        <item itemvalue="Dart Test.Tests in get_ref_version_test.dart" />
         <item itemvalue="Dart Test.Local Command in local_test.dart" />
+        <item itemvalue="Dart Command Line App.gg_localize_refs.dart" />
       </list>
     </recent_temporary>
   </component>
@@ -95,7 +113,6 @@
     <attachedChunks>
       <set>
         <option value="bundled-jdk-9823dce3aa75-a94e463ab2e7-intellij.indexing.shared.core-IU-243.25659.59" />
-        <option value="bundled-js-predefined-d6986cc7102b-1632447f56bf-JavaScript-IU-243.25659.59" />
       </set>
     </attachedChunks>
   </component>
@@ -118,7 +135,7 @@
       <workItem from="1749230089872" duration="5054000" />
       <workItem from="1749547791521" duration="3733000" />
       <workItem from="1753685593768" duration="415000" />
-      <workItem from="1753876656331" duration="2558000" />
+      <workItem from="1754580285004" duration="4722000" />
     </task>
     <task id="LOCAL-00001" summary="add tests for git option">
       <option name="closed" value="true" />
@@ -136,15 +153,23 @@
       <option name="project" value="LOCAL" />
       <updated>1749234313155</updated>
     </task>
-    <task id="LOCAL-00003" summary="gg_local_package_dependencies git dependency">
+    <task id="LOCAL-00003" summary="add get-ref-version and set-ref-version commands">
       <option name="closed" value="true" />
-      <created>1753876780455</created>
+      <created>1754582579501</created>
       <option name="number" value="00003" />
       <option name="presentableId" value="LOCAL-00003" />
       <option name="project" value="LOCAL" />
-      <updated>1753876780455</updated>
+      <updated>1754582579501</updated>
     </task>
-    <option name="localTasksCounter" value="4" />
+    <task id="LOCAL-00004" summary="improved replacement in set_ref_version">
+      <option name="closed" value="true" />
+      <created>1754584853925</created>
+      <option name="number" value="00004" />
+      <option name="presentableId" value="LOCAL-00004" />
+      <option name="project" value="LOCAL" />
+      <updated>1754584853925</updated>
+    </task>
+    <option name="localTasksCounter" value="5" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -152,8 +177,9 @@
   </component>
   <component name="VcsManagerConfiguration">
     <MESSAGE value="add tests for git option" />
-    <MESSAGE value="gg_local_package_dependencies git dependency" />
-    <option name="LAST_COMMIT_MESSAGE" value="gg_local_package_dependencies git dependency" />
+    <MESSAGE value="add get-ref-version and set-ref-version commands" />
+    <MESSAGE value="improved replacement in set_ref_version" />
+    <option name="LAST_COMMIT_MESSAGE" value="improved replacement in set_ref_version" />
   </component>
   <component name="XSLT-Support.FileAssociations.UIState">
     <expand />

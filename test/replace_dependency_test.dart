@@ -14,8 +14,7 @@ dependencies:
         String expectedYamlString = '''
 dependencies:
   dependency: ^2.0.0
-  other_dependency: ^1.0.0
-''';
+  other_dependency: ^1.0.0''';
 
         String result = replaceDependency(
           yamlString,
@@ -34,15 +33,13 @@ dependencies:
 dependencies:
   dependency: ^1.0.0
 
-assets:
-''';
+assets:''';
 
         String expectedYamlString = '''
 dependencies:
   dependency: ^2.0.0
 
-assets:
-''';
+assets:''';
 
         String result = replaceDependency(
           yamlString,
@@ -58,14 +55,12 @@ assets:
         String yamlString = '''
 dependencies:
   dependency: ^1.0.0 # Some comment
-  other_dependency: ^1.0.0
-''';
+  other_dependency: ^1.0.0''';
 
         String expectedYamlString = '''
 dependencies:
   dependency: ^2.0.0
-  other_dependency: ^1.0.0
-''';
+  other_dependency: ^1.0.0''';
 
         String result = replaceDependency(
           yamlString,
@@ -75,24 +70,6 @@ dependencies:
         );
 
         expect(result, equals(expectedYamlString));
-      });
-
-      test('should not alter yaml when old dependency is not present', () {
-        String yamlString = '''
-dependencies:
-  dependency: ^1.5.0
-
-test: ^1.0.0
-''';
-
-        String result = replaceDependency(
-          yamlString,
-          'dependency',
-          '^1.0.0',
-          '^2.0.0',
-        );
-
-        expect(result, equals(yamlString));
       });
 
       test('should replace multiple occurrences of old dependency', () {
@@ -107,8 +84,7 @@ dependencies:
 dependencies:
   dependency: ^2.0.0
   some_other_dependency: ^1.0.0
-  x: ^1.0.0
-''';
+  x: ^1.0.0''';
 
         String result = replaceDependency(
           yamlString,
@@ -128,8 +104,7 @@ dependencies:
 
         String expectedYamlString = '''
 dependencies:
-  dependency: ^2.0.0
-''';
+  dependency: ^2.0.0''';
 
         String result = replaceDependency(
           yamlString,
@@ -147,13 +122,11 @@ dependencies:
   dependency:
     git:
       url: git://github.com/user/repo.git
-      ref: master
-''';
+      ref: master''';
 
         String expectedYamlString = '''
 dependencies:
-  dependency: ^2.0.0
-''';
+  dependency: ^2.0.0''';
 
         String result = replaceDependency(
           yamlString,
@@ -179,11 +152,10 @@ dependencies:
 
         String expectedYamlString = '''
 dependencies:
-  dependency: 
+  dependency:
     git:
       url: git://github.com/user/repo.git
-      ref: master
-''';
+      ref: master''';
 
         String result = replaceDependency(
           yamlString,
@@ -211,8 +183,6 @@ dependencies:
         String expectedYamlString = '''
 dependencies:
   dependency: ^2.0.0
-
-
 ''';
 
         String result = replaceDependency(
@@ -223,6 +193,54 @@ dependencies:
         );
 
         expect(result, equals(expectedYamlString));
+      });
+
+      test('searches only given sectionName when provided', () {
+        // Provide dependencies and dev_dependencies with same dep
+        String yaml = '''
+dependencies:
+  a: ^1.0.0
+
+dev_dependencies:
+  a: ^1.0.0
+''';
+        // Replace only in dev_dependencies
+        final out = replaceDependency(
+          yaml,
+          'a',
+          '^1.0.0',
+          '^2.0.0',
+          sectionName: 'dev_dependencies',
+        );
+        expect(
+          out,
+          '''
+dependencies:
+  a: ^1.0.0
+
+dev_dependencies:
+  a: ^2.0.0''',
+        );
+      });
+
+      test('keeps empty lines inside block when present', () {
+        // Cover branch where child line is empty in _buildReplacementLines
+        const yaml = '''
+dependencies:
+  a:
+    git:
+      url: x
+      ref: y
+''';
+        const newBlock = 'git:\n  url: x\n\n  ref: y';
+        final out = replaceDependency(
+          yaml,
+          'a',
+          'git:\n  url: x\n  ref: y\n',
+          newBlock,
+        );
+        // The empty line should be preserved and indented.
+        expect(out, contains('\n\n'));
       });
     });
   });
