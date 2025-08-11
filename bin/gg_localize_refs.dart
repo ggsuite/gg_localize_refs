@@ -10,10 +10,7 @@ import 'package:gg_log/gg_log.dart';
 import 'package:gg_localize_refs/gg_localize_refs.dart';
 
 // .............................................................................
-Future<void> run({
-  required List<String> args,
-  required GgLog ggLog,
-}) =>
+Future<void> run({required List<String> args, required GgLog ggLog}) =>
     GgCommandRunner(
       ggLog: ggLog,
       command: GgToLocal(ggLog: ggLog),
@@ -21,8 +18,5 @@ Future<void> run({
 
 // .............................................................................
 Future<void> main(List<String> args) async {
-  await run(
-    args: args,
-    ggLog: print,
-  );
+  await run(args: args, ggLog: print);
 }

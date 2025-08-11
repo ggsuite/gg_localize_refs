@@ -14,9 +14,9 @@ void main() {
   group('.vscode/launch.json', () {
     test('pathes in launch.json', () {
       const String launchJsonPath = '.vscode/launch.json';
-      final String launchJson = File(launchJsonPath)
-          .readAsStringSync()
-          .replaceAll(RegExp(r'//.*'), '');
+      final String launchJson = File(
+        launchJsonPath,
+      ).readAsStringSync().replaceAll(RegExp(r'//.*'), '');
 
       final parsedLaunchJson = jsonDecode(launchJson) as Map<String, dynamic>;
 

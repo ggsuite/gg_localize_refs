@@ -24,12 +24,11 @@ import 'package:path/path.dart' as p;
 /// An example command
 class UnlocalizeRefs extends DirCommand<dynamic> {
   /// Constructor
-  UnlocalizeRefs({
-    required super.ggLog,
-  }) : super(
-          name: 'unlocalize-refs',
-          description: 'Changes dependencies to remote dependencies.',
-        );
+  UnlocalizeRefs({required super.ggLog})
+    : super(
+        name: 'unlocalize-refs',
+        description: 'Changes dependencies to remote dependencies.',
+      );
 
   // ...........................................................................
   @override
@@ -69,8 +68,9 @@ class UnlocalizeRefs extends DirCommand<dynamic> {
     bool hasLocalDependencies = false;
 
     for (MapEntry<String, Node> dependency in node.dependencies.entries) {
-      String oldDependencyYaml =
-          yamlToString(getDependency(dependency.key, yamlMap));
+      String oldDependencyYaml = yamlToString(
+        getDependency(dependency.key, yamlMap),
+      );
 
       if (oldDependencyYaml.contains('path:') ||
           oldDependencyYaml.contains('git:')) {
@@ -115,8 +115,9 @@ class UnlocalizeRefs extends DirCommand<dynamic> {
         continue;
       }
 
-      String newDependencyYaml =
-          yamlToString(savedDependencies[dependencyName]);
+      String newDependencyYaml = yamlToString(
+        savedDependencies[dependencyName],
+      );
 
       newPubspecContent = replaceDependency(
         newPubspecContent,

@@ -16,17 +16,13 @@ import 'package:yaml/yaml.dart';
 /// Command that reads the current version/spec of a dependency from pubspec.yaml
 class GetRefVersion extends DirCommand<dynamic> {
   /// Constructor
-  GetRefVersion({
-    required super.ggLog,
-  }) : super(
-          name: 'get-ref-version',
-          description:
-              'Reads the current version/spec of a dependency from pubspec.yaml.',
-        ) {
-    argParser.addOption(
-      'ref',
-      help: 'The dependency name to read.',
-    );
+  GetRefVersion({required super.ggLog})
+    : super(
+        name: 'get-ref-version',
+        description:
+            'Reads the current version/spec of a dependency from pubspec.yaml.',
+      ) {
+    argParser.addOption('ref', help: 'The dependency name to read.');
   }
 
   // ...........................................................................

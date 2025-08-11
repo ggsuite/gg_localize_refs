@@ -25,12 +25,7 @@ void main() {
   });
 
   tearDown(() {
-    deleteDirs([
-      tempDir,
-      tempDir2,
-      tempDirGit,
-      tempGitProject,
-    ]);
+    deleteDirs([tempDir, tempDir2, tempDirGit, tempGitProject]);
   });
 
   group('bin/gg_localize_refs.dart', () {
@@ -95,14 +90,8 @@ void main() {
           args: ['localize-refs', '--git', '--input', tempDirGit.path],
           ggLog: messages.add,
         );
-        expect(
-          messages,
-          isNotEmpty,
-        );
-        expect(
-          messages.join('\n'),
-          contains('No project root found'),
-        );
+        expect(messages, isNotEmpty);
+        expect(messages.join('\n'), contains('No project root found'));
       });
     });
   });

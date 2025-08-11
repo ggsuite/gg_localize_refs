@@ -14,12 +14,11 @@ import 'package:pubspec_parse/pubspec_parse.dart';
 /// Command that reads the current package version from pubspec.yaml
 class GetVersion extends DirCommand<dynamic> {
   /// Constructor
-  GetVersion({
-    required super.ggLog,
-  }) : super(
-          name: 'get-version',
-          description: 'Reads the current package version from pubspec.yaml.',
-        );
+  GetVersion({required super.ggLog})
+    : super(
+        name: 'get-version',
+        description: 'Reads the current package version from pubspec.yaml.',
+      );
 
   // ...........................................................................
   @override

@@ -20,7 +20,8 @@ Future<void> processProject(
     Node node,
     Directory projectDir,
     FileChangesBuffer fileChangesBuffer,
-  ) modifyFunction,
+  )
+  modifyFunction,
   FileChangesBuffer fileChangesBuffer,
   GgLog ggLog,
 ) async {
@@ -77,7 +78,8 @@ Future<void> processNode(
     Node node,
     Directory projectDir,
     FileChangesBuffer fileChangesBuffer,
-  ) modifyFunction,
+  )
+  modifyFunction,
   FileChangesBuffer fileChangesBuffer,
 ) async {
   projectDir = correctDir(projectDir);
@@ -131,11 +133,13 @@ Future<void> processNode(
 /// Helper method to correct a directory
 Directory correctDir(Directory directory) {
   if (directory.path.endsWith('\\.') || directory.path.endsWith('/.')) {
-    directory =
-        Directory(directory.path.substring(0, directory.path.length - 2));
+    directory = Directory(
+      directory.path.substring(0, directory.path.length - 2),
+    );
   } else if (directory.path.endsWith('\\') || directory.path.endsWith('/')) {
-    directory =
-        Directory(directory.path.substring(0, directory.path.length - 1));
+    directory = Directory(
+      directory.path.substring(0, directory.path.length - 1),
+    );
   }
   return directory;
 }

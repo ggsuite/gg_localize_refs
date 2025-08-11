@@ -27,11 +27,7 @@ void main() {
   });
 
   tearDown(() {
-    deleteDirs(
-      [
-        tempDir,
-      ],
-    );
+    deleteDirs([tempDir]);
   });
 
   group('GgToLocal()', () {
@@ -58,10 +54,7 @@ void main() {
             tempDir.path,
           ]),
         );
-        expect(
-          messages,
-          contains('Running localize-refs in ${tempDir.path}'),
-        );
+        expect(messages, contains('Running localize-refs in ${tempDir.path}'));
       });
 
       // .......................................................................

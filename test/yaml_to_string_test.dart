@@ -20,10 +20,7 @@ void main() {
     test('should convert a Map with nested Map', () {
       final node = {
         'key1': 'value1',
-        'key2': {
-          'nestedKey1': 'nestedValue1',
-          'nestedKey2': 'nestedValue2',
-        },
+        'key2': {'nestedKey1': 'nestedValue1', 'nestedKey2': 'nestedValue2'},
       };
       final result = yamlToString(node);
       const expected = '''
@@ -86,9 +83,7 @@ key2:
           {'nestedKey1': 'nestedValue1'},
           ['subItem1', 'subItem2'],
         ],
-        'key3': {
-          'key4': 'value4',
-        },
+        'key3': {'key4': 'value4'},
       };
       final result = yamlToString(node);
       const expected = '''
@@ -189,9 +184,7 @@ key2:
       final node = {
         'level1': {
           'level2': {
-            'level3': {
-              'level4': 'deepValue',
-            },
+            'level3': {'level4': 'deepValue'},
           },
         },
       };

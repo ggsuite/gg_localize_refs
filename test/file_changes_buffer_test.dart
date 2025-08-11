@@ -4,19 +4,21 @@ import 'package:test/test.dart';
 
 void main() {
   group('FileChanges', () {
-    test('should create a FileChanges instance with given file and content',
-        () {
-      // Arrange
-      final file = File('test.txt');
-      const content = 'Hello, World!';
+    test(
+      'should create a FileChanges instance with given file and content',
+      () {
+        // Arrange
+        final file = File('test.txt');
+        const content = 'Hello, World!';
 
-      // Act
-      final fileChange = FileChanges(file, content);
+        // Act
+        final fileChange = FileChanges(file, content);
 
-      // Assert
-      expect(fileChange.file, equals(file));
-      expect(fileChange.content, equals(content));
-    });
+        // Assert
+        expect(fileChange.file, equals(file));
+        expect(fileChange.content, equals(content));
+      },
+    );
   });
 
   group('FileChangesBuffer', () {
@@ -113,14 +115,10 @@ void main() {
 
       test('should handle empty buffer gracefully', () async {
         // Act & Assert
-        expect(
-          () async => await buffer.apply(),
-          returnsNormally,
-        );
+        expect(() async => await buffer.apply(), returnsNormally);
       });
 
-      test(
-          'should overwrite previous content for '
+      test('should overwrite previous content for '
           'the same file if added multiple times', () async {
         // Arrange
         final file = File('${tempDir.path}/test.txt');
@@ -138,8 +136,9 @@ void main() {
         // Arrange
         final file1 = File('${tempDir.path}/test1.txt');
         const content1 = 'Content 1';
-        final file2 =
-            File('/root/test2.txt'); // Assume insufficient permissions
+        final file2 = File(
+          '/root/test2.txt',
+        ); // Assume insufficient permissions
         buffer.add(file1, content1);
         buffer.add(file2, 'Content 2');
 
@@ -165,9 +164,7 @@ void main() {
         final order = <String>[];
         final file1 = File('${tempDir.path}/test1.txt');
         final file2 = File('${tempDir.path}/test2.txt');
-        buffer = FileChangesBufferMock(
-          onWrite: (file) => order.add(file.path),
-        );
+        buffer = FileChangesBufferMock(onWrite: (file) => order.add(file.path));
         buffer.add(file1, 'Content 1');
         buffer.add(file2, 'Content 2');
 
@@ -178,22 +175,24 @@ void main() {
         expect(order, [file1.path, file2.path]);
       });
 
-      test('should retain buffer contents after apply if not cleared',
-          () async {
-        // Arrange
-        final file = File('${tempDir.path}/test.txt');
-        buffer.add(file, 'Content');
+      test(
+        'should retain buffer contents after apply if not cleared',
+        () async {
+          // Arrange
+          final file = File('${tempDir.path}/test.txt');
+          buffer.add(file, 'Content');
 
-        // Act
-        await buffer.apply();
-        await buffer.apply();
+          // Act
+          await buffer.apply();
+          await buffer.apply();
 
-        // Assert
-        // Since the buffer is not cleared, the file should be written twice
-        // We can check file system operations or
-        // assume the content remains the same
-        expect(await file.readAsString(), equals('Content'));
-      });
+          // Assert
+          // Since the buffer is not cleared, the file should be written twice
+          // We can check file system operations or
+          // assume the content remains the same
+          expect(await file.readAsString(), equals('Content'));
+        },
+      );
     });
   });
 }

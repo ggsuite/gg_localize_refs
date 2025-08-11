@@ -39,20 +39,14 @@ class FileChangesBuffer {
   /// it will be deleted before writing the new content.
   Future<void> apply() async {
     for (final fileChange in files) {
-      await _writeToFile(
-        content: fileChange.content,
-        file: fileChange.file,
-      );
+      await _writeToFile(content: fileChange.content, file: fileChange.file);
     }
   }
 }
 
 // ...........................................................................
 /// Helper method to write content to a file
-Future<void> _writeToFile({
-  required String content,
-  required File file,
-}) async {
+Future<void> _writeToFile({required String content, required File file}) async {
   if (await file.exists()) {
     await file.delete();
   }

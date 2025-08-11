@@ -23,20 +23,25 @@ void main() {
 
   setUp(() async {
     messages.clear();
-    runner =
-        CommandRunner<void>('unlocalize', 'Description of unlocalize command.');
+    runner = CommandRunner<void>(
+      'unlocalize',
+      'Description of unlocalize command.',
+    );
     final myCommand = UnlocalizeRefs(ggLog: messages.add);
     runner.addCommand(myCommand);
 
-    dNoProjectRootError =
-        createTempDir('unlocalize_no_project_root_error', 'project1');
+    dNoProjectRootError = createTempDir(
+      'unlocalize_no_project_root_error',
+      'project1',
+    );
     dParseError = createTempDir('unlocalize_parse_error', 'project1');
     dNoDependencies = createTempDir('unlocalize_no_dependencies', 'project1');
     dNodeNotFound = createTempDir('unlocalize_node_not_found', 'project1');
     dJsonNotFound = createTempDir('unlocalize_json_not_found', 'project1');
     dWorkspaceSucceed = createTempDir('unlocalize_succeed');
-    dWorkspaceAlreadyUnlocalized =
-        createTempDir('unlocalize_already_unlocalized');
+    dWorkspaceAlreadyUnlocalized = createTempDir(
+      'unlocalize_already_unlocalized',
+    );
   });
 
   tearDown(() {
@@ -58,9 +63,7 @@ void main() {
         test('when called args=[--help]', () async {
           capturePrint(
             ggLog: messages.add,
-            code: () => runner.run(
-              ['unlocalize-refs', '--help'],
-            ),
+            code: () => runner.run(['unlocalize-refs', '--help']),
           );
 
           expect(
@@ -74,9 +77,11 @@ void main() {
       group('should throw', () {
         test('when project root was not found', () async {
           await expectLater(
-            runner.run(
-              ['unlocalize-refs', '--input', dNoProjectRootError.path],
-            ),
+            runner.run([
+              'unlocalize-refs',
+              '--input',
+              dNoProjectRootError.path,
+            ]),
             throwsA(
               isA<Exception>().having(
                 (e) => e.toString(),
@@ -90,13 +95,12 @@ void main() {
         group('when pubspec.yaml cannot be parsed', () {
           test('when calling command', () async {
             // Create a pubspec.yaml with invalid content in tempDir
-            File(join(dParseError.path, 'pubspec.yaml'))
-                .writeAsStringSync('invalid yaml');
+            File(
+              join(dParseError.path, 'pubspec.yaml'),
+            ).writeAsStringSync('invalid yaml');
 
             await expectLater(
-              runner.run(
-                ['unlocalize-refs', '--input', dParseError.path],
-              ),
+              runner.run(['unlocalize-refs', '--input', dParseError.path]),
               throwsA(
                 isA<Exception>().having(
                   (e) => e.toString(),
@@ -147,10 +151,12 @@ void main() {
 
       group('should succeed', () {
         test('when pubspec is correct', () async {
-          Directory dProject1 =
-              Directory(join(dWorkspaceSucceed.path, 'project1'));
-          Directory dProject2 =
-              Directory(join(dWorkspaceSucceed.path, 'project2'));
+          Directory dProject1 = Directory(
+            join(dWorkspaceSucceed.path, 'project1'),
+          );
+          Directory dProject2 = Directory(
+            join(dWorkspaceSucceed.path, 'project2'),
+          );
 
           createDirs([dProject1, dProject2]);
 
@@ -162,8 +168,9 @@ dependencies:
     path: ../project2''',
           );
 
-          File(join(dProject1.path, '.gg_localize_refs_backup.json'))
-              .writeAsStringSync('{"test2":"^2.0.4"}');
+          File(
+            join(dProject1.path, '.gg_localize_refs_backup.json'),
+          ).writeAsStringSync('{"test2":"^2.0.4"}');
 
           File(join(dProject2.path, 'pubspec.yaml')).writeAsStringSync(
             '''name: test2
@@ -175,22 +182,22 @@ version: 1.0.0''',
           await unlocal.get(directory: dProject1, ggLog: messages.add);
 
           expect(messages[0], contains('Running unlocalize-refs in'));
-          expect(
-            messages[1],
-            contains('Unlocalize refs of test1'),
-          );
+          expect(messages[1], contains('Unlocalize refs of test1'));
 
           // Check if publish_to: none was removed
-          final resultYaml =
-              File(join(dProject1.path, 'pubspec.yaml')).readAsStringSync();
+          final resultYaml = File(
+            join(dProject1.path, 'pubspec.yaml'),
+          ).readAsStringSync();
           expect(resultYaml, isNot(contains('publish_to: none')));
         });
 
         test('when pubspec is correct and has git refs', () async {
-          Directory dProject1 =
-              Directory(join(dWorkspaceSucceed.path, 'project1'));
-          Directory dProject2 =
-              Directory(join(dWorkspaceSucceed.path, 'project2'));
+          Directory dProject1 = Directory(
+            join(dWorkspaceSucceed.path, 'project1'),
+          );
+          Directory dProject2 = Directory(
+            join(dWorkspaceSucceed.path, 'project2'),
+          );
 
           createDirs([dProject1, dProject2]);
 
@@ -198,29 +205,29 @@ version: 1.0.0''',
             '''name: test1\nversion: 1.0.0\ndependencies:\n  test2:\n    git: git_test''',
           );
 
-          File(join(dProject1.path, '.gg_localize_refs_backup.json'))
-              .writeAsStringSync('{"test2":"^2.0.4"}');
+          File(
+            join(dProject1.path, '.gg_localize_refs_backup.json'),
+          ).writeAsStringSync('{"test2":"^2.0.4"}');
 
-          File(join(dProject2.path, 'pubspec.yaml')).writeAsStringSync(
-            '''name: test2\nversion: 1.0.0''',
-          );
+          File(
+            join(dProject2.path, 'pubspec.yaml'),
+          ).writeAsStringSync('''name: test2\nversion: 1.0.0''');
 
           final messages = <String>[];
           UnlocalizeRefs unlocal = UnlocalizeRefs(ggLog: messages.add);
           await unlocal.get(directory: dProject1, ggLog: messages.add);
 
           expect(messages[0], contains('Running unlocalize-refs in'));
-          expect(
-            messages[1],
-            contains('Unlocalize refs of test1'),
-          );
+          expect(messages[1], contains('Unlocalize refs of test1'));
         });
 
         test('when already localized', () async {
-          Directory dProject1 =
-              Directory(join(dWorkspaceAlreadyUnlocalized.path, 'project1'));
-          Directory dProject2 =
-              Directory(join(dWorkspaceAlreadyUnlocalized.path, 'project2'));
+          Directory dProject1 = Directory(
+            join(dWorkspaceAlreadyUnlocalized.path, 'project1'),
+          );
+          Directory dProject2 = Directory(
+            join(dWorkspaceAlreadyUnlocalized.path, 'project2'),
+          );
 
           createDirs([dProject1, dProject2]);
 
@@ -231,8 +238,9 @@ dependencies:
   test2: ^1.0.0''',
           );
 
-          File(join(dProject1.path, '.gg_localize_refs_backup.json'))
-              .writeAsStringSync('{"test2":"^2.0.4"}');
+          File(
+            join(dProject1.path, '.gg_localize_refs_backup.json'),
+          ).writeAsStringSync('{"test2":"^2.0.4"}');
 
           File(join(dProject2.path, 'pubspec.yaml')).writeAsStringSync(
             '''name: test2
@@ -275,10 +283,7 @@ version: 1.0.0''',
           // The json file .. with old dependencies does not exist.
 
           expect(messages[0], contains('Running unlocalize-refs in'));
-          expect(
-            messages[1],
-            contains('Unlocalize refs of test1'),
-          );
+          expect(messages[1], contains('Unlocalize refs of test1'));
           expect(
             messages[2],
             contains(

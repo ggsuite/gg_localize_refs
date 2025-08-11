@@ -201,10 +201,7 @@ List<String> _buildReplacementLines(String depName, String newDep) {
       indentedChild.add('    $l');
     }
   }
-  return [
-    '  $depName:',
-    ...indentedChild,
-  ];
+  return ['  $depName:', ...indentedChild];
 }
 
 // ...........................................................................

@@ -16,11 +16,7 @@ void main() {
   });
 
   tearDown(() {
-    deleteDirs(
-      [
-        dWorkspaceSucceed,
-      ],
-    );
+    deleteDirs([dWorkspaceSucceed]);
   });
 
   group('Process dependencies', () {
@@ -106,10 +102,12 @@ void main() {
       });
 
       test('succeeds', () async {
-        Directory dProject1 =
-            Directory(join(dWorkspaceSucceed.path, 'project1'));
-        Directory dProject2 =
-            Directory(join(dWorkspaceSucceed.path, 'project2'));
+        Directory dProject1 = Directory(
+          join(dWorkspaceSucceed.path, 'project1'),
+        );
+        Directory dProject2 = Directory(
+          join(dWorkspaceSucceed.path, 'project2'),
+        );
 
         createDirs([dProject1, dProject2]);
 
@@ -161,14 +159,8 @@ dependencies:
     group('Helper methods', () {
       group('correctDir()', () {
         test('succeeds', () {
-          expect(
-            correctDir(Directory('test/')).path,
-            'test',
-          );
-          expect(
-            correctDir(Directory('test/.')).path,
-            'test',
-          );
+          expect(correctDir(Directory('test/')).path, 'test');
+          expect(correctDir(Directory('test/.')).path, 'test');
         });
       });
 
@@ -205,9 +197,9 @@ dependencies:
             'name: p1\nversion: 1.0.0\n'
             'dependencies:\n  p2: ^1.0.0',
           );
-          File(join(p2.path, 'pubspec.yaml')).writeAsStringSync(
-            'name: p2\nversion: 1.0.0',
-          );
+          File(
+            join(p2.path, 'pubspec.yaml'),
+          ).writeAsStringSync('name: p2\nversion: 1.0.0');
 
           // Build graph and use only the root node in the top map so that
           // findNode needs to recurse into dependencies.
@@ -232,9 +224,9 @@ dependencies:
             'name: p1\nversion: 1.0.0\n'
             'dependencies:\n  p2: ^1.0.0',
           );
-          File(join(p2.path, 'pubspec.yaml')).writeAsStringSync(
-            'name: p2\nversion: 1.0.0',
-          );
+          File(
+            join(p2.path, 'pubspec.yaml'),
+          ).writeAsStringSync('name: p2\nversion: 1.0.0');
 
           final graph = Graph(ggLog: (_) {});
           final nodes = await graph.get(directory: ws, ggLog: (_) {});

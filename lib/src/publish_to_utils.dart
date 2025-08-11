@@ -7,8 +7,9 @@
 /// Adds 'publish_to: none' to the YAML string if not present.
 /// Inserts it after the 'version:' line to maintain a logical order.
 String addPublishToNone(String yamlString) {
-  if (yamlString
-      .contains(RegExp(r'^publish_to:\s*none\s*$', multiLine: true))) {
+  if (yamlString.contains(
+    RegExp(r'^publish_to:\s*none\s*$', multiLine: true),
+  )) {
     return yamlString;
   }
 

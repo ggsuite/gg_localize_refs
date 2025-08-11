@@ -21,17 +21,17 @@ import 'package:yaml/yaml.dart';
 /// input directory. It does not traverse a workspace or use project graphs.
 class SetRefVersion extends DirCommand<dynamic> {
   /// Constructor
-  SetRefVersion({
-    required super.ggLog,
-  }) : super(
-          name: 'set-ref-version',
-          description: 'Sets the version/spec of a dependency in pubspec.yaml.',
-        ) {
+  SetRefVersion({required super.ggLog})
+    : super(
+        name: 'set-ref-version',
+        description: 'Sets the version/spec of a dependency in pubspec.yaml.',
+      ) {
     argParser
       ..addOption('ref', help: 'The dependency name to change.')
       ..addOption(
         'version',
-        help: 'The new version/spec. Can be a scalar (e.g., ^1.2.3) '
+        help:
+            'The new version/spec. Can be a scalar (e.g., ^1.2.3) '
             'or a YAML block.',
       );
   }

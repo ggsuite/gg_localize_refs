@@ -34,11 +34,7 @@ void main() {
   });
 
   tearDown(() {
-    deleteDirs([
-      dNoProjectRootError,
-      dParseError,
-      dWorkspace,
-    ]);
+    deleteDirs([dNoProjectRootError, dParseError, dWorkspace]);
   });
 
   group('SetRefVersion', () {
@@ -69,19 +65,15 @@ void main() {
                   'message',
                   contains('pubspec.yaml'),
                 )
-                .having(
-                  (e) => e.toString(),
-                  'message',
-                  contains('not found'),
-                ),
+                .having((e) => e.toString(), 'message', contains('not found')),
           ),
         );
       });
 
       test('when pubspec.yaml cannot be parsed', () async {
-        File(join(dParseError.path, 'pubspec.yaml')).writeAsStringSync(
-          'invalid yaml',
-        );
+        File(
+          join(dParseError.path, 'pubspec.yaml'),
+        ).writeAsStringSync('invalid yaml');
         await expectLater(
           runner.run([
             'set-ref-version',
@@ -109,9 +101,9 @@ void main() {
         File(join(d1.path, 'pubspec.yaml')).writeAsStringSync(
           'name: a1\nversion: 1.0.0\ndependencies:\n  a2: ^1.0.0',
         );
-        File(join(d2.path, 'pubspec.yaml')).writeAsStringSync(
-          'name: a2\nversion: 1.0.0',
-        );
+        File(
+          join(d2.path, 'pubspec.yaml'),
+        ).writeAsStringSync('name: a2\nversion: 1.0.0');
 
         await expectLater(
           runner.run([
@@ -164,13 +156,7 @@ void main() {
           'name: a\nversion: 1.0.0\ndependencies:\n  b: ^1.0.0',
         );
         await expectLater(
-          runner.run([
-            'set-ref-version',
-            '--input',
-            d.path,
-            '--ref',
-            'b',
-          ]),
+          runner.run(['set-ref-version', '--input', d.path, '--ref', 'b']),
           throwsA(
             isA<Exception>().having(
               (e) => e.toString(),
@@ -190,9 +176,9 @@ void main() {
         File(join(d1.path, 'pubspec.yaml')).writeAsStringSync(
           'name: b1\nversion: 1.0.0\ndependencies:\n  b2: ^1.0.0',
         );
-        File(join(d2.path, 'pubspec.yaml')).writeAsStringSync(
-          'name: b2\nversion: 1.0.0',
-        );
+        File(
+          join(d2.path, 'pubspec.yaml'),
+        ).writeAsStringSync('name: b2\nversion: 1.0.0');
 
         await runner.run([
           'set-ref-version',
@@ -214,9 +200,9 @@ void main() {
         File(join(d1.path, 'pubspec.yaml')).writeAsStringSync(
           'name: c1\nversion: 1.0.0\ndependencies:\n  c2: ^1.0.0',
         );
-        File(join(d2.path, 'pubspec.yaml')).writeAsStringSync(
-          'name: c2\nversion: 1.0.0',
-        );
+        File(
+          join(d2.path, 'pubspec.yaml'),
+        ).writeAsStringSync('name: c2\nversion: 1.0.0');
 
         await runner.run([
           'set-ref-version',
@@ -241,9 +227,9 @@ void main() {
         File(join(d1.path, 'pubspec.yaml')).writeAsStringSync(
           'name: d1\nversion: 1.0.0\ndependencies:\n  d2:\n    git:\n      url: git@github.com:user/d2.git\n      ref: main',
         );
-        File(join(d2.path, 'pubspec.yaml')).writeAsStringSync(
-          'name: d2\nversion: 1.0.0',
-        );
+        File(
+          join(d2.path, 'pubspec.yaml'),
+        ).writeAsStringSync('name: d2\nversion: 1.0.0');
 
         await runner.run([
           'set-ref-version',
@@ -266,9 +252,9 @@ void main() {
         File(join(d1.path, 'pubspec.yaml')).writeAsStringSync(
           'name: e1\nversion: 1.0.0\ndependencies:\n  e2:\n    path: ../e2',
         );
-        File(join(d2.path, 'pubspec.yaml')).writeAsStringSync(
-          'name: e2\nversion: 1.0.0',
-        );
+        File(
+          join(d2.path, 'pubspec.yaml'),
+        ).writeAsStringSync('name: e2\nversion: 1.0.0');
 
         await runner.run([
           'set-ref-version',
@@ -291,9 +277,9 @@ void main() {
         File(join(d1.path, 'pubspec.yaml')).writeAsStringSync(
           'name: f1\nversion: 1.0.0\ndev_dependencies:\n  f2: ^1.0.0',
         );
-        File(join(d2.path, 'pubspec.yaml')).writeAsStringSync(
-          'name: f2\nversion: 1.0.0',
-        );
+        File(
+          join(d2.path, 'pubspec.yaml'),
+        ).writeAsStringSync('name: f2\nversion: 1.0.0');
 
         await runner.run([
           'set-ref-version',
@@ -315,9 +301,9 @@ void main() {
         File(join(d1.path, 'pubspec.yaml')).writeAsStringSync(
           'name: g1\nversion: 1.0.0\ndependencies:\n  g2: ^1.0.0',
         );
-        File(join(d2.path, 'pubspec.yaml')).writeAsStringSync(
-          'name: g2\nversion: 1.0.0',
-        );
+        File(
+          join(d2.path, 'pubspec.yaml'),
+        ).writeAsStringSync('name: g2\nversion: 1.0.0');
         messages.clear();
         await runner.run([
           'set-ref-version',

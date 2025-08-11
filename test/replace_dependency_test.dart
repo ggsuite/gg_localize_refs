@@ -26,8 +26,7 @@ dependencies:
         expect(result, equals(expectedYamlString));
       });
 
-      test(
-          'should replace old dependency with new '
+      test('should replace old dependency with new '
           'dependency followed by other identation', () {
         String yamlString = '''
 dependencies:
@@ -128,22 +127,16 @@ dependencies:
 dependencies:
   dependency: ^2.0.0''';
 
-        String result = replaceDependency(
-          yamlString,
-          'dependency',
-          '''
+        String result = replaceDependency(yamlString, 'dependency', '''
 git:
   url: git://github.com/user/repo.git
   ref: master
-''',
-          '^2.0.0',
-        );
+''', '^2.0.0');
 
         expect(result, equals(expectedYamlString));
       });
 
-      test(
-          'should preserve the structure of '
+      test('should preserve the structure of '
           'the yaml file with multiline replacement', () {
         String yamlString = '''
 dependencies:
@@ -171,29 +164,31 @@ git:
         expect(result, equals(expectedYamlString));
       });
 
-      test('should handle dependencies with leading and trailing whitespace',
-          () {
-        String yamlString = '''
+      test(
+        'should handle dependencies with leading and trailing whitespace',
+        () {
+          String yamlString = '''
 dependencies:
   dependency: ^1.0.0  
 
 
 ''';
 
-        String expectedYamlString = '''
+          String expectedYamlString = '''
 dependencies:
   dependency: ^2.0.0
 ''';
 
-        String result = replaceDependency(
-          yamlString,
-          'dependency',
-          '^1.0.0',
-          '^2.0.0',
-        );
+          String result = replaceDependency(
+            yamlString,
+            'dependency',
+            '^1.0.0',
+            '^2.0.0',
+          );
 
-        expect(result, equals(expectedYamlString));
-      });
+          expect(result, equals(expectedYamlString));
+        },
+      );
 
       test('searches only given sectionName when provided', () {
         // Provide dependencies and dev_dependencies with same dep
@@ -212,15 +207,12 @@ dev_dependencies:
           '^2.0.0',
           sectionName: 'dev_dependencies',
         );
-        expect(
-          out,
-          '''
+        expect(out, '''
 dependencies:
   a: ^1.0.0
 
 dev_dependencies:
-  a: ^2.0.0''',
-        );
+  a: ^2.0.0''');
       });
 
       test('keeps empty lines inside block when present', () {

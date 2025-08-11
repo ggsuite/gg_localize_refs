@@ -28,32 +28,33 @@ class LocalizeRefs extends DirCommand<dynamic> {
     String executable,
     List<String> arguments, {
     String? workingDirectory,
-  }) runProcess;
+  })
+  runProcess;
 
   /// Constructor
-  LocalizeRefs({
-    required super.ggLog,
-  }) : super(
-          name: 'localize-refs',
-          description: 'Changes dependencies to local dependencies.',
-        ) {
+  LocalizeRefs({required super.ggLog})
+    : super(
+        name: 'localize-refs',
+        description: 'Changes dependencies to local dependencies.',
+      ) {
     argParser.addFlag(
       'git',
       abbr: 'g',
       negatable: false,
       help: 'Use git references instead of local paths.',
     );
-    runProcess = (
-      String executable,
-      List<String> arguments, {
-      String? workingDirectory,
-    }) {
-      return Process.run(
-        executable,
-        arguments,
-        workingDirectory: workingDirectory,
-      );
-    };
+    runProcess =
+        (
+          String executable,
+          List<String> arguments, {
+          String? workingDirectory,
+        }) {
+          return Process.run(
+            executable,
+            arguments,
+            workingDirectory: workingDirectory,
+          );
+        };
   }
 
   /// Whether to localize to git references
@@ -115,12 +116,10 @@ class LocalizeRefs extends DirCommand<dynamic> {
       ggLog('Localize refs of $packageName');
 
       // copy pubspec.yaml to pubspec.yaml.original
-      File originalPubspec =
-          File('${projectDir.path}/.gg_localize_refs_backup.yaml');
-      await _writeFileCopy(
-        source: pubspec,
-        destination: originalPubspec,
+      File originalPubspec = File(
+        '${projectDir.path}/.gg_localize_refs_backup.yaml',
       );
+      await _writeFileCopy(source: pubspec, destination: originalPubspec);
 
       // Return the updated YAML content
       String newPubspecContent = pubspecContent;
@@ -135,12 +134,16 @@ class LocalizeRefs extends DirCommand<dynamic> {
             .replaceAll('\\', '/');
         dynamic oldDependency = getDependency(dependencyName, yamlMap);
         String oldDependencyYaml = yamlToString(oldDependency);
-        String oldDependencyYamlCompressed =
-            oldDependencyYaml.replaceAll(RegExp(r'[\n\r\t{}]'), '');
+        String oldDependencyYamlCompressed = oldDependencyYaml.replaceAll(
+          RegExp(r'[\n\r\t{}]'),
+          '',
+        );
 
         if (!oldDependencyYamlCompressed.startsWith('path:')) {
-          replacedDependencies[dependencyName] =
-              getDependency(dependencyName, yamlMap);
+          replacedDependencies[dependencyName] = getDependency(
+            dependencyName,
+            yamlMap,
+          );
         }
 
         newPubspecContent = replaceDependency(
@@ -185,12 +188,10 @@ class LocalizeRefs extends DirCommand<dynamic> {
     ggLog('Localize refs of $packageName');
 
     // backup YAML
-    File originalPubspec =
-        File('${projectDir.path}/.gg_localize_refs_backup.yaml');
-    await _writeFileCopy(
-      source: pubspec,
-      destination: originalPubspec,
+    File originalPubspec = File(
+      '${projectDir.path}/.gg_localize_refs_backup.yaml',
     );
+    await _writeFileCopy(source: pubspec, destination: originalPubspec);
     // backup JSON of dependencies
     Map<String, dynamic> replacedDependencies = {};
     for (MapEntry<String, Node> dependency in node.dependencies.entries) {
@@ -199,8 +200,10 @@ class LocalizeRefs extends DirCommand<dynamic> {
       String oldDependencyYaml = yamlToString(oldDependency);
 
       if (!oldDependencyYaml.startsWith('git:')) {
-        replacedDependencies[dependencyName] =
-            getDependency(dependencyName, yamlMap);
+        replacedDependencies[dependencyName] = getDependency(
+          dependencyName,
+          yamlMap,
+        );
       }
     }
     // Backup publish_to
@@ -241,16 +244,13 @@ class LocalizeRefs extends DirCommand<dynamic> {
 
   // ...........................................................................
   /// Get a dependency Yaml for a git repo
-  Future<String> getGitDependencyYaml(
-    Directory depDir,
-    String depName,
-  ) async {
+  Future<String> getGitDependencyYaml(Directory depDir, String depName) async {
     // resolve remote url
-    final resultUrl = await runProcess(
-      'git',
-      ['remote', 'get-url', 'origin'],
-      workingDirectory: depDir.path,
-    );
+    final resultUrl = await runProcess('git', [
+      'remote',
+      'get-url',
+      'origin',
+    ], workingDirectory: depDir.path);
     if (resultUrl.exitCode != 0) {
       throw Exception(
         'Cannot get git remote url for dependency $depName in ${depDir.path}',
@@ -258,11 +258,11 @@ class LocalizeRefs extends DirCommand<dynamic> {
     }
     final url = resultUrl.stdout.toString().trim();
     // resolve branch/ref
-    final resultRef = await runProcess(
-      'git',
-      ['rev-parse', '--abbrev-ref', 'HEAD'],
-      workingDirectory: depDir.path,
-    );
+    final resultRef = await runProcess('git', [
+      'rev-parse',
+      '--abbrev-ref',
+      'HEAD',
+    ], workingDirectory: depDir.path);
     String ref = 'main';
     if (resultRef.exitCode == 0) {
       ref = resultRef.stdout.toString().trim();
@@ -272,10 +272,7 @@ class LocalizeRefs extends DirCommand<dynamic> {
       }
     }
     final gitMap = {
-      'git': {
-        'url': url,
-        'ref': ref,
-      },
+      'git': {'url': url, 'ref': ref},
     };
     // returns YAML string for the dependency
     // The yamlToString expects Map corresponding to a full dependency:

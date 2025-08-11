@@ -34,11 +34,7 @@ void main() {
   });
 
   tearDown(() {
-    deleteDirs([
-      dNoPubspec,
-      dParseError,
-      dWorkspace,
-    ]);
+    deleteDirs([dNoPubspec, dParseError, dWorkspace]);
   });
 
   group('GetRefVersion', () {
@@ -67,19 +63,15 @@ void main() {
                   'message',
                   contains('pubspec.yaml'),
                 )
-                .having(
-                  (e) => e.toString(),
-                  'message',
-                  contains('not found'),
-                ),
+                .having((e) => e.toString(), 'message', contains('not found')),
           ),
         );
       });
 
       test('when pubspec.yaml cannot be parsed', () async {
-        File(join(dParseError.path, 'pubspec.yaml')).writeAsStringSync(
-          'invalid yaml',
-        );
+        File(
+          join(dParseError.path, 'pubspec.yaml'),
+        ).writeAsStringSync('invalid yaml');
         await expectLater(
           runner.run([
             'get-ref-version',
@@ -102,15 +94,11 @@ void main() {
         // Create minimal pubspec so that only --ref validation triggers
         final d = Directory(join(dWorkspace.path, 'missing_ref'));
         createDirs([d]);
-        File(join(d.path, 'pubspec.yaml')).writeAsStringSync(
-          'name: a\nversion: 1.0.0',
-        );
+        File(
+          join(d.path, 'pubspec.yaml'),
+        ).writeAsStringSync('name: a\nversion: 1.0.0');
         await expectLater(
-          runner.run([
-            'get-ref-version',
-            '--input',
-            d.path,
-          ]),
+          runner.run(['get-ref-version', '--input', d.path]),
           throwsA(
             isA<Exception>().having(
               (e) => e.toString(),
@@ -130,9 +118,9 @@ void main() {
         File(join(d1.path, 'pubspec.yaml')).writeAsStringSync(
           'name: p1\nversion: 1.0.0\ndependencies:\n  p2: ^1.2.3',
         );
-        File(join(d2.path, 'pubspec.yaml')).writeAsStringSync(
-          'name: p2\nversion: 1.0.0',
-        );
+        File(
+          join(d2.path, 'pubspec.yaml'),
+        ).writeAsStringSync('name: p2\nversion: 1.0.0');
         messages.clear();
         await runner.run([
           'get-ref-version',
@@ -152,9 +140,9 @@ void main() {
         File(join(d1.path, 'pubspec.yaml')).writeAsStringSync(
           'name: p3\nversion: 1.0.0\ndev_dependencies:\n  p4: ^2.0.0',
         );
-        File(join(d2.path, 'pubspec.yaml')).writeAsStringSync(
-          'name: p4\nversion: 1.0.0',
-        );
+        File(
+          join(d2.path, 'pubspec.yaml'),
+        ).writeAsStringSync('name: p4\nversion: 1.0.0');
         messages.clear();
         await runner.run([
           'get-ref-version',
@@ -173,9 +161,9 @@ void main() {
         File(join(d1.path, 'pubspec.yaml')).writeAsStringSync(
           'name: p5\nversion: 1.0.0\ndependencies:\n  p6:\n    git:\n      url: git@github.com:user/p6.git\n      ref: main',
         );
-        File(join(d2.path, 'pubspec.yaml')).writeAsStringSync(
-          'name: p6\nversion: 1.0.0',
-        );
+        File(
+          join(d2.path, 'pubspec.yaml'),
+        ).writeAsStringSync('name: p6\nversion: 1.0.0');
         messages.clear();
         await runner.run([
           'get-ref-version',
@@ -197,9 +185,9 @@ void main() {
         File(join(d1.path, 'pubspec.yaml')).writeAsStringSync(
           'name: p7\nversion: 1.0.0\ndependencies:\n  p8:\n    path: ../p8',
         );
-        File(join(d2.path, 'pubspec.yaml')).writeAsStringSync(
-          'name: p8\nversion: 1.0.0',
-        );
+        File(
+          join(d2.path, 'pubspec.yaml'),
+        ).writeAsStringSync('name: p8\nversion: 1.0.0');
         messages.clear();
         await runner.run([
           'get-ref-version',
@@ -215,9 +203,9 @@ void main() {
       test('logs warning when dependency not found', () async {
         final d1 = Directory(join(dWorkspace.path, 'p9'));
         createDirs([d1]);
-        File(join(d1.path, 'pubspec.yaml')).writeAsStringSync(
-          'name: p9\nversion: 1.0.0\ndependencies: {}',
-        );
+        File(
+          join(d1.path, 'pubspec.yaml'),
+        ).writeAsStringSync('name: p9\nversion: 1.0.0\ndependencies: {}');
         messages.clear();
         await runner.run([
           'get-ref-version',

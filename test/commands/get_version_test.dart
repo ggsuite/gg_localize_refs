@@ -34,11 +34,7 @@ void main() {
   });
 
   tearDown(() {
-    deleteDirs([
-      dNoPubspec,
-      dParseError,
-      dWorkspace,
-    ]);
+    deleteDirs([dNoPubspec, dParseError, dWorkspace]);
   });
 
   group('GetVersion', () {
@@ -53,11 +49,7 @@ void main() {
     group('should throw', () {
       test('when pubspec.yaml was not found', () async {
         await expectLater(
-          runner.run([
-            'get-version',
-            '--input',
-            dNoPubspec.path,
-          ]),
+          runner.run(['get-version', '--input', dNoPubspec.path]),
           throwsA(
             isA<Exception>()
                 .having(
@@ -65,25 +57,17 @@ void main() {
                   'message',
                   contains('pubspec.yaml'),
                 )
-                .having(
-                  (e) => e.toString(),
-                  'message',
-                  contains('not found'),
-                ),
+                .having((e) => e.toString(), 'message', contains('not found')),
           ),
         );
       });
 
       test('when pubspec.yaml cannot be parsed', () async {
-        File(join(dParseError.path, 'pubspec.yaml')).writeAsStringSync(
-          'invalid yaml',
-        );
+        File(
+          join(dParseError.path, 'pubspec.yaml'),
+        ).writeAsStringSync('invalid yaml');
         await expectLater(
-          runner.run([
-            'get-version',
-            '--input',
-            dParseError.path,
-          ]),
+          runner.run(['get-version', '--input', dParseError.path]),
           throwsA(
             isA<Exception>().having(
               (e) => e.toString(),
@@ -100,18 +84,14 @@ void main() {
         final d1 = Directory(join(dWorkspace.path, 'v1'));
         final d2 = Directory(join(dWorkspace.path, 'v2'));
         createDirs([d1, d2]);
-        File(join(d1.path, 'pubspec.yaml')).writeAsStringSync(
-          'name: v1\nversion: 1.2.3',
-        );
-        File(join(d2.path, 'pubspec.yaml')).writeAsStringSync(
-          'name: v2\nversion: 1.0.0',
-        );
+        File(
+          join(d1.path, 'pubspec.yaml'),
+        ).writeAsStringSync('name: v1\nversion: 1.2.3');
+        File(
+          join(d2.path, 'pubspec.yaml'),
+        ).writeAsStringSync('name: v2\nversion: 1.0.0');
         messages.clear();
-        await runner.run([
-          'get-version',
-          '--input',
-          d1.path,
-        ]);
+        await runner.run(['get-version', '--input', d1.path]);
         expect(messages.first, contains('Running get-version in'));
         expect(messages.last.trim(), '1.2.3');
       });
@@ -119,15 +99,9 @@ void main() {
       test('logs warning when version missing', () async {
         final d = Directory(join(dWorkspace.path, 'v3'));
         createDirs([d]);
-        File(join(d.path, 'pubspec.yaml')).writeAsStringSync(
-          'name: v3',
-        );
+        File(join(d.path, 'pubspec.yaml')).writeAsStringSync('name: v3');
         messages.clear();
-        await runner.run([
-          'get-version',
-          '--input',
-          d.path,
-        ]);
+        await runner.run(['get-version', '--input', d.path]);
         expect(messages.last, contains('No version found'));
       });
     });

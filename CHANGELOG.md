@@ -12,6 +12,7 @@
 - Add tests for process dependencies
 - add .idea to .gitignore
 - Add publish\_to: none when localizing
+- Add .gitattributes file
 
 ### Changed
 

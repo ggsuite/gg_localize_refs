@@ -4,7 +4,7 @@ version: 1.0.0
 repository: https://github.com/inlavigo/gg_localize_refs.git
 
 environment:
-  sdk: ">=3.3.0 <4.0.0"
+  sdk: ">=3.8.0 <4.0.0"
 
 dependencies:
   args: ^2.5.0
@@ -25,4 +25,4 @@ dev_dependencies:
   test: ^1.25.8
 
 executables:
- gg_localize_refs:
+  gg_localize_refs:
