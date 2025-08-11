@@ -129,9 +129,9 @@ class LocalizeRefs extends DirCommand<dynamic> {
       for (MapEntry<String, Node> dependency in node.dependencies.entries) {
         String dependencyName = dependency.key;
         String dependencyPath = dependency.value.directory.path;
-        String relativeDepPath =
-            p.relative(dependencyPath, from: projectDir.path)
-                .replaceAll('\\', '/');
+        String relativeDepPath = p
+            .relative(dependencyPath, from: projectDir.path)
+            .replaceAll('\\', '/');
         dynamic oldDependency = getDependency(dependencyName, yamlMap);
         String oldDependencyYaml = yamlToString(oldDependency);
         String oldDependencyYamlCompressed =

@@ -4,6 +4,7 @@ import 'package:gg_localize_refs/src/file_changes_buffer.dart';
 import 'package:gg_localize_refs/src/process_dependencies.dart';
 import 'package:path/path.dart';
 import 'package:test/test.dart';
+import 'package:gg_local_package_dependencies/gg_local_package_dependencies.dart';
 
 import 'test_helpers.dart';
 
@@ -185,6 +186,64 @@ dependencies:
               ),
             );
           });
+        });
+      });
+
+      group('findNode()', () {
+        test('returns null when nodes is empty', () {
+          final result = findNode(packageName: 'x', nodes: {});
+          expect(result, isNull);
+        });
+
+        test('finds dependency via recursive search', () async {
+          final ws = createTempDir('pd_findnode_ws');
+          final p1 = Directory(join(ws.path, 'p1'));
+          final p2 = Directory(join(ws.path, 'p2'));
+          createDirs([p1, p2]);
+
+          File(join(p1.path, 'pubspec.yaml')).writeAsStringSync(
+            'name: p1\nversion: 1.0.0\n'
+            'dependencies:\n  p2: ^1.0.0',
+          );
+          File(join(p2.path, 'pubspec.yaml')).writeAsStringSync(
+            'name: p2\nversion: 1.0.0',
+          );
+
+          // Build graph and use only the root node in the top map so that
+          // findNode needs to recurse into dependencies.
+          final graph = Graph(ggLog: (_) {});
+          final nodes = await graph.get(directory: ws, ggLog: (_) {});
+          final top = <String, Node>{'p1': nodes['p1']!};
+
+          final found = findNode(packageName: 'p2', nodes: top);
+          expect(found, isNotNull);
+          expect(found!.name, 'p2');
+
+          deleteDirs([ws]);
+        });
+
+        test('returns null when not found recursively', () async {
+          final ws = createTempDir('pd_findnode_ws2');
+          final p1 = Directory(join(ws.path, 'p1'));
+          final p2 = Directory(join(ws.path, 'p2'));
+          createDirs([p1, p2]);
+
+          File(join(p1.path, 'pubspec.yaml')).writeAsStringSync(
+            'name: p1\nversion: 1.0.0\n'
+            'dependencies:\n  p2: ^1.0.0',
+          );
+          File(join(p2.path, 'pubspec.yaml')).writeAsStringSync(
+            'name: p2\nversion: 1.0.0',
+          );
+
+          final graph = Graph(ggLog: (_) {});
+          final nodes = await graph.get(directory: ws, ggLog: (_) {});
+          final top = <String, Node>{'p1': nodes['p1']!};
+
+          final found = findNode(packageName: 'unknown', nodes: top);
+          expect(found, isNull);
+
+          deleteDirs([ws]);
         });
       });
     });
