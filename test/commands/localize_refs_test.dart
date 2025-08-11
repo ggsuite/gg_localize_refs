@@ -182,6 +182,11 @@ void main() {
             messages[1],
             contains('Localize refs of test1'),
           );
+
+          // Check if publish_to: none was added
+          final resultYaml =
+              File(p.join(dProject1.path, 'pubspec.yaml')).readAsStringSync();
+          expect(resultYaml, contains('publish_to: none'));
         });
 
         test('when already localized', () async {
@@ -265,6 +270,7 @@ void main() {
           expect(resultYaml, contains('git:'));
           expect(resultYaml, contains('url: $remoteUrl'));
           expect(resultYaml, contains('ref: main'));
+          expect(resultYaml, contains('publish_to: none'));
 
           // .gg_localize_refs_backup.json
           // should still save the previous version

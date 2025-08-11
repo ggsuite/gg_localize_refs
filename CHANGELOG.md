@@ -11,10 +11,13 @@
 - Add get version command
 - Add tests for process dependencies
 - add .idea to .gitignore
+- Add publish\_to: none when localizing
 
 ### Changed
 
 - Automatic checks
+- Collect all nodes in allNodesMap
+- posix style path
 
 ### Fixed
 

@@ -17,6 +17,7 @@ import 'package:gg_log/gg_log.dart';
 import 'package:gg_localize_refs/src/process_dependencies.dart';
 import 'package:gg_localize_refs/src/replace_dependency.dart';
 import 'package:gg_localize_refs/src/yaml_to_string.dart';
+import 'package:gg_localize_refs/src/publish_to_utils.dart';
 import 'package:path/path.dart' as p;
 
 // #############################################################################
@@ -124,6 +125,9 @@ class UnlocalizeRefs extends DirCommand<dynamic> {
         newDependencyYaml,
       );
     }
+
+    // Restore publish_to
+    newPubspecContent = restorePublishTo(newPubspecContent, savedDependencies);
 
     // write new pubspec.yaml.modified
     File modifiedPubspec = File('${projectDir.path}/pubspec.yaml');
