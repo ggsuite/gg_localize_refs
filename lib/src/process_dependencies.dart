@@ -42,6 +42,28 @@ Future<void> processProject(
 }
 
 // ...........................................................................
+/// Find a node by package name in the dependency graph
+Node? findNode({
+  required String packageName,
+  required Map<String, Node> nodes,
+}) {
+  if (nodes.isEmpty) {
+    return null;
+  }
+  Node? node = nodes[packageName];
+  if (node != null) {
+    return node;
+  }
+  for (Node n in nodes.values) {
+    Node? foundNode = findNode(packageName: packageName, nodes: n.dependencies);
+    if (foundNode != null) {
+      return foundNode;
+    }
+  }
+  return null;
+}
+
+// ...........................................................................
 /// Process the node
 Future<void> processNode(
   Directory projectDir,
@@ -74,7 +96,7 @@ Future<void> processNode(
     return;
   }
 
-  Node? node = nodes[packageName];
+  Node? node = findNode(packageName: packageName, nodes: nodes);
 
   if (node == null) {
     throw Exception('The node for the package $packageName was not found.');

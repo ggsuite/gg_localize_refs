@@ -10,8 +10,9 @@
       "request": "launch",
       "program": "${workspaceFolder}/bin/gg_localize_refs.dart",
       "args": [
-        "--param",
-        "value"
+        "localize-refs",
+        "--input",
+        "P:\\test_workspace\\tickets\\feat_test\\gg_project_root"
       ],
       "console": "debugConsole"
     },

@@ -2,6 +2,7 @@ name: gg_localize_refs
 description: gg_localize_refs allows to switch a local package and its local checkouts to local pathes
 version: 1.0.0
 repository: https://github.com/inlavigo/gg_localize_refs.git
+publish_to: none
 
 environment:
   sdk: ">=3.3.0 <4.0.0"
