@@ -4,9 +4,7 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="7bb7c532-1775-4077-b89c-85e74cd3e219" name="Changes" comment="improved replacement in set_ref_version">
-      <change beforePath="$PROJECT_DIR$/lib/src/commands/localize_refs.dart" beforeDir="false" afterPath="$PROJECT_DIR$/lib/src/commands/localize_refs.dart" afterDir="false" />
-    </list>
+    <list default="true" id="7bb7c532-1775-4077-b89c-85e74cd3e219" name="Changes" comment="improved replacement in set_ref_version" />
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
