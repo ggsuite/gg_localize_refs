@@ -29,10 +29,10 @@ class GetRefVersion extends DirCommand<dynamic> {
   @override
   Future<String?> get({
     required Directory directory,
-    required GgLog ggLog,
+    GgLog? ggLog,
     String? ref,
   }) async {
-    ggLog('Running get-ref-version in ${directory.path}');
+    ggLog?.call('Running get-ref-version in ${directory.path}');
 
     final String? dependencyName = ref ?? (argResults?['ref'] as String?);
     if (dependencyName == null || dependencyName.isEmpty) {
@@ -54,11 +54,11 @@ class GetRefVersion extends DirCommand<dynamic> {
 
       final dynamic value = getDependency2(dependencyName, yamlMap);
       if (value == null) {
-        ggLog(yellow('Dependency $dependencyName not found.'));
+        ggLog?.call(yellow('Dependency $dependencyName not found.'));
         return null;
       }
 
-      ggLog(yamlToString(value).trimRight());
+      ggLog?.call(yamlToString(value).trimRight());
       return yamlToString(value).trimRight();
     } catch (e) {
       throw Exception(red('An error occurred: $e'));

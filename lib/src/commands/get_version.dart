@@ -22,11 +22,8 @@ class GetVersion extends DirCommand<dynamic> {
 
   // ...........................................................................
   @override
-  Future<String?> get({
-    required Directory directory,
-    required GgLog ggLog,
-  }) async {
-    ggLog('Running get-version in ${directory.path}');
+  Future<String?> get({required Directory directory, GgLog? ggLog}) async {
+    ggLog?.call('Running get-version in ${directory.path}');
 
     try {
       final pubspecFile = File('${directory.path}/pubspec.yaml');
@@ -39,11 +36,11 @@ class GetVersion extends DirCommand<dynamic> {
 
       final version = pubspec.version?.toString();
       if (version == null || version.isEmpty) {
-        ggLog(yellow('No version found in pubspec.yaml.'));
+        ggLog?.call(yellow('No version found in pubspec.yaml.'));
         return null;
       }
 
-      ggLog(version);
+      ggLog?.call(version);
       return version;
     } catch (e) {
       throw Exception(red('An error occurred: $e'));

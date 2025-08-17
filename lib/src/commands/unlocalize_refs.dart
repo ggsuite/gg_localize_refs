@@ -32,16 +32,21 @@ class UnlocalizeRefs extends DirCommand<dynamic> {
 
   // ...........................................................................
   @override
-  Future<void> get({required Directory directory, required GgLog ggLog}) async {
-    ggLog('Running unlocalize-refs in ${directory.path}');
+  Future<void> get({required Directory directory, GgLog? ggLog}) async {
+    ggLog?.call('Running unlocalize-refs in ${directory.path}');
 
     FileChangesBuffer fileChangesBuffer = FileChangesBuffer();
 
     try {
-      await processProject(directory, modifyYaml, fileChangesBuffer, ggLog);
+      await processProject(
+        directory: directory,
+        modifyFunction: modifyYaml,
+        fileChangesBuffer: fileChangesBuffer,
+        ggLog: ggLog,
+      );
 
       if (fileChangesBuffer.files.isEmpty) {
-        ggLog(yellow('No files were changed.'));
+        ggLog?.call(yellow('No files were changed.'));
         return;
       }
 

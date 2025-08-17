@@ -40,11 +40,11 @@ class SetRefVersion extends DirCommand<dynamic> {
   @override
   Future<void> get({
     required Directory directory,
-    required GgLog ggLog,
+    required GgLog? ggLog,
     String? ref,
     String? version,
   }) async {
-    ggLog('Running set-ref-version in ${directory.path}');
+    ggLog?.call('Running set-ref-version in ${directory.path}');
 
     final String? dependencyName = ref ?? (argResults?['ref'] as String?);
     final String? newVersion = version ?? (argResults?['version'] as String?);
@@ -86,7 +86,7 @@ class SetRefVersion extends DirCommand<dynamic> {
       );
 
       if (updated == content) {
-        ggLog(yellow('No files were changed.'));
+        ggLog?.call(yellow('No files were changed.'));
         return;
       }
 

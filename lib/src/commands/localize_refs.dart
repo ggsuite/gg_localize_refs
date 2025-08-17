@@ -64,19 +64,24 @@ class LocalizeRefs extends DirCommand<dynamic> {
   @override
   Future<void> get({
     required Directory directory,
-    required GgLog ggLog,
+    GgLog? ggLog,
     bool? git,
   }) async {
-    ggLog('Running localize-refs in ${directory.path}');
+    ggLog?.call('Running localize-refs in ${directory.path}');
     // Use a safe access for argResults
     useGit = git ?? ((argResults?['git'] as bool?) ?? false);
     FileChangesBuffer fileChangesBuffer = FileChangesBuffer();
 
     try {
-      await processProject(directory, modifyYaml, fileChangesBuffer, ggLog);
+      await processProject(
+        directory: directory,
+        modifyFunction: modifyYaml,
+        fileChangesBuffer: fileChangesBuffer,
+        ggLog: ggLog,
+      );
 
       if (fileChangesBuffer.files.isEmpty) {
-        ggLog(yellow('No files were changed.'));
+        ggLog?.call(yellow('No files were changed.'));
         return;
       }
 

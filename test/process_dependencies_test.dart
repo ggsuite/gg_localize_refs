@@ -33,18 +33,19 @@ void main() {
 
           await expectLater(
             processProject(
-              dNoProjectRootError,
-              (
-                packageName,
-                pubspec,
-                pubspecContent,
-                yamlMap,
-                node,
-                projectDir,
-                fileChangesBuffer,
-              ) async {},
-              FileChangesBuffer(),
-              messages.add,
+              directory: dNoProjectRootError,
+              modifyFunction:
+                  (
+                    packageName,
+                    pubspec,
+                    pubspecContent,
+                    yamlMap,
+                    node,
+                    projectDir,
+                    fileChangesBuffer,
+                  ) async {},
+              fileChangesBuffer: FileChangesBuffer(),
+              ggLog: messages.add,
             ),
             throwsA(
               isA<Exception>().having(
@@ -126,32 +127,33 @@ version: 1.0.0''',
         List<String> messages = [];
 
         await processProject(
-          dProject1,
-          (
-            packageName,
-            pubspec,
-            pubspecContent,
-            yamlMap,
-            node,
-            projectDir,
-            fileChangesBuffer,
-          ) async {
-            expect(packageName, 'test1');
-            expect(pubspec.path, endsWith('pubspec.yaml'));
-            expect(pubspecContent, '''name: test1
+          directory: dProject1,
+          modifyFunction:
+              (
+                packageName,
+                pubspec,
+                pubspecContent,
+                yamlMap,
+                node,
+                projectDir,
+                fileChangesBuffer,
+              ) async {
+                expect(packageName, 'test1');
+                expect(pubspec.path, endsWith('pubspec.yaml'));
+                expect(pubspecContent, '''name: test1
 version: 1.0.0
 dependencies:
   test2: ^1.0.0''');
-            expect(yamlMap, {
-              'name': 'test1',
-              'version': '1.0.0',
-              'dependencies': {'test2': '^1.0.0'},
-            });
-            expect(node.name, 'test1');
-            expect(projectDir.path, endsWith('project1'));
-          },
-          FileChangesBuffer(),
-          messages.add,
+                expect(yamlMap, {
+                  'name': 'test1',
+                  'version': '1.0.0',
+                  'dependencies': {'test2': '^1.0.0'},
+                });
+                expect(node.name, 'test1');
+                expect(projectDir.path, endsWith('project1'));
+              },
+          fileChangesBuffer: FileChangesBuffer(),
+          ggLog: messages.add,
         );
       });
     });

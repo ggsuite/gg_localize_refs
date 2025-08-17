@@ -10,9 +10,9 @@ import 'package:pubspec_parse/pubspec_parse.dart';
 import 'package:yaml/yaml.dart';
 
 /// Process the project
-Future<void> processProject(
-  Directory directory,
-  Future<void> Function(
+Future<void> processProject({
+  required Directory directory,
+  required Future<void> Function(
     String packageName,
     File pubspec,
     String pubspecContent,
@@ -22,9 +22,9 @@ Future<void> processProject(
     FileChangesBuffer fileChangesBuffer,
   )
   modifyFunction,
-  FileChangesBuffer fileChangesBuffer,
-  GgLog ggLog,
-) async {
+  required FileChangesBuffer fileChangesBuffer,
+  GgLog? ggLog,
+}) async {
   String? root = await GgProjectRoot.get(directory.absolute.path);
 
   if (root == null) {
@@ -33,7 +33,7 @@ Future<void> processProject(
 
   Directory projectDir = correctDir(Directory(root));
 
-  Graph graph = Graph(ggLog: ggLog);
+  Graph graph = Graph(ggLog: ggLog ?? (_) {});
   Map<String, Node> nodes = await graph.get(
     directory: projectDir.parent,
     ggLog: ggLog,

@@ -19,6 +19,7 @@
 - Automatic checks
 - Collect all nodes in allNodesMap
 - posix style path
+- change ggLog parameter to optional
 
 ### Fixed
 
