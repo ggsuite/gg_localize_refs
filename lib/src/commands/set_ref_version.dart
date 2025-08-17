@@ -40,7 +40,7 @@ class SetRefVersion extends DirCommand<dynamic> {
   @override
   Future<void> get({
     required Directory directory,
-    required GgLog? ggLog,
+    GgLog? ggLog,
     String? ref,
     String? version,
   }) async {
