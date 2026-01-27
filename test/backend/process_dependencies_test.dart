@@ -1,12 +1,12 @@
 import 'dart:io';
 
-import 'package:gg_localize_refs/src/file_changes_buffer.dart';
-import 'package:gg_localize_refs/src/process_dependencies.dart';
+import 'package:gg_localize_refs/src/backend/file_changes_buffer.dart';
+import 'package:gg_localize_refs/src/backend/process_dependencies.dart';
 import 'package:path/path.dart';
 import 'package:test/test.dart';
 import 'package:gg_local_package_dependencies/gg_local_package_dependencies.dart';
 
-import 'test_helpers.dart';
+import '../test_helpers.dart';
 
 void main() {
   Directory dWorkspaceSucceed = Directory('');

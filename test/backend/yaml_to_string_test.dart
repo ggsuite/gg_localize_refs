@@ -1,4 +1,4 @@
-import 'package:gg_localize_refs/src/yaml_to_string.dart';
+import 'package:gg_localize_refs/src/backend/yaml_to_string.dart';
 import 'package:test/test.dart';
 
 void main() {

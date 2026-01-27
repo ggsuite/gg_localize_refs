@@ -1,4 +1,4 @@
-import 'package:gg_localize_refs/src/publish_to_utils.dart';
+import 'package:gg_localize_refs/src/backend/publish_to_utils.dart';
 import 'package:test/test.dart';
 import 'package:yaml/yaml.dart';
 

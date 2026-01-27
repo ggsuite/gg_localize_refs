@@ -3,7 +3,7 @@ import 'dart:io';
 
 import 'package:gg_console_colors/gg_console_colors.dart';
 import 'package:gg_local_package_dependencies/gg_local_package_dependencies.dart';
-import 'package:gg_localize_refs/src/file_changes_buffer.dart';
+import 'package:gg_localize_refs/src/backend/file_changes_buffer.dart';
 import 'package:gg_log/gg_log.dart';
 import 'package:gg_project_root/gg_project_root.dart';
 import 'package:pubspec_parse/pubspec_parse.dart';

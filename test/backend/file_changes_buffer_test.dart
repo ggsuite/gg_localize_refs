@@ -1,5 +1,5 @@
 import 'dart:io';
-import 'package:gg_localize_refs/src/file_changes_buffer.dart';
+import 'package:gg_localize_refs/src/backend/file_changes_buffer.dart';
 import 'package:test/test.dart';
 
 void main() {

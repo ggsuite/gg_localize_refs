@@ -12,12 +12,12 @@ import 'package:gg_args/gg_args.dart';
 import 'package:gg_console_colors/gg_console_colors.dart';
 import 'package:gg_local_package_dependencies/gg_local_package_dependencies.dart';
 import 'package:gg_localize_refs/src/commands/localize_refs.dart';
-import 'package:gg_localize_refs/src/file_changes_buffer.dart';
+import 'package:gg_localize_refs/src/backend/file_changes_buffer.dart';
 import 'package:gg_log/gg_log.dart';
-import 'package:gg_localize_refs/src/process_dependencies.dart';
-import 'package:gg_localize_refs/src/replace_dependency.dart';
-import 'package:gg_localize_refs/src/yaml_to_string.dart';
-import 'package:gg_localize_refs/src/publish_to_utils.dart';
+import 'package:gg_localize_refs/src/backend/process_dependencies.dart';
+import 'package:gg_localize_refs/src/backend/replace_dependency.dart';
+import 'package:gg_localize_refs/src/backend/yaml_to_string.dart';
+import 'package:gg_localize_refs/src/backend/publish_to_utils.dart';
 import 'package:path/path.dart' as p;
 
 // #############################################################################

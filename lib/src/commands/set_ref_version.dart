@@ -9,8 +9,8 @@ import 'dart:io';
 
 import 'package:gg_args/gg_args.dart';
 import 'package:gg_console_colors/gg_console_colors.dart';
-import 'package:gg_localize_refs/src/replace_dependency.dart';
-import 'package:gg_localize_refs/src/yaml_to_string.dart';
+import 'package:gg_localize_refs/src/backend/replace_dependency.dart';
+import 'package:gg_localize_refs/src/backend/yaml_to_string.dart';
 import 'package:gg_log/gg_log.dart';
 import 'package:yaml/yaml.dart';
 
