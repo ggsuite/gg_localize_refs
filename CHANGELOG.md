@@ -20,6 +20,7 @@
 - Collect all nodes in allNodesMap
 - posix style path
 - change ggLog parameter to optional
+- Use sample\_folder for test files
 
 ### Fixed
 

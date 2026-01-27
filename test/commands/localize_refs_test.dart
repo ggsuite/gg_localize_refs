@@ -11,8 +11,8 @@ import 'package:gg_capture_print/gg_capture_print.dart';
 import 'package:gg_localize_refs/src/commands/localize_refs.dart';
 import 'package:gg_localize_refs/src/file_changes_buffer.dart';
 import 'package:gg_localize_refs/src/process_dependencies.dart';
-import 'package:test/test.dart';
 import 'package:path/path.dart' as p;
+import 'package:test/test.dart';
 
 import '../test_helpers.dart';
 
@@ -43,6 +43,29 @@ void main() {
     dWorkspaceAlreadyLocalized = createTempDir('already_localized');
     dGitSucceed = createTempDir('git_succeed');
     dGitNoRepo = createTempDir('git_no_repo');
+
+    copyDirectory(
+      Directory(p.join('test', 'sample_folder', 'localize_refs', 'succeed')),
+      dWorkspaceSucceed,
+    );
+    copyDirectory(
+      Directory(
+        p.join('test', 'sample_folder', 'localize_refs', 'already_localized'),
+      ),
+      dWorkspaceAlreadyLocalized,
+    );
+    copyDirectory(
+      Directory(
+        p.join('test', 'sample_folder', 'localize_refs', 'git_succeed'),
+      ),
+      dGitSucceed,
+    );
+    copyDirectory(
+      Directory(
+        p.join('test', 'sample_folder', 'localize_refs', 'git_no_repo'),
+      ),
+      dGitNoRepo,
+    );
   });
 
   tearDown(() {
@@ -122,7 +145,7 @@ void main() {
             'name: test_package\nversion: 1.0.0\ndependencies:',
           );
 
-          LocalizeRefs loc = LocalizeRefs(ggLog: messages.add);
+          final loc = LocalizeRefs(ggLog: messages.add);
 
           await expectLater(
             processNode(
@@ -153,25 +176,12 @@ void main() {
 
       group('should succeed', () {
         test('when pubspec is correct', () async {
-          Directory dProject1 = Directory(
+          final dProject1 = Directory(
             p.join(dWorkspaceSucceed.path, 'project1'),
           );
-          Directory dProject2 = Directory(
-            p.join(dWorkspaceSucceed.path, 'project2'),
-          );
-
-          createDirs([dProject1, dProject2]);
-
-          File(p.join(dProject1.path, 'pubspec.yaml')).writeAsStringSync(
-            '''name: test1\nversion: 1.0.0\ndependencies:\n  test2: ^1.0.0\ndev_dependencies:\n  test2: ^1.0.0''',
-          );
-
-          File(
-            p.join(dProject2.path, 'pubspec.yaml'),
-          ).writeAsStringSync('''name: test2\nversion: 1.0.0''');
 
           final messages = <String>[];
-          LocalizeRefs local = LocalizeRefs(ggLog: messages.add);
+          final local = LocalizeRefs(ggLog: messages.add);
           await local.get(directory: dProject1, ggLog: messages.add);
 
           expect(messages[0], contains('Running localize-refs in'));
@@ -185,25 +195,12 @@ void main() {
         });
 
         test('when already localized', () async {
-          Directory dProject1 = Directory(
+          final dProject1 = Directory(
             p.join(dWorkspaceAlreadyLocalized.path, 'project1'),
           );
-          Directory dProject2 = Directory(
-            p.join(dWorkspaceAlreadyLocalized.path, 'project2'),
-          );
-
-          createDirs([dProject1, dProject2]);
-
-          File(p.join(dProject1.path, 'pubspec.yaml')).writeAsStringSync(
-            '''name: test1\nversion: 1.0.0\ndependencies:\n  test2:\n    path: ../project2''',
-          );
-
-          File(
-            p.join(dProject2.path, 'pubspec.yaml'),
-          ).writeAsStringSync('''name: test2\nversion: 1.0.0''');
 
           final messages = <String>[];
-          LocalizeRefs local = LocalizeRefs(ggLog: messages.add);
+          final local = LocalizeRefs(ggLog: messages.add);
           await local.get(directory: dProject1, ggLog: messages.add);
 
           expect(messages[0], contains('Running localize-refs in'));
@@ -211,18 +208,8 @@ void main() {
         });
 
         test('with --git option should succeed', () async {
-          Directory dProject1 = Directory(p.join(dGitSucceed.path, 'project1'));
-          Directory dProject2 = Directory(p.join(dGitSucceed.path, 'project2'));
-
-          createDirs([dProject1, dProject2]);
-
-          File(p.join(dProject1.path, 'pubspec.yaml')).writeAsStringSync(
-            '''name: test1\nversion: 1.0.0\ndependencies:\n  test2: ^1.0.0''',
-          );
-
-          File(
-            p.join(dProject2.path, 'pubspec.yaml'),
-          ).writeAsStringSync('''name: test2\nversion: 1.0.0''');
+          final dProject1 = Directory(p.join(dGitSucceed.path, 'project1'));
+          final dProject2 = Directory(p.join(dGitSucceed.path, 'project2'));
 
           // In project2, init a git repo and set remote
           final resultInit = Process.runSync('git', [
@@ -275,19 +262,7 @@ void main() {
         });
 
         test('with --git should throw if repo has no git', () async {
-          Directory dProject1 = Directory(p.join(dGitNoRepo.path, 'project1'));
-          Directory dProject2 = Directory(p.join(dGitNoRepo.path, 'project2'));
-
-          createDirs([dProject1, dProject2]);
-
-          File(p.join(dProject1.path, 'pubspec.yaml')).writeAsStringSync(
-            'name: test1\nversion: 1.0.0\ndependencies:\n  test2: ^1.0.0',
-          );
-          File(
-            p.join(dProject2.path, 'pubspec.yaml'),
-          ).writeAsStringSync('name: test2\nversion: 1.0.0');
-
-          // project2 has no git repo
+          final dProject1 = Directory(p.join(dGitNoRepo.path, 'project1'));
 
           // Should throw meaningful error
           await runner
@@ -500,6 +475,6 @@ class FakeLocalizeRefs extends LocalizeRefs {
 
   /// Exposes the getGitDependencyYaml method for testing
   Future<String> rawGitDependencyYaml(Directory dir, String depName) async {
-    return await getGitDependencyYaml(dir, depName);
+    return getGitDependencyYaml(dir, depName);
   }
 }

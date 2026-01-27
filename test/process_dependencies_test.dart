@@ -13,6 +13,10 @@ void main() {
 
   setUp(() async {
     dWorkspaceSucceed = createTempDir('pd_succeed');
+    final source = Directory(
+      join('test', 'sample_folder', 'process_dependencies', 'succeed'),
+    );
+    copyDirectory(source, dWorkspaceSucceed);
   });
 
   tearDown(() {
@@ -23,13 +27,13 @@ void main() {
     group('processProject()', () {
       group('should throw', () {
         test('when project root was not found', () async {
-          Directory dNoProjectRootError = Directory(
+          final dNoProjectRootError = Directory(
             join(dWorkspaceSucceed.path, 'no_project_root_error'),
           );
 
           createDirs([dNoProjectRootError]);
 
-          List<String> messages = [];
+          final messages = <String>[];
 
           await expectLater(
             processProject(
@@ -58,7 +62,7 @@ void main() {
         });
 
         test('when node not found', () async {
-          Directory dNodeNotFound = Directory(
+          final dNodeNotFound = Directory(
             join(dWorkspaceSucceed.path, 'node_not_found'),
           );
 
@@ -103,28 +107,9 @@ void main() {
       });
 
       test('succeeds', () async {
-        Directory dProject1 = Directory(
-          join(dWorkspaceSucceed.path, 'project1'),
-        );
-        Directory dProject2 = Directory(
-          join(dWorkspaceSucceed.path, 'project2'),
-        );
+        final dProject1 = Directory(join(dWorkspaceSucceed.path, 'project1'));
 
-        createDirs([dProject1, dProject2]);
-
-        File(join(dProject1.path, 'pubspec.yaml')).writeAsStringSync(
-          '''name: test1
-version: 1.0.0
-dependencies:
-  test2: ^1.0.0''',
-        );
-
-        File(join(dProject2.path, 'pubspec.yaml')).writeAsStringSync(
-          '''name: test2
-version: 1.0.0''',
-        );
-
-        List<String> messages = [];
+        final messages = <String>[];
 
         await processProject(
           directory: dProject1,
@@ -140,10 +125,11 @@ version: 1.0.0''',
               ) async {
                 expect(packageName, 'test1');
                 expect(pubspec.path, endsWith('pubspec.yaml'));
-                expect(pubspecContent, '''name: test1
-version: 1.0.0
-dependencies:
-  test2: ^1.0.0''');
+                expect(
+                  pubspecContent,
+                  'name: test1\nversion: 1.0.0\n'
+                  'dependencies:\n  test2: ^1.0.0',
+                );
                 expect(yamlMap, {
                   'name': 'test1',
                   'version': '1.0.0',
