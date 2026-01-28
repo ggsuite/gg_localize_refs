@@ -238,22 +238,26 @@ void main() {
         expect(messages.last.trim(), '^1.2.3');
       });
 
-      test('reads from devDependencies when not in dependencies in package.json', () async {
-        final d = Directory(join(dWorkspace.path, 'ts2'));
-        createDirs(<Directory>[d]);
-        File(join(d.path, 'package.json')).writeAsStringSync(
-          '{"name":"ts2","version":"1.0.0","devDependencies":{"dep":"^2.0.0"}}',
-        );
-        messages.clear();
-        await runner.run(<String>[
-          'get-ref-version',
-          '--input',
-          d.path,
-          '--ref',
-          'dep',
-        ]);
-        expect(messages.last.trim(), '^2.0.0');
-      });
+      test(
+        'reads from devDependencies when not in dependencies in package.json',
+        () async {
+          final d = Directory(join(dWorkspace.path, 'ts2'));
+          createDirs(<Directory>[d]);
+          File(join(d.path, 'package.json')).writeAsStringSync(
+            '{"name":"ts2","version":"1.0.0",'
+            '"devDependencies":{"dep":"^2.0.0"}}',
+          );
+          messages.clear();
+          await runner.run(<String>[
+            'get-ref-version',
+            '--input',
+            d.path,
+            '--ref',
+            'dep',
+          ]);
+          expect(messages.last.trim(), '^2.0.0');
+        },
+      );
 
       test('logs warning when dependency not found in package.json', () async {
         final d = Directory(join(dWorkspace.path, 'ts3'));

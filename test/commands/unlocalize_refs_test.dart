@@ -54,8 +54,9 @@ void main() {
 
     dWorkspaceSucceedTs = createTempDir('unlocalize_ts_succeed');
     dWorkspaceSucceedGitTs = createTempDir('unlocalize_ts_succeed_git');
-    dWorkspaceAlreadyUnlocalizedTs =
-        createTempDir('unlocalize_ts_already_unlocalized');
+    dWorkspaceAlreadyUnlocalizedTs = createTempDir(
+      'unlocalize_ts_already_unlocalized',
+    );
     dJsonNotFoundTs = createTempDir('unlocalize_ts_json_not_found');
 
     copyDirectory(
@@ -72,12 +73,7 @@ void main() {
     );
     copyDirectory(
       Directory(
-        join(
-          'test',
-          'sample_folder',
-          'unlocalize_refs',
-          'already_unlocalized',
-        ),
+        join('test', 'sample_folder', 'unlocalize_refs', 'already_unlocalized'),
       ),
       dWorkspaceAlreadyUnlocalized,
     );
@@ -315,18 +311,21 @@ void main() {
           expect(resultJson, contains('"test2_ts":"^2.0.4"'));
         });
 
-        test('TypeScript: when package.json is correct and has git refs', () async {
-          final dProject1 = Directory(
-            join(dWorkspaceSucceedGitTs.path, 'project1'),
-          );
+        test(
+          'TypeScript: when package.json is correct and has git refs',
+          () async {
+            final dProject1 = Directory(
+              join(dWorkspaceSucceedGitTs.path, 'project1'),
+            );
 
-          final localMessages = <String>[];
-          final unlocal = UnlocalizeRefs(ggLog: localMessages.add);
-          await unlocal.get(directory: dProject1, ggLog: localMessages.add);
+            final localMessages = <String>[];
+            final unlocal = UnlocalizeRefs(ggLog: localMessages.add);
+            await unlocal.get(directory: dProject1, ggLog: localMessages.add);
 
-          expect(localMessages[0], contains('Running unlocalize-refs in'));
-          expect(localMessages[1], contains('Unlocalize refs of test1_ts'));
-        });
+            expect(localMessages[0], contains('Running unlocalize-refs in'));
+            expect(localMessages[1], contains('Unlocalize refs of test1_ts'));
+          },
+        );
 
         test('TypeScript: when already localized', () async {
           final dProject1 = Directory(
@@ -341,23 +340,28 @@ void main() {
           expect(localMessages[1], contains('No files were changed'));
         });
 
-        test('TypeScript: when .gg_localize_refs_backup.json does not exist', () async {
-          final localMessages = <String>[];
+        test(
+          'TypeScript: when .gg_localize_refs_backup.json does not exist',
+          () async {
+            final localMessages = <String>[];
 
-          final dProject1 = Directory(join(dJsonNotFoundTs.path, 'project1'));
+            final dProject1 = Directory(join(dJsonNotFoundTs.path, 'project1'));
 
-          final unlocal = UnlocalizeRefs(ggLog: localMessages.add);
+            final unlocal = UnlocalizeRefs(ggLog: localMessages.add);
 
-          await unlocal.get(directory: dProject1, ggLog: localMessages.add);
+            await unlocal.get(directory: dProject1, ggLog: localMessages.add);
 
-          expect(localMessages[0], contains('Running unlocalize-refs in'));
-          expect(localMessages[1], contains('Unlocalize refs of test1_ts'));
-          expect(
-            localMessages[2],
-            contains('The automatic change of dependencies could not be performed'),
-          );
-          expect(localMessages[2], contains('package.json'));
-        });
+            expect(localMessages[0], contains('Running unlocalize-refs in'));
+            expect(localMessages[1], contains('Unlocalize refs of test1_ts'));
+            expect(
+              localMessages[2],
+              contains(
+                'The automatic change of dependencies could not be performed',
+              ),
+            );
+            expect(localMessages[2], contains('package.json'));
+          },
+        );
       });
     });
   });

@@ -40,13 +40,14 @@ void main() {
           await expectLater(
             processProject(
               directory: dNoProjectRootError,
-              modifyFunction: (
-                ProjectNode node,
-                File manifestFile,
-                String manifestContent,
-                dynamic manifestMap,
-                FileChangesBuffer fileChangesBuffer,
-              ) async {},
+              modifyFunction:
+                  (
+                    ProjectNode node,
+                    File manifestFile,
+                    String manifestContent,
+                    dynamic manifestMap,
+                    FileChangesBuffer fileChangesBuffer,
+                  ) async {},
               fileChangesBuffer: FileChangesBuffer(),
               ggLog: messages.add,
             ),
@@ -112,26 +113,27 @@ void main() {
 
         await processProject(
           directory: dProject1,
-          modifyFunction: (
-            ProjectNode node,
-            File manifestFile,
-            String manifestContent,
-            dynamic manifestMap,
-            FileChangesBuffer fileChangesBuffer,
-          ) async {
-            expect(node.name, 'test1');
-            expect(manifestFile.path, endsWith('pubspec.yaml'));
-            expect(
-              manifestContent,
-              'name: test1\nversion: 1.0.0\n'
-              'dependencies:\n  test2: ^1.0.0',
-            );
-            expect(manifestMap, <dynamic, dynamic>{
-              'name': 'test1',
-              'version': '1.0.0',
-              'dependencies': <dynamic, dynamic>{'test2': '^1.0.0'},
-            });
-          },
+          modifyFunction:
+              (
+                ProjectNode node,
+                File manifestFile,
+                String manifestContent,
+                dynamic manifestMap,
+                FileChangesBuffer fileChangesBuffer,
+              ) async {
+                expect(node.name, 'test1');
+                expect(manifestFile.path, endsWith('pubspec.yaml'));
+                expect(
+                  manifestContent,
+                  'name: test1\nversion: 1.0.0\n'
+                  'dependencies:\n  test2: ^1.0.0',
+                );
+                expect(manifestMap, <dynamic, dynamic>{
+                  'name': 'test1',
+                  'version': '1.0.0',
+                  'dependencies': <dynamic, dynamic>{'test2': '^1.0.0'},
+                });
+              },
           fileChangesBuffer: FileChangesBuffer(),
           ggLog: messages.add,
         );
@@ -165,7 +167,10 @@ void main() {
 
       group('findNode()', () {
         test('returns null when nodes is empty', () {
-          final result = findNode(packageName: 'x', nodes: <String, ProjectNode>{});
+          final result = findNode(
+            packageName: 'x',
+            nodes: <String, ProjectNode>{},
+          );
           expect(result, isNull);
         });
 
@@ -179,9 +184,9 @@ void main() {
             'name: p1\nversion: 1.0.0\n'
             'dependencies:\n  p2: ^1.0.0',
           );
-          File(join(p2.path, 'pubspec.yaml')).writeAsStringSync(
-            'name: p2\nversion: 1.0.0',
-          );
+          File(
+            join(p2.path, 'pubspec.yaml'),
+          ).writeAsStringSync('name: p2\nversion: 1.0.0');
 
           final graph = MultiLanguageGraph(
             languages: <ProjectLanguage>[DartProjectLanguage()],
@@ -206,9 +211,9 @@ void main() {
             'name: p1\nversion: 1.0.0\n'
             'dependencies:\n  p2: ^1.0.0',
           );
-          File(join(p2.path, 'pubspec.yaml')).writeAsStringSync(
-            'name: p2\nversion: 1.0.0',
-          );
+          File(
+            join(p2.path, 'pubspec.yaml'),
+          ).writeAsStringSync('name: p2\nversion: 1.0.0');
 
           final graph = MultiLanguageGraph(
             languages: <ProjectLanguage>[DartProjectLanguage()],

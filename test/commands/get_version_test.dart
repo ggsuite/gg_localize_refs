@@ -112,9 +112,9 @@ void main() {
       test('reads version from package.json', () async {
         final d = Directory(join(dWorkspace.path, 'ts1'));
         createDirs(<Directory>[d]);
-        File(join(d.path, 'package.json')).writeAsStringSync(
-          '{"name":"ts1","version":"2.3.4"}',
-        );
+        File(
+          join(d.path, 'package.json'),
+        ).writeAsStringSync('{"name":"ts1","version":"2.3.4"}');
         messages.clear();
         await runner.run(<String>['get-version', '--input', d.path]);
         expect(messages.first, contains('Running get-version in'));
@@ -124,9 +124,7 @@ void main() {
       test('logs warning when version missing in package.json', () async {
         final d = Directory(join(dWorkspace.path, 'ts2'));
         createDirs(<Directory>[d]);
-        File(join(d.path, 'package.json')).writeAsStringSync(
-          '{"name":"ts2"}',
-        );
+        File(join(d.path, 'package.json')).writeAsStringSync('{"name":"ts2"}');
         messages.clear();
         await runner.run(<String>['get-version', '--input', d.path]);
         expect(messages.last, contains('No version found in package.json.'));

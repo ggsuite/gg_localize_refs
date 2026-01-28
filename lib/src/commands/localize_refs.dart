@@ -29,7 +29,8 @@ class LocalizeRefs extends DirCommand<dynamic> {
     String executable,
     List<String> arguments, {
     String? workingDirectory,
-  }) runProcess;
+  })
+  runProcess;
 
   /// Constructor
   LocalizeRefs({required super.ggLog})
@@ -50,17 +51,18 @@ class LocalizeRefs extends DirCommand<dynamic> {
             'Git ref (branch, tag, or commit) '
             'to use when localizing with --git.',
       );
-    runProcess = (
-      String executable,
-      List<String> arguments, {
-      String? workingDirectory,
-    }) {
-      return Process.run(
-        executable,
-        arguments,
-        workingDirectory: workingDirectory,
-      );
-    };
+    runProcess =
+        (
+          String executable,
+          List<String> arguments, {
+          String? workingDirectory,
+        }) {
+          return Process.run(
+            executable,
+            arguments,
+            workingDirectory: workingDirectory,
+          );
+        };
   }
 
   /// Whether to localize to git references
@@ -280,14 +282,12 @@ class LocalizeRefs extends DirCommand<dynamic> {
     Map<String, dynamic> manifestMap,
     FileChangesBuffer fileChangesBuffer,
   ) async {
-    final dependencies =
-        manifestMap['dependencies'] is Map
-            ? (manifestMap['dependencies'] as Map).cast<String, dynamic>()
-            : <String, dynamic>{};
-    final devDependencies =
-        manifestMap['devDependencies'] is Map
-            ? (manifestMap['devDependencies'] as Map).cast<String, dynamic>()
-            : <String, dynamic>{};
+    final dependencies = manifestMap['dependencies'] is Map
+        ? (manifestMap['dependencies'] as Map).cast<String, dynamic>()
+        : <String, dynamic>{};
+    final devDependencies = manifestMap['devDependencies'] is Map
+        ? (manifestMap['devDependencies'] as Map).cast<String, dynamic>()
+        : <String, dynamic>{};
 
     if (!useGit) {
       var hasOnlineDependencies = false;
@@ -386,7 +386,9 @@ class LocalizeRefs extends DirCommand<dynamic> {
       }
     }
 
-    final backupFile = File('${node.directory.path}/.gg_localize_refs_backup.json');
+    final backupFile = File(
+      '${node.directory.path}/.gg_localize_refs_backup.json',
+    );
     await backupFile.writeAsString(jsonEncode(replacedDependencies));
 
     for (final dependency in node.dependencies.entries) {
@@ -450,11 +452,11 @@ class LocalizeRefs extends DirCommand<dynamic> {
     Directory depDir,
     String depName,
   ) async {
-    final resultUrl = await runProcess(
-      'git',
-      <String>['remote', 'get-url', 'origin'],
-      workingDirectory: depDir.path,
-    );
+    final resultUrl = await runProcess('git', <String>[
+      'remote',
+      'get-url',
+      'origin',
+    ], workingDirectory: depDir.path);
     if (resultUrl.exitCode != 0) {
       throw Exception(
         'Cannot get git remote url for dependency $depName in ${depDir.path}',
@@ -465,11 +467,11 @@ class LocalizeRefs extends DirCommand<dynamic> {
     var ref = gitRefOverride?.trim() ?? '';
 
     if (ref.isEmpty) {
-      final resultRef = await runProcess(
-        'git',
-        <String>['rev-parse', '--abbrev-ref', 'HEAD'],
-        workingDirectory: depDir.path,
-      );
+      final resultRef = await runProcess('git', <String>[
+        'rev-parse',
+        '--abbrev-ref',
+        'HEAD',
+      ], workingDirectory: depDir.path);
       ref = 'main';
       if (resultRef.exitCode == 0) {
         ref = resultRef.stdout.toString().trim();

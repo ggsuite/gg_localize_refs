@@ -415,26 +415,29 @@ void main() {
         expect(content, contains('"dep":"^1.1.0"'));
       });
 
-      test('no change when value is equal in package.json logs and returns', () async {
-        final d = Directory(join(dWorkspace.path, 'ts_equal'));
-        createDirs(<Directory>[d]);
-        File(join(d.path, 'package.json')).writeAsStringSync(
-          '{"name":"ts_equal","dependencies":{"dep":"^1.0.0"}}',
-        );
-        messages.clear();
-        await runner.run(<String>[
-          'set-ref-version',
-          '--input',
-          d.path,
-          '--ref',
-          'dep',
-          '--version',
-          '^1.0.0',
-        ]);
-        final content = File(join(d.path, 'package.json')).readAsStringSync();
-        expect(content, contains('"dep":"^1.0.0"'));
-        expect(messages.join('\n'), contains('No files were changed'));
-      });
+      test(
+        'no change when value is equal in package.json logs and returns',
+        () async {
+          final d = Directory(join(dWorkspace.path, 'ts_equal'));
+          createDirs(<Directory>[d]);
+          File(join(d.path, 'package.json')).writeAsStringSync(
+            '{"name":"ts_equal","dependencies":{"dep":"^1.0.0"}}',
+          );
+          messages.clear();
+          await runner.run(<String>[
+            'set-ref-version',
+            '--input',
+            d.path,
+            '--ref',
+            'dep',
+            '--version',
+            '^1.0.0',
+          ]);
+          final content = File(join(d.path, 'package.json')).readAsStringSync();
+          expect(content, contains('"dep":"^1.0.0"'));
+          expect(messages.join('\n'), contains('No files were changed'));
+        },
+      );
     });
   });
 }

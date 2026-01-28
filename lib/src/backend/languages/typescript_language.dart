@@ -38,11 +38,7 @@ class TypeScriptProjectLanguage extends ProjectLanguage {
       );
     }
 
-    return ProjectNode(
-      name: name,
-      directory: directory,
-      language: this,
-    );
+    return ProjectNode(name: name, directory: directory, language: this);
   }
 
   @override

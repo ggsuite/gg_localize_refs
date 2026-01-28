@@ -75,10 +75,9 @@ class SetRefVersion extends DirCommand<dynamic> {
           throw Exception('Dependency $dependencyName not found.');
         }
 
-        final sectionName =
-            yamlMap['dependencies']?[dependencyName] != null
-                ? 'dependencies'
-                : 'dev_dependencies';
+        final sectionName = yamlMap['dependencies']?[dependencyName] != null
+            ? 'dependencies'
+            : 'dev_dependencies';
 
         final oldYaml = yamlToString(oldDep).trimRight();
 

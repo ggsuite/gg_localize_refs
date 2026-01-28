@@ -71,14 +71,12 @@ class GetRefVersion extends DirCommand<dynamic> {
       if (json['dependencies'] is Map) {
         value =
             (json['dependencies'] as Map)[dependencyName] ??
-                (json['dependencies'] as Map<String, dynamic>)[dependencyName];
+            (json['dependencies'] as Map<String, dynamic>)[dependencyName];
       }
       if (value == null && json['devDependencies'] is Map) {
         value =
             (json['devDependencies'] as Map)[dependencyName] ??
-                (json['devDependencies'] as Map<String, dynamic>)[
-                  dependencyName
-                ];
+            (json['devDependencies'] as Map<String, dynamic>)[dependencyName];
       }
 
       if (value == null) {

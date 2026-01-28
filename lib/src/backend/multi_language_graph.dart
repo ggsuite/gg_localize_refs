@@ -23,10 +23,8 @@ class MultiLanguageGraph {
   /// Builds the graph starting at [directory].
   ///
   /// Returns a record containing the root node and all nodes in the workspace.
-  Future<({ProjectNode rootNode, Map<String, ProjectNode> allNodes})> buildGraph({
-    required Directory directory,
-    GgLog? ggLog,
-  }) async {
+  Future<({ProjectNode rootNode, Map<String, ProjectNode> allNodes})>
+  buildGraph({required Directory directory, GgLog? ggLog}) async {
     final startDir = _correctDir(directory);
 
     final rootInfo = await _findProjectRootAndLanguage(startDir);
@@ -39,10 +37,7 @@ class MultiLanguageGraph {
 
     final workspaceRoot = rootDir.parent;
 
-    final allDirs = workspaceRoot
-        .listSync()
-        .whereType<Directory>()
-        .toList()
+    final allDirs = workspaceRoot.listSync().whereType<Directory>().toList()
       ..sort((a, b) => a.path.compareTo(b.path));
 
     final nodes = <String, ProjectNode>{};
@@ -92,7 +87,8 @@ class MultiLanguageGraph {
 
     if (rootNode == null) {
       throw Exception(
-        'The node for the package ${rootDir.path.split(Platform.pathSeparator).last} was not found.',
+        'The node for the package '
+        '${rootDir.path.split(Platform.pathSeparator).last} was not found.',
       );
     }
 
@@ -138,7 +134,10 @@ class MultiLanguageGraph {
     }
 
     for (final dependency in node.dependencies.values) {
-      _detectCircularDependencies(dependency, <ProjectNode>[...coveredNodes, node]);
+      _detectCircularDependencies(dependency, <ProjectNode>[
+        ...coveredNodes,
+        node,
+      ]);
     }
   }
 

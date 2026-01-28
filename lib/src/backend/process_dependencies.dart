@@ -9,16 +9,16 @@ import 'package:gg_localize_refs/src/backend/languages/typescript_language.dart'
 import 'package:gg_localize_refs/src/backend/multi_language_graph.dart';
 import 'package:gg_log/gg_log.dart';
 import 'package:pubspec_parse/pubspec_parse.dart';
-import 'package:yaml/yaml.dart';
 
 /// Signature of a function that modifies a project manifest.
-typedef ModifyManifest = Future<void> Function(
-  ProjectNode node,
-  File manifestFile,
-  String manifestContent,
-  dynamic manifestMap,
-  FileChangesBuffer fileChangesBuffer,
-);
+typedef ModifyManifest =
+    Future<void> Function(
+      ProjectNode node,
+      File manifestFile,
+      String manifestContent,
+      dynamic manifestMap,
+      FileChangesBuffer fileChangesBuffer,
+    );
 
 /// Process the project
 Future<void> processProject({
@@ -136,23 +136,23 @@ bool _hasDependencies(dynamic manifestMap) {
 
   final hasDartDependencies =
       manifestMap.containsKey('dependencies') &&
-          manifestMap['dependencies'] is Map &&
-          (manifestMap['dependencies'] as Map).isNotEmpty;
+      manifestMap['dependencies'] is Map &&
+      (manifestMap['dependencies'] as Map).isNotEmpty;
 
   final hasDartDevDependencies =
       manifestMap.containsKey('dev_dependencies') &&
-          manifestMap['dev_dependencies'] is Map &&
-          (manifestMap['dev_dependencies'] as Map).isNotEmpty;
+      manifestMap['dev_dependencies'] is Map &&
+      (manifestMap['dev_dependencies'] as Map).isNotEmpty;
 
   final hasTsDependencies =
       manifestMap.containsKey('dependencies') &&
-          manifestMap['dependencies'] is Map &&
-          (manifestMap['dependencies'] as Map).isNotEmpty;
+      manifestMap['dependencies'] is Map &&
+      (manifestMap['dependencies'] as Map).isNotEmpty;
 
   final hasTsDevDependencies =
       manifestMap.containsKey('devDependencies') &&
-          manifestMap['devDependencies'] is Map &&
-          (manifestMap['devDependencies'] as Map).isNotEmpty;
+      manifestMap['devDependencies'] is Map &&
+      (manifestMap['devDependencies'] as Map).isNotEmpty;
 
   return hasDartDependencies ||
       hasDartDevDependencies ||
@@ -165,13 +165,9 @@ bool _hasDependencies(dynamic manifestMap) {
 Directory correctDir(Directory directory) {
   var dir = directory;
   if (dir.path.endsWith('\\.') || dir.path.endsWith('/.')) {
-    dir = Directory(
-      dir.path.substring(0, dir.path.length - 2),
-    );
+    dir = Directory(dir.path.substring(0, dir.path.length - 2));
   } else if (dir.path.endsWith('\\') || dir.path.endsWith('/')) {
-    dir = Directory(
-      dir.path.substring(0, dir.path.length - 1),
-    );
+    dir = Directory(dir.path.substring(0, dir.path.length - 1));
   }
   return dir;
 }

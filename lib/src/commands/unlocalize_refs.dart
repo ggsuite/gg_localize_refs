@@ -123,7 +123,8 @@ class UnlocalizeRefs extends DirCommand<dynamic> {
       ggLog(
         yellow(
           'The automatic change of dependencies could not be performed. '
-          'Please change the ${red(p.join(node.directory.path, 'pubspec.yaml'))} '
+          'Please change the '
+          '${red(p.join(node.directory.path, 'pubspec.yaml'))} '
           'file manually.',
         ),
       );
@@ -206,7 +207,8 @@ class UnlocalizeRefs extends DirCommand<dynamic> {
       ggLog(
         yellow(
           'The automatic change of dependencies could not be performed. '
-          'Please change the ${red(p.join(node.directory.path, 'package.json'))} '
+          'Please change the '
+          '${red(p.join(node.directory.path, 'package.json'))} '
           'file manually.',
         ),
       );
