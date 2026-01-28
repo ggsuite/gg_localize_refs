@@ -191,7 +191,7 @@ void main() {
           final graph = MultiLanguageGraph(
             languages: <ProjectLanguage>[DartProjectLanguage()],
           );
-          final result = await graph.buildGraph(directory: ws);
+          final result = await graph.buildGraph(directory: p1);
           final top = <String, ProjectNode>{'p1': result.allNodes['p1']!};
 
           final found = findNode(packageName: 'p2', nodes: top);
@@ -218,7 +218,7 @@ void main() {
           final graph = MultiLanguageGraph(
             languages: <ProjectLanguage>[DartProjectLanguage()],
           );
-          final result = await graph.buildGraph(directory: ws);
+          final result = await graph.buildGraph(directory: p1);
           final top = <String, ProjectNode>{'p1': result.allNodes['p1']!};
 
           final found = findNode(packageName: 'unknown', nodes: top);
