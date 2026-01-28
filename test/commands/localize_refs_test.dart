@@ -99,6 +99,13 @@ void main() {
             messages.join('\n'),
             contains('Use git references instead of local paths.'),
           );
+          expect(
+            messages.join('\n'),
+            contains(
+              'Git ref (branch, tag, or commit) '
+              'to use when localizing with --git.',
+            ),
+          );
         });
       });
 
@@ -259,6 +266,61 @@ void main() {
             p.join(dProject1.path, '.gg_localize_refs_backup.json'),
           ).readAsStringSync();
           expect(backupJson, contains('^1.0.0'));
+        });
+
+        test('with --git and --git-ref uses provided ref', () async {
+          final dProject1 = Directory(p.join(dGitSucceed.path, 'project1'));
+          final dProject2 = Directory(p.join(dGitSucceed.path, 'project2'));
+
+          // In project2, init a git repo and set remote
+          final resultInit = Process.runSync('git', [
+            'init',
+          ], workingDirectory: dProject2.path);
+          expect(resultInit.exitCode, 0, reason: resultInit.stderr.toString());
+          final resultBranch = Process.runSync('git', [
+            'checkout',
+            '-b',
+            'develop',
+          ], workingDirectory: dProject2.path);
+          expect(
+            resultBranch.exitCode,
+            0,
+            reason: resultBranch.stderr.toString(),
+          );
+          const remoteUrl = 'git@github.com:user/test2.git';
+          final resultRemote = Process.runSync('git', [
+            'remote',
+            'add',
+            'origin',
+            remoteUrl,
+          ], workingDirectory: dProject2.path);
+          expect(
+            resultRemote.exitCode,
+            0,
+            reason: resultRemote.stderr.toString(),
+          );
+
+          const customRef = 'feature123';
+
+          // Now run localize-refs --git with --git-ref
+          await runner.run([
+            'localize-refs',
+            '--git',
+            '--git-ref',
+            customRef,
+            '--input',
+            dProject1.path,
+          ]);
+
+          // pubspec.yaml should now contain the custom ref
+          final resultYaml = File(
+            p.join(dProject1.path, 'pubspec.yaml'),
+          ).readAsStringSync();
+          expect(resultYaml, contains('test2:'));
+          expect(resultYaml, contains('git:'));
+          expect(resultYaml, contains('url: $remoteUrl'));
+          expect(resultYaml, contains('ref: $customRef'));
+          expect(resultYaml, isNot(contains('ref: main')));
         });
 
         test('with --git should throw if repo has no git', () async {
