@@ -33,9 +33,7 @@ void main() {
       final manifest = File(join(projectDir.path, 'package.json'));
       expect(language.isProjectRoot(projectDir), isFalse);
 
-      manifest.writeAsStringSync(
-        '{"name":"test","version":"1.0.0"}',
-      );
+      manifest.writeAsStringSync('{"name":"test","version":"1.0.0"}');
 
       expect(language.isProjectRoot(projectDir), isTrue);
     });
@@ -44,9 +42,9 @@ void main() {
       final projectDir = Directory(join(workspace.path, 'project1'));
       createDirs(<Directory>[projectDir]);
 
-      File(join(projectDir.path, 'package.json')).writeAsStringSync(
-        '{"name":"my_ts_pkg","version":"1.0.0"}',
-      );
+      File(
+        join(projectDir.path, 'package.json'),
+      ).writeAsStringSync('{"name":"my_ts_pkg","version":"1.0.0"}');
 
       final node = await language.createNode(projectDir);
 
@@ -59,9 +57,9 @@ void main() {
       final projectDir = Directory(join(workspace.path, 'project_no_name'));
       createDirs(<Directory>[projectDir]);
 
-      File(join(projectDir.path, 'package.json')).writeAsStringSync(
-        '{"version":"1.0.0"}',
-      );
+      File(
+        join(projectDir.path, 'package.json'),
+      ).writeAsStringSync('{"version":"1.0.0"}');
 
       await expectLater(
         language.createNode(projectDir),
@@ -75,7 +73,8 @@ void main() {
       );
     });
 
-    test('readDeclaredDependencies merges dependencies and devDependencies', () async {
+    test('readDeclaredDependencies merges '
+        'dependencies and devDependencies', () async {
       final projectDir = Directory(join(workspace.path, 'deps_project'));
       createDirs(<Directory>[projectDir]);
 

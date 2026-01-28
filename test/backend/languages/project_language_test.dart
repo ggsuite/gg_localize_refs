@@ -13,7 +13,8 @@ import '../../test_helpers.dart';
 
 void main() {
   group('ProjectNode', () {
-    test('stores name, directory and language and provides a readable toString', () {
+    test('stores name, directory and language '
+        'and provides a readable toString', () {
       final dir = createTempDir('project_node_test');
       final language = _FakeLanguage();
 
@@ -56,7 +57,9 @@ class _FakeLanguage extends ProjectLanguage {
 
   @override
   Future<Map<String, String>> readDeclaredDependencies(ProjectNode node) {
-    throw UnimplementedError('readDeclaredDependencies is not needed in this test.');
+    throw UnimplementedError(
+      'readDeclaredDependencies is not needed in this test.',
+    );
   }
 
   @override
