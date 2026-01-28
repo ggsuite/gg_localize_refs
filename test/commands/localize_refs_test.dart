@@ -6,11 +6,14 @@
 
 import 'dart:async';
 import 'dart:io';
+
 import 'package:args/command_runner.dart';
 import 'package:gg_capture_print/gg_capture_print.dart';
-import 'package:gg_localize_refs/src/commands/localize_refs.dart';
 import 'package:gg_localize_refs/src/backend/file_changes_buffer.dart';
+import 'package:gg_localize_refs/src/backend/languages/dart_language.dart';
+import 'package:gg_localize_refs/src/backend/languages/project_language.dart';
 import 'package:gg_localize_refs/src/backend/process_dependencies.dart';
+import 'package:gg_localize_refs/src/commands/localize_refs.dart';
 import 'package:path/path.dart' as p;
 import 'package:test/test.dart';
 
@@ -29,6 +32,11 @@ void main() {
   Directory dGitSucceed = Directory('');
   Directory dGitNoRepo = Directory('');
 
+  Directory dWorkspaceSucceedTs = Directory('');
+  Directory dWorkspaceAlreadyLocalizedTs = Directory('');
+  Directory dGitSucceedTs = Directory('');
+  Directory dGitNoRepoTs = Directory('');
+
   setUp(() async {
     messages.clear();
     runner = CommandRunner<void>('local', 'Description of local command.');
@@ -43,6 +51,11 @@ void main() {
     dWorkspaceAlreadyLocalized = createTempDir('already_localized');
     dGitSucceed = createTempDir('git_succeed');
     dGitNoRepo = createTempDir('git_no_repo');
+
+    dWorkspaceSucceedTs = createTempDir('ts_succeed');
+    dWorkspaceAlreadyLocalizedTs = createTempDir('ts_already_localized');
+    dGitSucceedTs = createTempDir('ts_git_succeed');
+    dGitNoRepoTs = createTempDir('ts_git_no_repo');
 
     copyDirectory(
       Directory(p.join('test', 'sample_folder', 'localize_refs', 'succeed')),
@@ -66,10 +79,38 @@ void main() {
       ),
       dGitNoRepo,
     );
+
+    copyDirectory(
+      Directory(p.join('test', 'sample_folder_ts', 'localize_refs', 'succeed')),
+      dWorkspaceSucceedTs,
+    );
+    copyDirectory(
+      Directory(
+        p.join(
+          'test',
+          'sample_folder_ts',
+          'localize_refs',
+          'already_localized',
+        ),
+      ),
+      dWorkspaceAlreadyLocalizedTs,
+    );
+    copyDirectory(
+      Directory(
+        p.join('test', 'sample_folder_ts', 'localize_refs', 'git_succeed'),
+      ),
+      dGitSucceedTs,
+    );
+    copyDirectory(
+      Directory(
+        p.join('test', 'sample_folder_ts', 'localize_refs', 'git_no_repo'),
+      ),
+      dGitNoRepoTs,
+    );
   });
 
   tearDown(() {
-    deleteDirs([
+    deleteDirs(<Directory>[
       dNoProjectRootError,
       dParseError,
       dNoDependencies,
@@ -78,6 +119,10 @@ void main() {
       dWorkspaceSucceed,
       dGitSucceed,
       dGitNoRepo,
+      dWorkspaceSucceedTs,
+      dWorkspaceAlreadyLocalizedTs,
+      dGitSucceedTs,
+      dGitNoRepoTs,
     ]);
   });
 
@@ -88,7 +133,7 @@ void main() {
         test('when called args=[--help]', () async {
           capturePrint(
             ggLog: messages.add,
-            code: () => runner.run(['localize-refs', '--help']),
+            code: () => runner.run(<String>['localize-refs', '--help']),
           );
 
           expect(
@@ -113,10 +158,14 @@ void main() {
       group('should throw', () {
         test('when project root was not found', () async {
           await expectLater(
-            runner.run(['localize-refs', '--input', dNoProjectRootError.path]),
+            runner.run(<String>[
+              'localize-refs',
+              '--input',
+              dNoProjectRootError.path,
+            ]),
             throwsA(
               isA<Exception>().having(
-                (e) => e.toString(),
+                (Object e) => e.toString(),
                 'message',
                 contains('No project root found'),
               ),
@@ -126,16 +175,19 @@ void main() {
 
         group('when pubspec.yaml cannot be parsed', () {
           test('when calling command', () async {
-            // Create a pubspec.yaml with invalid content in tempDir
             File(
               p.join(dParseError.path, 'pubspec.yaml'),
             ).writeAsStringSync('invalid yaml');
 
             await expectLater(
-              runner.run(['localize-refs', '--input', dParseError.path]),
+              runner.run(<String>[
+                'localize-refs',
+                '--input',
+                dParseError.path,
+              ]),
               throwsA(
                 isA<Exception>().having(
-                  (e) => e.toString(),
+                  (Object e) => e.toString(),
                   'message',
                   contains('Error parsing pubspec.yaml'),
                 ),
@@ -145,32 +197,35 @@ void main() {
         });
 
         test('when node not found', () async {
-          final messages = <String>[];
+          final localMessages = <String>[];
 
-          // Create a pubspec.yaml with invalid content in tempDir
           File(p.join(dNodeNotFound.path, 'pubspec.yaml')).writeAsStringSync(
             'name: test_package\nversion: 1.0.0\ndependencies:',
           );
 
-          final loc = LocalizeRefs(ggLog: messages.add);
+          final loc = LocalizeRefs(ggLog: localMessages.add);
 
           await expectLater(
-            processNode(
-              dNodeNotFound,
-              {},
-              {},
-              loc.modifyYaml,
-              FileChangesBuffer(),
-            ),
+            () async {
+              final language = DartProjectLanguage();
+              final node = await language.createNode(dNodeNotFound);
+              await processNode(
+                node,
+                <String, ProjectNode>{},
+                <String>{},
+                loc.modifyManifest,
+                FileChangesBuffer(),
+              );
+            },
             throwsA(
               isA<Exception>()
                   .having(
-                    (e) => e.toString(),
+                    (Object e) => e.toString(),
                     'message',
                     contains('node for the package'),
                   )
                   .having(
-                    (e) => e.toString(),
+                    (Object e) => e.toString(),
                     'message',
                     contains('not found'),
                   ),
@@ -187,14 +242,13 @@ void main() {
             p.join(dWorkspaceSucceed.path, 'project1'),
           );
 
-          final messages = <String>[];
-          final local = LocalizeRefs(ggLog: messages.add);
-          await local.get(directory: dProject1, ggLog: messages.add);
+          final localMessages = <String>[];
+          final local = LocalizeRefs(ggLog: localMessages.add);
+          await local.get(directory: dProject1, ggLog: localMessages.add);
 
-          expect(messages[0], contains('Running localize-refs in'));
-          expect(messages[1], contains('Localize refs of test1'));
+          expect(localMessages[0], contains('Running localize-refs in'));
+          expect(localMessages[1], contains('Localize refs of test1'));
 
-          // Check if publish_to: none was added
           final resultYaml = File(
             p.join(dProject1.path, 'pubspec.yaml'),
           ).readAsStringSync();
@@ -206,31 +260,30 @@ void main() {
             p.join(dWorkspaceAlreadyLocalized.path, 'project1'),
           );
 
-          final messages = <String>[];
-          final local = LocalizeRefs(ggLog: messages.add);
-          await local.get(directory: dProject1, ggLog: messages.add);
+          final localMessages = <String>[];
+          final local = LocalizeRefs(ggLog: localMessages.add);
+          await local.get(directory: dProject1, ggLog: localMessages.add);
 
-          expect(messages[0], contains('Running localize-refs in'));
-          expect(messages[1], contains('No files were changed.'));
+          expect(localMessages[0], contains('Running localize-refs in'));
+          expect(localMessages[1], contains('No files were changed.'));
         });
 
         test('with --git option should succeed', () async {
           final dProject1 = Directory(p.join(dGitSucceed.path, 'project1'));
           final dProject2 = Directory(p.join(dGitSucceed.path, 'project2'));
 
-          // In project2, init a git repo and set remote
-          final resultInit = Process.runSync('git', [
+          final resultInit = Process.runSync('git', <String>[
             'init',
           ], workingDirectory: dProject2.path);
           expect(resultInit.exitCode, 0, reason: resultInit.stderr.toString());
-          final resultMain = Process.runSync('git', [
+          final resultMain = Process.runSync('git', <String>[
             'checkout',
             '-b',
             'main',
           ], workingDirectory: dProject2.path);
           expect(resultMain.exitCode, 0, reason: resultMain.stderr.toString());
           const remoteUrl = 'git@github.com:user/test2.git';
-          final resultRemote = Process.runSync('git', [
+          final resultRemote = Process.runSync('git', <String>[
             'remote',
             'add',
             'origin',
@@ -242,15 +295,13 @@ void main() {
             reason: resultRemote.stderr.toString(),
           );
 
-          // Now run localize-refs --git
-          await runner.run([
+          await runner.run(<String>[
             'localize-refs',
             '--git',
             '--input',
             dProject1.path,
           ]);
 
-          // pubspec.yaml should now contain a git block for test2
           final resultYaml = File(
             p.join(dProject1.path, 'pubspec.yaml'),
           ).readAsStringSync();
@@ -260,8 +311,6 @@ void main() {
           expect(resultYaml, contains('ref: main'));
           expect(resultYaml, contains('publish_to: none'));
 
-          // .gg_localize_refs_backup.json
-          // should still save the previous version
           final backupJson = File(
             p.join(dProject1.path, '.gg_localize_refs_backup.json'),
           ).readAsStringSync();
@@ -272,12 +321,11 @@ void main() {
           final dProject1 = Directory(p.join(dGitSucceed.path, 'project1'));
           final dProject2 = Directory(p.join(dGitSucceed.path, 'project2'));
 
-          // In project2, init a git repo and set remote
-          final resultInit = Process.runSync('git', [
+          final resultInit = Process.runSync('git', <String>[
             'init',
           ], workingDirectory: dProject2.path);
           expect(resultInit.exitCode, 0, reason: resultInit.stderr.toString());
-          final resultBranch = Process.runSync('git', [
+          final resultBranch = Process.runSync('git', <String>[
             'checkout',
             '-b',
             'develop',
@@ -288,7 +336,7 @@ void main() {
             reason: resultBranch.stderr.toString(),
           );
           const remoteUrl = 'git@github.com:user/test2.git';
-          final resultRemote = Process.runSync('git', [
+          final resultRemote = Process.runSync('git', <String>[
             'remote',
             'add',
             'origin',
@@ -302,8 +350,7 @@ void main() {
 
           const customRef = 'feature123';
 
-          // Now run localize-refs --git with --git-ref
-          await runner.run([
+          await runner.run(<String>[
             'localize-refs',
             '--git',
             '--git-ref',
@@ -312,7 +359,6 @@ void main() {
             dProject1.path,
           ]);
 
-          // pubspec.yaml should now contain the custom ref
           final resultYaml = File(
             p.join(dProject1.path, 'pubspec.yaml'),
           ).readAsStringSync();
@@ -326,24 +372,130 @@ void main() {
         test('with --git should throw if repo has no git', () async {
           final dProject1 = Directory(p.join(dGitNoRepo.path, 'project1'));
 
-          // Should throw meaningful error
           await runner
-              .run(['localize-refs', '--git', '--input', dProject1.path])
-              .catchError((dynamic e) {
+              .run(<String>[
+                'localize-refs',
+                '--git',
+                '--input',
+                dProject1.path,
+              ])
+              .catchError((Object e) {
                 expect(
                   e.toString(),
                   contains('Cannot get git remote url for dependency test2'),
                 );
               });
         });
+
+        test('TypeScript: when package.json is correct (path mode)', () async {
+          final dProject1 = Directory(
+            p.join(dWorkspaceSucceedTs.path, 'project1'),
+          );
+
+          final localMessages = <String>[];
+          final local = LocalizeRefs(ggLog: localMessages.add);
+          await local.get(directory: dProject1, ggLog: localMessages.add);
+
+          expect(localMessages[0], contains('Running localize-refs in'));
+          expect(localMessages[1], contains('Localize refs of test1_ts'));
+
+          final resultJson = File(
+            p.join(dProject1.path, 'package.json'),
+          ).readAsStringSync();
+          expect(resultJson, contains('"test2_ts":"file:../project2"'));
+
+          final backupJson = File(
+            p.join(dProject1.path, '.gg_localize_refs_backup.json'),
+          ).readAsStringSync();
+          expect(backupJson, contains('^1.0.0'));
+        });
+
+        test('TypeScript: when already localized', () async {
+          final dProject1 = Directory(
+            p.join(dWorkspaceAlreadyLocalizedTs.path, 'project1'),
+          );
+
+          final localMessages = <String>[];
+          final local = LocalizeRefs(ggLog: localMessages.add);
+          await local.get(directory: dProject1, ggLog: localMessages.add);
+
+          expect(localMessages[0], contains('Running localize-refs in'));
+          expect(localMessages[1], contains('No files were changed.'));
+        });
+
+        test('TypeScript: with --git option should succeed', () async {
+          final dProject1 = Directory(p.join(dGitSucceedTs.path, 'project1'));
+          final dProject2 = Directory(p.join(dGitSucceedTs.path, 'project2'));
+
+          final resultInit = Process.runSync('git', <String>[
+            'init',
+          ], workingDirectory: dProject2.path);
+          expect(resultInit.exitCode, 0, reason: resultInit.stderr.toString());
+          final resultMain = Process.runSync('git', <String>[
+            'checkout',
+            '-b',
+            'main',
+          ], workingDirectory: dProject2.path);
+          expect(resultMain.exitCode, 0, reason: resultMain.stderr.toString());
+          const remoteUrl = 'git@github.com:user/test2_ts.git';
+          final resultRemote = Process.runSync('git', <String>[
+            'remote',
+            'add',
+            'origin',
+            remoteUrl,
+          ], workingDirectory: dProject2.path);
+          expect(
+            resultRemote.exitCode,
+            0,
+            reason: resultRemote.stderr.toString(),
+          );
+
+          await runner.run(<String>[
+            'localize-refs',
+            '--git',
+            '--input',
+            dProject1.path,
+          ]);
+
+          final resultJson = File(
+            p.join(dProject1.path, 'package.json'),
+          ).readAsStringSync();
+          expect(resultJson, contains('test2_ts'));
+          expect(resultJson, contains('git+'));
+          expect(resultJson, contains(remoteUrl));
+          expect(resultJson, contains('#main'));
+        });
+
+        test(
+          'TypeScript: with --git should throw if repo has no git',
+          () async {
+            final dProject1 = Directory(p.join(dGitNoRepoTs.path, 'project1'));
+
+            await runner
+                .run(<String>[
+                  'localize-refs',
+                  '--git',
+                  '--input',
+                  dProject1.path,
+                ])
+                .catchError((Object e) {
+                  expect(
+                    e.toString(),
+                    contains(
+                      'Cannot get git remote url for dependency test2_ts',
+                    ),
+                  );
+                });
+          },
+        );
       });
     });
   });
 
   group('getDependency', () {
     test('should return the dependency from dependencies', () {
-      final yamlMap = {
-        'dependencies': {'some_dependency': '^1.0.0'},
+      final yamlMap = <String, dynamic>{
+        'dependencies': <String, dynamic>{'some_dependency': '^1.0.0'},
         'dev_dependencies': <String, dynamic>{},
       };
       final result = getDependency('some_dependency', yamlMap);
@@ -352,9 +504,9 @@ void main() {
 
     test('should return the dependency from dev_dependencies '
         'when not in dependencies', () {
-      final yamlMap = {
+      final yamlMap = <String, dynamic>{
         'dependencies': <String, dynamic>{},
-        'dev_dependencies': {'some_dependency': '^2.0.0'},
+        'dev_dependencies': <String, dynamic>{'some_dependency': '^2.0.0'},
       };
       final result = getDependency('some_dependency', yamlMap);
       expect(result, equals('^2.0.0'));
@@ -362,16 +514,16 @@ void main() {
 
     test('should return the dependency from dependencies when '
         'in both dependencies and dev_dependencies', () {
-      final yamlMap = {
-        'dependencies': {'some_dependency': '^1.0.0'},
-        'dev_dependencies': {'some_dependency': '^2.0.0'},
+      final yamlMap = <String, dynamic>{
+        'dependencies': <String, dynamic>{'some_dependency': '^1.0.0'},
+        'dev_dependencies': <String, dynamic>{'some_dependency': '^2.0.0'},
       };
       final result = getDependency('some_dependency', yamlMap);
       expect(result, equals('^1.0.0'));
     });
 
     test('should return null when the dependency is not present', () {
-      final yamlMap = {
+      final yamlMap = <String, dynamic>{
         'dependencies': <String, dynamic>{},
         'dev_dependencies': <String, dynamic>{},
       };
@@ -380,16 +532,16 @@ void main() {
     });
 
     test('should handle missing dependencies section', () {
-      final yamlMap = {
-        'dev_dependencies': {'some_dependency': '^1.0.0'},
+      final yamlMap = <String, dynamic>{
+        'dev_dependencies': <String, dynamic>{'some_dependency': '^1.0.0'},
       };
       final result = getDependency('some_dependency', yamlMap);
       expect(result, equals('^1.0.0'));
     });
 
     test('should handle missing dev_dependencies section', () {
-      final yamlMap = {
-        'dependencies': {'some_dependency': '^1.0.0'},
+      final yamlMap = <String, dynamic>{
+        'dependencies': <String, dynamic>{'some_dependency': '^1.0.0'},
       };
       final result = getDependency('some_dependency', yamlMap);
       expect(result, equals('^1.0.0'));
@@ -409,7 +561,6 @@ void main() {
     test(
       'should use "main" as ref if the git rev-parse fails (exitCode != 0)',
       () async {
-        // Arrange
         final fakeDepDir = Directory.systemTemp.createTempSync('fakegit');
         final fakeRefs = FakeLocalizeRefs(
           ggLog: (_) {},
@@ -420,7 +571,6 @@ void main() {
                 String? workingDirectory,
               }) async {
                 if (arguments.join(' ') == 'remote get-url origin') {
-                  // Simulate git remote get-url origin success
                   return ProcessResult(
                     0,
                     0,
@@ -429,16 +579,13 @@ void main() {
                   );
                 }
                 if (arguments.join(' ') == 'rev-parse --abbrev-ref HEAD') {
-                  // Simulate rev-parse fails (non-zero exit code)
                   return ProcessResult(0, 1, '', 'fail');
                 }
                 throw UnimplementedError('Unknown process for args $arguments');
               },
         );
 
-        // Act
         final yaml = await fakeRefs.rawGitDependencyYaml(fakeDepDir, 'somedep');
-        // Assert
         expect(yaml, contains('ref: main'));
         expect(yaml, contains('git:'));
         expect(yaml, contains('url: git@github.com:user/fake.git'));
@@ -459,7 +606,6 @@ void main() {
                 String? workingDirectory,
               }) async {
                 if (arguments.join(' ') == 'remote get-url origin') {
-                  // Simulate git remote get-url origin success
                   return ProcessResult(
                     0,
                     0,
@@ -468,7 +614,6 @@ void main() {
                   );
                 }
                 if (arguments.join(' ') == 'rev-parse --abbrev-ref HEAD') {
-                  // Simulate rev-parse returns exitCode 0 with stdout 'HEAD'
                   return ProcessResult(0, 0, 'HEAD', '');
                 }
                 throw UnimplementedError('Unknown process for args $arguments');
@@ -495,7 +640,6 @@ void main() {
                 String? workingDirectory,
               }) async {
                 if (arguments.join(' ') == 'remote get-url origin') {
-                  // Simulate git remote get-url origin success
                   return ProcessResult(
                     0,
                     0,
@@ -504,7 +648,6 @@ void main() {
                   );
                 }
                 if (arguments.join(' ') == 'rev-parse --abbrev-ref HEAD') {
-                  // Simulate rev-parse returns exitCode 0 but no stdout
                   return ProcessResult(0, 0, '', '');
                 }
                 throw UnimplementedError('Unknown process for args $arguments');
@@ -521,7 +664,7 @@ void main() {
 }
 
 // Implements a fake version of LocalizeRefs with injectable runProcess for
-// testing git ref fallback. No runProcess in superclass anymore; assign here.
+// testing git ref fallback.
 class FakeLocalizeRefs extends LocalizeRefs {
   FakeLocalizeRefs({
     required super.ggLog,

@@ -2,61 +2,72 @@
 import 'dart:io';
 
 import 'package:gg_console_colors/gg_console_colors.dart';
-import 'package:gg_local_package_dependencies/gg_local_package_dependencies.dart';
 import 'package:gg_localize_refs/src/backend/file_changes_buffer.dart';
+import 'package:gg_localize_refs/src/backend/languages/dart_language.dart';
+import 'package:gg_localize_refs/src/backend/languages/project_language.dart';
+import 'package:gg_localize_refs/src/backend/languages/typescript_language.dart';
+import 'package:gg_localize_refs/src/backend/multi_language_graph.dart';
 import 'package:gg_log/gg_log.dart';
-import 'package:gg_project_root/gg_project_root.dart';
 import 'package:pubspec_parse/pubspec_parse.dart';
 import 'package:yaml/yaml.dart';
+
+/// Signature of a function that modifies a project manifest.
+typedef ModifyManifest = Future<void> Function(
+  ProjectNode node,
+  File manifestFile,
+  String manifestContent,
+  dynamic manifestMap,
+  FileChangesBuffer fileChangesBuffer,
+);
 
 /// Process the project
 Future<void> processProject({
   required Directory directory,
-  required Future<void> Function(
-    String packageName,
-    File pubspec,
-    String pubspecContent,
-    Map<dynamic, dynamic> yamlMap,
-    Node node,
-    Directory projectDir,
-    FileChangesBuffer fileChangesBuffer,
-  )
-  modifyFunction,
+  required ModifyManifest modifyFunction,
   required FileChangesBuffer fileChangesBuffer,
   GgLog? ggLog,
 }) async {
-  String? root = await GgProjectRoot.get(directory.absolute.path);
-
-  if (root == null) {
-    throw Exception(red('No project root found'));
-  }
-
-  Directory projectDir = correctDir(Directory(root));
-
-  Graph graph = Graph(ggLog: ggLog ?? (_) {});
-  Map<String, Node> nodes = await graph.get(
-    directory: projectDir.parent,
-    ggLog: ggLog,
+  final graph = MultiLanguageGraph(
+    languages: <ProjectLanguage>[
+      DartProjectLanguage(),
+      TypeScriptProjectLanguage(),
+    ],
   );
 
-  await processNode(projectDir, nodes, {}, modifyFunction, fileChangesBuffer);
+  final result = await graph.buildGraph(directory: directory, ggLog: ggLog);
+
+  final rootNode = result.rootNode;
+  final allNodes = result.allNodes;
+
+  final processedNodes = <String>{};
+
+  await processNode(
+    rootNode,
+    allNodes,
+    processedNodes,
+    modifyFunction,
+    fileChangesBuffer,
+  );
 }
 
 // ...........................................................................
 /// Find a node by package name in the dependency graph
-Node? findNode({
+ProjectNode? findNode({
   required String packageName,
-  required Map<String, Node> nodes,
+  required Map<String, ProjectNode> nodes,
 }) {
   if (nodes.isEmpty) {
     return null;
   }
-  Node? node = nodes[packageName];
+  final ProjectNode? node = nodes[packageName];
   if (node != null) {
     return node;
   }
-  for (Node n in nodes.values) {
-    Node? foundNode = findNode(packageName: packageName, nodes: n.dependencies);
+  for (final n in nodes.values) {
+    final ProjectNode? foundNode = findNode(
+      packageName: packageName,
+      nodes: n.dependencies,
+    );
     if (foundNode != null) {
       return foundNode;
     }
@@ -67,61 +78,50 @@ Node? findNode({
 // ...........................................................................
 /// Process the node
 Future<void> processNode(
-  Directory projectDir,
-  Map<String, Node> nodes,
+  ProjectNode currentNode,
+  Map<String, ProjectNode> allNodes,
   Set<String> processedNodes,
-  Future<void> Function(
-    String packageName,
-    File pubspec,
-    String pubspecContent,
-    Map<dynamic, dynamic> yamlMap,
-    Node node,
-    Directory projectDir,
-    FileChangesBuffer fileChangesBuffer,
-  )
-  modifyFunction,
+  ModifyManifest modifyFunction,
   FileChangesBuffer fileChangesBuffer,
 ) async {
-  projectDir = correctDir(projectDir);
-  final pubspec = File('${projectDir.path}/pubspec.yaml');
+  final projectDir = correctDir(currentNode.directory);
 
-  final pubspecContent = await pubspec.readAsString();
+  if (!allNodes.containsKey(currentNode.name)) {
+    throw Exception(
+      'The node for the package ${currentNode.name} was not found.',
+    );
+  }
 
-  String packageName = getPackageName(pubspecContent);
+  final manifestFile = File(
+    '${projectDir.path}/${currentNode.language.manifestFileName}',
+  );
 
-  // Load the YAML content as a Map
-  final yamlMap = loadYaml(pubspecContent) as Map;
+  final manifestContent = await manifestFile.readAsString();
 
-  // Check if the 'dependencies' section exists
-  if (!yamlMap.containsKey('dependencies') &&
-      !yamlMap.containsKey('dev_dependencies')) {
+  final manifestMap = currentNode.language.parseManifestContent(
+    manifestContent,
+  );
+
+  if (!_hasDependencies(manifestMap)) {
     return;
   }
 
-  Node? node = findNode(packageName: packageName, nodes: nodes);
-
-  if (node == null) {
-    throw Exception('The node for the package $packageName was not found.');
-  }
-
   await modifyFunction(
-    packageName,
-    pubspec,
-    pubspecContent,
-    yamlMap,
-    node,
-    projectDir,
+    currentNode,
+    manifestFile,
+    manifestContent,
+    manifestMap,
     fileChangesBuffer,
   );
 
-  for (MapEntry<String, Node> dependency in node.dependencies.entries) {
+  for (final dependency in currentNode.dependencies.entries) {
     if (processedNodes.contains(dependency.key)) {
       continue;
     }
     processedNodes.add(dependency.key);
     await processNode(
-      dependency.value.directory,
-      node.dependencies,
+      dependency.value,
+      allNodes,
       processedNodes,
       modifyFunction,
       fileChangesBuffer,
@@ -129,19 +129,51 @@ Future<void> processNode(
   }
 }
 
+bool _hasDependencies(dynamic manifestMap) {
+  if (manifestMap is! Map) {
+    return false;
+  }
+
+  final hasDartDependencies =
+      manifestMap.containsKey('dependencies') &&
+          manifestMap['dependencies'] is Map &&
+          (manifestMap['dependencies'] as Map).isNotEmpty;
+
+  final hasDartDevDependencies =
+      manifestMap.containsKey('dev_dependencies') &&
+          manifestMap['dev_dependencies'] is Map &&
+          (manifestMap['dev_dependencies'] as Map).isNotEmpty;
+
+  final hasTsDependencies =
+      manifestMap.containsKey('dependencies') &&
+          manifestMap['dependencies'] is Map &&
+          (manifestMap['dependencies'] as Map).isNotEmpty;
+
+  final hasTsDevDependencies =
+      manifestMap.containsKey('devDependencies') &&
+          manifestMap['devDependencies'] is Map &&
+          (manifestMap['devDependencies'] as Map).isNotEmpty;
+
+  return hasDartDependencies ||
+      hasDartDevDependencies ||
+      hasTsDependencies ||
+      hasTsDevDependencies;
+}
+
 // ...........................................................................
 /// Helper method to correct a directory
 Directory correctDir(Directory directory) {
-  if (directory.path.endsWith('\\.') || directory.path.endsWith('/.')) {
-    directory = Directory(
-      directory.path.substring(0, directory.path.length - 2),
+  var dir = directory;
+  if (dir.path.endsWith('\\.') || dir.path.endsWith('/.')) {
+    dir = Directory(
+      dir.path.substring(0, dir.path.length - 2),
     );
-  } else if (directory.path.endsWith('\\') || directory.path.endsWith('/')) {
-    directory = Directory(
-      directory.path.substring(0, directory.path.length - 1),
+  } else if (dir.path.endsWith('\\') || dir.path.endsWith('/')) {
+    dir = Directory(
+      dir.path.substring(0, dir.path.length - 1),
     );
   }
-  return directory;
+  return dir;
 }
 
 // ...........................................................................

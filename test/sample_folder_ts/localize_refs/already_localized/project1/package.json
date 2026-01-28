@@ -1,0 +1,1 @@
+{"name":"test1_ts","version":"1.0.0","dependencies":{"test2_ts":"file:../project2"},"devDependencies":{"test2_ts":"file:../project2"}}

@@ -7,17 +7,18 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
+
 import 'package:gg_console_colors/gg_console_colors.dart';
 import 'package:gg_localize_refs/src/backend/file_changes_buffer.dart';
 import 'package:path/path.dart' as p;
 
 import 'package:gg_args/gg_args.dart';
-import 'package:gg_local_package_dependencies/gg_local_package_dependencies.dart';
-import 'package:gg_log/gg_log.dart';
+import 'package:gg_localize_refs/src/backend/languages/project_language.dart';
 import 'package:gg_localize_refs/src/backend/process_dependencies.dart';
 import 'package:gg_localize_refs/src/backend/replace_dependency.dart';
 import 'package:gg_localize_refs/src/backend/yaml_to_string.dart';
 import 'package:gg_localize_refs/src/backend/publish_to_utils.dart';
+import 'package:gg_log/gg_log.dart';
 
 // #############################################################################
 /// Command for localizing references
@@ -28,8 +29,7 @@ class LocalizeRefs extends DirCommand<dynamic> {
     String executable,
     List<String> arguments, {
     String? workingDirectory,
-  })
-  runProcess;
+  }) runProcess;
 
   /// Constructor
   LocalizeRefs({required super.ggLog})
@@ -50,18 +50,17 @@ class LocalizeRefs extends DirCommand<dynamic> {
             'Git ref (branch, tag, or commit) '
             'to use when localizing with --git.',
       );
-    runProcess =
-        (
-          String executable,
-          List<String> arguments, {
-          String? workingDirectory,
-        }) {
-          return Process.run(
-            executable,
-            arguments,
-            workingDirectory: workingDirectory,
-          );
-        };
+    runProcess = (
+      String executable,
+      List<String> arguments, {
+      String? workingDirectory,
+    }) {
+      return Process.run(
+        executable,
+        arguments,
+        workingDirectory: workingDirectory,
+      );
+    };
   }
 
   /// Whether to localize to git references
@@ -79,7 +78,6 @@ class LocalizeRefs extends DirCommand<dynamic> {
     String? gitRef,
   }) async {
     ggLog?.call('Running localize-refs in ${directory.path}');
-    // Use a safe access for argResults
     useGit = git ?? ((argResults?['git'] as bool?) ?? false);
     gitRefOverride = gitRef ?? (argResults?['git-ref'] as String?);
     final fileChangesBuffer = FileChangesBuffer();
@@ -87,7 +85,7 @@ class LocalizeRefs extends DirCommand<dynamic> {
     try {
       await processProject(
         directory: directory,
-        modifyFunction: modifyYaml,
+        modifyFunction: modifyManifest,
         fileChangesBuffer: fileChangesBuffer,
         ggLog: ggLog,
       );
@@ -104,22 +102,47 @@ class LocalizeRefs extends DirCommand<dynamic> {
   }
 
   // ...........................................................................
-  /// Modify the pubspec.yaml file
-  Future<void> modifyYaml(
-    String packageName,
+  /// Modify the manifest file of a project node.
+  Future<void> modifyManifest(
+    ProjectNode node,
+    File manifestFile,
+    String manifestContent,
+    dynamic manifestMap,
+    FileChangesBuffer fileChangesBuffer,
+  ) async {
+    if (node.language.id == ProjectLanguageId.dart) {
+      await _modifyDart(
+        node,
+        manifestFile,
+        manifestContent,
+        manifestMap as Map<dynamic, dynamic>,
+        fileChangesBuffer,
+      );
+      return;
+    }
+
+    if (node.language.id == ProjectLanguageId.typescript) {
+      await _modifyTypeScript(
+        node,
+        manifestFile,
+        manifestContent,
+        manifestMap as Map<String, dynamic>,
+        fileChangesBuffer,
+      );
+    }
+  }
+
+  Future<void> _modifyDart(
+    ProjectNode node,
     File pubspec,
     String pubspecContent,
     Map<dynamic, dynamic> yamlMap,
-    Node node,
-    Directory projectDir,
     FileChangesBuffer fileChangesBuffer,
   ) async {
     if (!useGit) {
-      // Normal path (file)
       var hasOnlineDependencies = false;
 
-      for (final MapEntry<String, Node> dependency
-          in node.dependencies.entries) {
+      for (final dependency in node.dependencies.entries) {
         if (!yamlToString(
           getDependency(dependency.key, yamlMap),
         ).startsWith('path:')) {
@@ -131,25 +154,22 @@ class LocalizeRefs extends DirCommand<dynamic> {
         return;
       }
 
-      ggLog('Localize refs of $packageName');
+      ggLog('Localize refs of ${node.name}');
 
-      // copy pubspec.yaml to pubspec.yaml.original
       final originalPubspec = File(
-        '${projectDir.path}/.gg_localize_refs_backup.yaml',
+        '${node.directory.path}/.gg_localize_refs_backup.yaml',
       );
       await _writeFileCopy(source: pubspec, destination: originalPubspec);
 
-      // Return the updated YAML content
       var newPubspecContent = pubspecContent;
 
       final replacedDependencies = <String, dynamic>{};
 
-      for (final MapEntry<String, Node> dependency
-          in node.dependencies.entries) {
+      for (final dependency in node.dependencies.entries) {
         final dependencyName = dependency.key;
         final dependencyPath = dependency.value.directory.path;
         final relativeDepPath = p
-            .relative(dependencyPath, from: projectDir.path)
+            .relative(dependencyPath, from: node.directory.path)
             .replaceAll('\\', '/');
         final oldDependency = getDependency(dependencyName, yamlMap);
         final oldDependencyYaml = yamlToString(oldDependency);
@@ -173,30 +193,25 @@ class LocalizeRefs extends DirCommand<dynamic> {
         );
       }
 
-      // Backup publish_to
       final publishBackup = backupPublishTo(yamlMap);
       replacedDependencies.addAll(publishBackup);
 
-      // Add publish_to: none
       newPubspecContent = addPublishToNone(newPubspecContent);
 
-      // Save the replaced dependencies to a JSON file
       await saveDependenciesAsJson(
         replacedDependencies,
-        '${projectDir.path}/.gg_localize_refs_backup.json',
+        '${node.directory.path}/.gg_localize_refs_backup.json',
       );
 
-      // write new pubspec.yaml.modified
-      final modifiedPubspec = File('${projectDir.path}/pubspec.yaml');
+      final modifiedPubspec = File('${node.directory.path}/pubspec.yaml');
       fileChangesBuffer.add(modifiedPubspec, newPubspecContent);
       return;
     }
-    // ------------ useGit = true ----------------------
+
     var hasNonGitDependencies = false;
-    for (final MapEntry<String, Node> dependency in node.dependencies.entries) {
+    for (final dependency in node.dependencies.entries) {
       final depYaml = yamlToString(getDependency(dependency.key, yamlMap));
       if (!depYaml.startsWith('git:')) {
-        // not yet git
         hasNonGitDependencies = true;
       }
     }
@@ -204,16 +219,15 @@ class LocalizeRefs extends DirCommand<dynamic> {
       return;
     }
 
-    ggLog('Localize refs of $packageName');
+    ggLog('Localize refs of ${node.name}');
 
-    // backup YAML
     final originalPubspec = File(
-      '${projectDir.path}/.gg_localize_refs_backup.yaml',
+      '${node.directory.path}/.gg_localize_refs_backup.yaml',
     );
     await _writeFileCopy(source: pubspec, destination: originalPubspec);
-    // backup JSON of dependencies
+
     final replacedDependencies = <String, dynamic>{};
-    for (final MapEntry<String, Node> dependency in node.dependencies.entries) {
+    for (final dependency in node.dependencies.entries) {
       final dependencyName = dependency.key;
       final oldDependency = getDependency(dependencyName, yamlMap);
       final oldDependencyYaml = yamlToString(oldDependency);
@@ -225,22 +239,21 @@ class LocalizeRefs extends DirCommand<dynamic> {
         );
       }
     }
-    // Backup publish_to
+
     final publishBackup = backupPublishTo(yamlMap);
     replacedDependencies.addAll(publishBackup);
 
     await saveDependenciesAsJson(
       replacedDependencies,
-      '${projectDir.path}/.gg_localize_refs_backup.json',
+      '${node.directory.path}/.gg_localize_refs_backup.json',
     );
 
-    // Replace each dependency in pubspecContent
     var newPubspecContent = pubspecContent;
-    for (final MapEntry<String, Node> dependency in node.dependencies.entries) {
+    for (final dependency in node.dependencies.entries) {
       final dependencyName = dependency.key;
       final oldDependency = getDependency(dependencyName, yamlMap);
       final oldDependencyYaml = yamlToString(oldDependency);
-      // Only replace if not already git
+
       if (!oldDependencyYaml.startsWith('git:')) {
         final newDependencyYaml = await getGitDependencyYaml(
           dependency.value.directory,
@@ -254,11 +267,154 @@ class LocalizeRefs extends DirCommand<dynamic> {
         );
       }
     }
-    // Add publish_to: none
+
     newPubspecContent = addPublishToNone(newPubspecContent);
-    // write new pubspec.yaml.modified
-    final modifiedPubspec = File('${projectDir.path}/pubspec.yaml');
+    final modifiedPubspec = File('${node.directory.path}/pubspec.yaml');
     fileChangesBuffer.add(modifiedPubspec, newPubspecContent);
+  }
+
+  Future<void> _modifyTypeScript(
+    ProjectNode node,
+    File manifestFile,
+    String manifestContent,
+    Map<String, dynamic> manifestMap,
+    FileChangesBuffer fileChangesBuffer,
+  ) async {
+    final dependencies =
+        manifestMap['dependencies'] is Map
+            ? (manifestMap['dependencies'] as Map).cast<String, dynamic>()
+            : <String, dynamic>{};
+    final devDependencies =
+        manifestMap['devDependencies'] is Map
+            ? (manifestMap['devDependencies'] as Map).cast<String, dynamic>()
+            : <String, dynamic>{};
+
+    if (!useGit) {
+      var hasOnlineDependencies = false;
+
+      for (final dependency in node.dependencies.entries) {
+        final name = dependency.key;
+        final value =
+            dependencies[name]?.toString() ?? devDependencies[name]?.toString();
+        if (value == null) {
+          continue;
+        }
+        if (!value.trim().startsWith('file:')) {
+          hasOnlineDependencies = true;
+        }
+      }
+
+      if (!hasOnlineDependencies) {
+        return;
+      }
+
+      ggLog('Localize refs of ${node.name}');
+
+      final replacedDependencies = <String, dynamic>{};
+
+      for (final dependency in node.dependencies.entries) {
+        final name = dependency.key;
+        final depDir = dependency.value.directory.path;
+        final relativePath = p
+            .relative(depDir, from: node.directory.path)
+            .replaceAll('\\', '/');
+
+        if (dependencies.containsKey(name)) {
+          final oldValue = dependencies[name];
+          final oldString = oldValue.toString();
+          if (!oldString.trim().startsWith('file:')) {
+            replacedDependencies[name] = oldValue;
+          }
+          dependencies[name] = 'file:$relativePath';
+        } else if (devDependencies.containsKey(name)) {
+          final oldValue = devDependencies[name];
+          final oldString = oldValue.toString();
+          if (!oldString.trim().startsWith('file:')) {
+            replacedDependencies[name] = oldValue;
+          }
+          devDependencies[name] = 'file:$relativePath';
+        }
+      }
+
+      manifestMap['dependencies'] = dependencies;
+      manifestMap['devDependencies'] = devDependencies;
+
+      if (replacedDependencies.isEmpty) {
+        return;
+      }
+
+      final backupFile = File(
+        '${node.directory.path}/.gg_localize_refs_backup.json',
+      );
+      await backupFile.writeAsString(jsonEncode(replacedDependencies));
+
+      final newContent = jsonEncode(manifestMap);
+      fileChangesBuffer.add(manifestFile, '$newContent\n');
+      return;
+    }
+
+    var hasNonGitDependencies = false;
+    for (final dependency in node.dependencies.entries) {
+      final name = dependency.key;
+      final value =
+          dependencies[name]?.toString() ?? devDependencies[name]?.toString();
+      if (value == null) {
+        continue;
+      }
+      if (!value.trim().startsWith('git+')) {
+        hasNonGitDependencies = true;
+      }
+    }
+
+    if (!hasNonGitDependencies) {
+      return;
+    }
+
+    ggLog('Localize refs of ${node.name}');
+
+    final replacedDependencies = <String, dynamic>{};
+
+    for (final dependency in node.dependencies.entries) {
+      final name = dependency.key;
+      final value =
+          dependencies[name]?.toString() ?? devDependencies[name]?.toString();
+      if (value == null) {
+        continue;
+      }
+      if (!value.trim().startsWith('git+')) {
+        replacedDependencies[name] = value;
+      }
+    }
+
+    final backupFile = File('${node.directory.path}/.gg_localize_refs_backup.json');
+    await backupFile.writeAsString(jsonEncode(replacedDependencies));
+
+    for (final dependency in node.dependencies.entries) {
+      final name = dependency.key;
+      final depDir = dependency.value.directory;
+
+      final value =
+          dependencies[name]?.toString() ?? devDependencies[name]?.toString();
+      if (value == null) {
+        continue;
+      }
+      if (value.trim().startsWith('git+')) {
+        continue;
+      }
+
+      final gitSpec = await getGitDependencySpecForTs(depDir, name);
+      if (dependencies.containsKey(name)) {
+        dependencies[name] = gitSpec;
+      } else if (devDependencies.containsKey(name)) {
+        devDependencies[name] = gitSpec;
+      }
+    }
+
+    manifestMap['dependencies'] = dependencies;
+    manifestMap['devDependencies'] = devDependencies;
+
+    final newContent = jsonEncode(manifestMap);
+    fileChangesBuffer.add(manifestFile, '$newContent\n');
   }
 
   // ...........................................................................
@@ -267,12 +423,38 @@ class LocalizeRefs extends DirCommand<dynamic> {
   /// If [gitRefOverride] is set, this value is used for the `ref` field
   /// instead of querying git for the current branch.
   Future<String> getGitDependencyYaml(Directory depDir, String depName) async {
-    // resolve remote url
-    final resultUrl = await runProcess('git', [
-      'remote',
-      'get-url',
-      'origin',
-    ], workingDirectory: depDir.path);
+    final gitInfo = await _resolveGitUrlAndRef(depDir, depName);
+    final url = gitInfo.$1;
+    final ref = gitInfo.$2;
+
+    final gitMap = <String, dynamic>{
+      'git': <String, dynamic>{'url': url, 'ref': ref},
+    };
+
+    return yamlToString(gitMap);
+  }
+
+  /// Returns a git spec string usable in package.json for TypeScript.
+  Future<String> getGitDependencySpecForTs(
+    Directory depDir,
+    String depName,
+  ) async {
+    final gitInfo = await _resolveGitUrlAndRef(depDir, depName);
+    final url = gitInfo.$1;
+    final ref = gitInfo.$2;
+
+    return 'git+$url#$ref';
+  }
+
+  Future<(String, String)> _resolveGitUrlAndRef(
+    Directory depDir,
+    String depName,
+  ) async {
+    final resultUrl = await runProcess(
+      'git',
+      <String>['remote', 'get-url', 'origin'],
+      workingDirectory: depDir.path,
+    );
     if (resultUrl.exitCode != 0) {
       throw Exception(
         'Cannot get git remote url for dependency $depName in ${depDir.path}',
@@ -280,35 +462,24 @@ class LocalizeRefs extends DirCommand<dynamic> {
     }
     final url = resultUrl.stdout.toString().trim();
 
-    // resolve branch/ref
     var ref = gitRefOverride?.trim() ?? '';
 
     if (ref.isEmpty) {
-      final resultRef = await runProcess('git', [
-        'rev-parse',
-        '--abbrev-ref',
-        'HEAD',
-      ], workingDirectory: depDir.path);
+      final resultRef = await runProcess(
+        'git',
+        <String>['rev-parse', '--abbrev-ref', 'HEAD'],
+        workingDirectory: depDir.path,
+      );
       ref = 'main';
       if (resultRef.exitCode == 0) {
         ref = resultRef.stdout.toString().trim();
-        // Fallback to 'main' if ref is 'HEAD' or empty string
         if (ref.isEmpty || ref == 'HEAD') {
           ref = 'main';
         }
       }
     }
 
-    final gitMap = {
-      'git': {'url': url, 'ref': ref},
-    };
-    // returns YAML string for the dependency
-    // The yamlToString expects Map corresponding to a full dependency:
-    //     dependencyName:
-    //       git:
-    //         url:
-    //         ref:
-    return yamlToString(gitMap);
+    return (url, ref);
   }
 
   // ...........................................................................
@@ -326,10 +497,7 @@ class LocalizeRefs extends DirCommand<dynamic> {
     Map<String, dynamic> replacedDependencies,
     String filePath,
   ) async {
-    // Convert the Map to a JSON string
     final jsonString = jsonEncode(replacedDependencies);
-
-    // Write the JSON data to the file
     final file = File(filePath);
     await file.writeAsString(jsonString);
   }

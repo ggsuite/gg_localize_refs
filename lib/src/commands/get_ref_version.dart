@@ -4,6 +4,7 @@
 // Use of this source code is governed by terms that can be
 // found in the LICENSE file in the root of this package.
 
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:gg_args/gg_args.dart';
@@ -13,7 +14,8 @@ import 'package:gg_log/gg_log.dart';
 import 'package:yaml/yaml.dart';
 
 // #############################################################################
-/// Command that reads the current version/spec of a dependency from pubspec.yaml
+/// Command that reads the current version/spec of a dependency from
+/// pubspec.yaml or package.json.
 class GetRefVersion extends DirCommand<dynamic> {
   /// Constructor
   GetRefVersion({required super.ggLog})
@@ -40,26 +42,53 @@ class GetRefVersion extends DirCommand<dynamic> {
     }
 
     try {
-      // Resolve pubspec.yaml in the provided directory directly.
       final pubspec = File('${directory.path}/pubspec.yaml');
-      if (!pubspec.existsSync()) {
+      final packageJson = File('${directory.path}/package.json');
+
+      if (!pubspec.existsSync() && !packageJson.existsSync()) {
         throw Exception('pubspec.yaml not found at ${pubspec.path}');
       }
 
-      // Read pubspec content
-      final content = pubspec.readAsStringSync();
+      if (pubspec.existsSync()) {
+        final content = pubspec.readAsStringSync();
+        final yamlMap = loadYaml(content) as Map<dynamic, dynamic>;
 
-      // Also load YAML as Map to access dependency values
-      final yamlMap = loadYaml(content) as Map<dynamic, dynamic>;
+        final dynamic value = getDependency2(dependencyName, yamlMap);
+        if (value == null) {
+          ggLog?.call(yellow('Dependency $dependencyName not found.'));
+          return null;
+        }
 
-      final dynamic value = getDependency2(dependencyName, yamlMap);
+        final result = yamlToString(value).trimRight();
+        ggLog?.call(result);
+        return result;
+      }
+
+      final content = packageJson.readAsStringSync();
+      final json = jsonDecode(content) as Map<String, dynamic>;
+
+      dynamic value;
+      if (json['dependencies'] is Map) {
+        value =
+            (json['dependencies'] as Map)[dependencyName] ??
+                (json['dependencies'] as Map<String, dynamic>)[dependencyName];
+      }
+      if (value == null && json['devDependencies'] is Map) {
+        value =
+            (json['devDependencies'] as Map)[dependencyName] ??
+                (json['devDependencies'] as Map<String, dynamic>)[
+                  dependencyName
+                ];
+      }
+
       if (value == null) {
         ggLog?.call(yellow('Dependency $dependencyName not found.'));
         return null;
       }
 
-      ggLog?.call(yamlToString(value).trimRight());
-      return yamlToString(value).trimRight();
+      final result = value is String ? value : jsonEncode(value);
+      ggLog?.call(result);
+      return result;
     } catch (e) {
       throw Exception(red('An error occurred: $e'));
     }
@@ -67,7 +96,8 @@ class GetRefVersion extends DirCommand<dynamic> {
 }
 
 // ............................................................................
-/// Get a dependency from the YAML map (re-export helper for this file)
+/// Get a dependency from the YAML map
+/// (helper for pubspec.yaml based projects)
 dynamic getDependency2(String dependencyName, Map<dynamic, dynamic> yamlMap) {
   return yamlMap['dependencies']?[dependencyName] ??
       yamlMap['dev_dependencies']?[dependencyName];

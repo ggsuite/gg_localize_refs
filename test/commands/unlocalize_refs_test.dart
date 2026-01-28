@@ -1,11 +1,13 @@
 import 'dart:io';
 import 'package:args/command_runner.dart';
 import 'package:gg_capture_print/gg_capture_print.dart';
-import 'package:gg_localize_refs/src/commands/unlocalize_refs.dart';
 import 'package:gg_localize_refs/src/backend/file_changes_buffer.dart';
+import 'package:gg_localize_refs/src/backend/languages/dart_language.dart';
+import 'package:gg_localize_refs/src/backend/languages/project_language.dart';
 import 'package:gg_localize_refs/src/backend/process_dependencies.dart';
-import 'package:test/test.dart';
+import 'package:gg_localize_refs/src/commands/unlocalize_refs.dart';
 import 'package:path/path.dart';
+import 'package:test/test.dart';
 
 import '../test_helpers.dart';
 
@@ -21,6 +23,11 @@ void main() {
   Directory dWorkspaceAlreadyUnlocalized = Directory('');
   Directory dWorkspaceSucceed = Directory('');
   Directory dWorkspaceSucceedGit = Directory('');
+
+  Directory dWorkspaceSucceedTs = Directory('');
+  Directory dWorkspaceSucceedGitTs = Directory('');
+  Directory dWorkspaceAlreadyUnlocalizedTs = Directory('');
+  Directory dJsonNotFoundTs = Directory('');
 
   setUp(() async {
     messages.clear();
@@ -45,6 +52,12 @@ void main() {
       'unlocalize_already_unlocalized',
     );
 
+    dWorkspaceSucceedTs = createTempDir('unlocalize_ts_succeed');
+    dWorkspaceSucceedGitTs = createTempDir('unlocalize_ts_succeed_git');
+    dWorkspaceAlreadyUnlocalizedTs =
+        createTempDir('unlocalize_ts_already_unlocalized');
+    dJsonNotFoundTs = createTempDir('unlocalize_ts_json_not_found');
+
     copyDirectory(
       Directory(
         join('test', 'sample_folder', 'unlocalize_refs', 'path_succeed'),
@@ -59,7 +72,12 @@ void main() {
     );
     copyDirectory(
       Directory(
-        join('test', 'sample_folder', 'unlocalize_refs', 'already_unlocalized'),
+        join(
+          'test',
+          'sample_folder',
+          'unlocalize_refs',
+          'already_unlocalized',
+        ),
       ),
       dWorkspaceAlreadyUnlocalized,
     );
@@ -69,10 +87,40 @@ void main() {
       ),
       dJsonNotFound,
     );
+
+    copyDirectory(
+      Directory(
+        join('test', 'sample_folder_ts', 'unlocalize_refs', 'path_succeed'),
+      ),
+      dWorkspaceSucceedTs,
+    );
+    copyDirectory(
+      Directory(
+        join('test', 'sample_folder_ts', 'unlocalize_refs', 'git_succeed'),
+      ),
+      dWorkspaceSucceedGitTs,
+    );
+    copyDirectory(
+      Directory(
+        join(
+          'test',
+          'sample_folder_ts',
+          'unlocalize_refs',
+          'already_unlocalized',
+        ),
+      ),
+      dWorkspaceAlreadyUnlocalizedTs,
+    );
+    copyDirectory(
+      Directory(
+        join('test', 'sample_folder_ts', 'unlocalize_refs', 'json_not_found'),
+      ),
+      dJsonNotFoundTs,
+    );
   });
 
   tearDown(() {
-    deleteDirs([
+    deleteDirs(<Directory>[
       dNoProjectRootError,
       dParseError,
       dNoDependencies,
@@ -81,6 +129,10 @@ void main() {
       dWorkspaceSucceed,
       dWorkspaceSucceedGit,
       dWorkspaceAlreadyUnlocalized,
+      dWorkspaceSucceedTs,
+      dWorkspaceSucceedGitTs,
+      dWorkspaceAlreadyUnlocalizedTs,
+      dJsonNotFoundTs,
     ]);
   });
 
@@ -91,7 +143,7 @@ void main() {
         test('when called args=[--help]', () async {
           capturePrint(
             ggLog: messages.add,
-            code: () => runner.run(['unlocalize-refs', '--help']),
+            code: () => runner.run(<String>['unlocalize-refs', '--help']),
           );
 
           expect(
@@ -105,14 +157,14 @@ void main() {
       group('should throw', () {
         test('when project root was not found', () async {
           await expectLater(
-            runner.run([
+            runner.run(<String>[
               'unlocalize-refs',
               '--input',
               dNoProjectRootError.path,
             ]),
             throwsA(
               isA<Exception>().having(
-                (e) => e.toString(),
+                (Object e) => e.toString(),
                 'message',
                 contains('No project root found'),
               ),
@@ -122,16 +174,19 @@ void main() {
 
         group('when pubspec.yaml cannot be parsed', () {
           test('when calling command', () async {
-            // Create a pubspec.yaml with invalid content in tempDir
             File(
               join(dParseError.path, 'pubspec.yaml'),
             ).writeAsStringSync('invalid yaml');
 
             await expectLater(
-              runner.run(['unlocalize-refs', '--input', dParseError.path]),
+              runner.run(<String>[
+                'unlocalize-refs',
+                '--input',
+                dParseError.path,
+              ]),
               throwsA(
                 isA<Exception>().having(
-                  (e) => e.toString(),
+                  (Object e) => e.toString(),
                   'message',
                   contains('Error parsing pubspec.yaml'),
                 ),
@@ -141,32 +196,35 @@ void main() {
         });
 
         test('when node not found', () async {
-          final messages = <String>[];
+          final localMessages = <String>[];
 
-          // Create a pubspec.yaml with invalid content in tempDir
           File(join(dNodeNotFound.path, 'pubspec.yaml')).writeAsStringSync(
             'name: test_package\nversion: 1.0.0\ndependencies: {}',
           );
 
-          final unlocal = UnlocalizeRefs(ggLog: messages.add);
+          final unlocal = UnlocalizeRefs(ggLog: localMessages.add);
 
           await expectLater(
-            processNode(
-              dNodeNotFound,
-              {},
-              {},
-              unlocal.modifyYaml,
-              FileChangesBuffer(),
-            ),
+            () async {
+              final language = DartProjectLanguage();
+              final node = await language.createNode(dNodeNotFound);
+              await processNode(
+                node,
+                <String, ProjectNode>{},
+                <String>{},
+                unlocal.modifyManifest,
+                FileChangesBuffer(),
+              );
+            },
             throwsA(
               isA<Exception>()
                   .having(
-                    (e) => e.toString(),
+                    (Object e) => e.toString(),
                     'message',
                     contains('node for the package'),
                   )
                   .having(
-                    (e) => e.toString(),
+                    (Object e) => e.toString(),
                     'message',
                     contains('not found'),
                   ),
@@ -181,14 +239,13 @@ void main() {
         test('when pubspec is correct', () async {
           final dProject1 = Directory(join(dWorkspaceSucceed.path, 'project1'));
 
-          final messages = <String>[];
-          final unlocal = UnlocalizeRefs(ggLog: messages.add);
-          await unlocal.get(directory: dProject1, ggLog: messages.add);
+          final localMessages = <String>[];
+          final unlocal = UnlocalizeRefs(ggLog: localMessages.add);
+          await unlocal.get(directory: dProject1, ggLog: localMessages.add);
 
-          expect(messages[0], contains('Running unlocalize-refs in'));
-          expect(messages[1], contains('Unlocalize refs of test1'));
+          expect(localMessages[0], contains('Running unlocalize-refs in'));
+          expect(localMessages[1], contains('Unlocalize refs of test1'));
 
-          // Check if publish_to: none was removed
           final resultYaml = File(
             join(dProject1.path, 'pubspec.yaml'),
           ).readAsStringSync();
@@ -200,12 +257,12 @@ void main() {
             join(dWorkspaceSucceedGit.path, 'project1'),
           );
 
-          final messages = <String>[];
-          final unlocal = UnlocalizeRefs(ggLog: messages.add);
-          await unlocal.get(directory: dProject1, ggLog: messages.add);
+          final localMessages = <String>[];
+          final unlocal = UnlocalizeRefs(ggLog: localMessages.add);
+          await unlocal.get(directory: dProject1, ggLog: localMessages.add);
 
-          expect(messages[0], contains('Running unlocalize-refs in'));
-          expect(messages[1], contains('Unlocalize refs of test1'));
+          expect(localMessages[0], contains('Running unlocalize-refs in'));
+          expect(localMessages[1], contains('Unlocalize refs of test1'));
         });
 
         test('when already localized', () async {
@@ -213,33 +270,93 @@ void main() {
             join(dWorkspaceAlreadyUnlocalized.path, 'project1'),
           );
 
-          final messages = <String>[];
-          final local = UnlocalizeRefs(ggLog: messages.add);
-          await local.get(directory: dProject1, ggLog: messages.add);
+          final localMessages = <String>[];
+          final local = UnlocalizeRefs(ggLog: localMessages.add);
+          await local.get(directory: dProject1, ggLog: localMessages.add);
 
-          expect(messages[0], contains('Running unlocalize-refs in'));
-          expect(messages[1], contains('No files were changed'));
+          expect(localMessages[0], contains('Running unlocalize-refs in'));
+          expect(localMessages[1], contains('No files were changed'));
         });
 
         test('when .gg_localize_refs_backup.json does not exist', () async {
-          final messages = <String>[];
+          final localMessages = <String>[];
 
           final dProject1 = Directory(join(dJsonNotFound.path, 'project1'));
 
-          final unlocal = UnlocalizeRefs(ggLog: messages.add);
+          final unlocal = UnlocalizeRefs(ggLog: localMessages.add);
 
-          await unlocal.get(directory: dProject1, ggLog: messages.add);
+          await unlocal.get(directory: dProject1, ggLog: localMessages.add);
 
-          // The json file .. with old dependencies does not exist.
-
-          expect(messages[0], contains('Running unlocalize-refs in'));
-          expect(messages[1], contains('Unlocalize refs of test1'));
+          expect(localMessages[0], contains('Running unlocalize-refs in'));
+          expect(localMessages[1], contains('Unlocalize refs of test1'));
           expect(
-            messages[2],
+            localMessages[2],
             contains(
               'The automatic change of dependencies could not be performed',
             ),
           );
+        });
+
+        test('TypeScript: when package.json is correct (path)', () async {
+          final dProject1 = Directory(
+            join(dWorkspaceSucceedTs.path, 'project1'),
+          );
+
+          final localMessages = <String>[];
+          final unlocal = UnlocalizeRefs(ggLog: localMessages.add);
+          await unlocal.get(directory: dProject1, ggLog: localMessages.add);
+
+          expect(localMessages[0], contains('Running unlocalize-refs in'));
+          expect(localMessages[1], contains('Unlocalize refs of test1_ts'));
+
+          final resultJson = File(
+            join(dProject1.path, 'package.json'),
+          ).readAsStringSync();
+          expect(resultJson, contains('"test2_ts":"^2.0.4"'));
+        });
+
+        test('TypeScript: when package.json is correct and has git refs', () async {
+          final dProject1 = Directory(
+            join(dWorkspaceSucceedGitTs.path, 'project1'),
+          );
+
+          final localMessages = <String>[];
+          final unlocal = UnlocalizeRefs(ggLog: localMessages.add);
+          await unlocal.get(directory: dProject1, ggLog: localMessages.add);
+
+          expect(localMessages[0], contains('Running unlocalize-refs in'));
+          expect(localMessages[1], contains('Unlocalize refs of test1_ts'));
+        });
+
+        test('TypeScript: when already localized', () async {
+          final dProject1 = Directory(
+            join(dWorkspaceAlreadyUnlocalizedTs.path, 'project1'),
+          );
+
+          final localMessages = <String>[];
+          final local = UnlocalizeRefs(ggLog: localMessages.add);
+          await local.get(directory: dProject1, ggLog: localMessages.add);
+
+          expect(localMessages[0], contains('Running unlocalize-refs in'));
+          expect(localMessages[1], contains('No files were changed'));
+        });
+
+        test('TypeScript: when .gg_localize_refs_backup.json does not exist', () async {
+          final localMessages = <String>[];
+
+          final dProject1 = Directory(join(dJsonNotFoundTs.path, 'project1'));
+
+          final unlocal = UnlocalizeRefs(ggLog: localMessages.add);
+
+          await unlocal.get(directory: dProject1, ggLog: localMessages.add);
+
+          expect(localMessages[0], contains('Running unlocalize-refs in'));
+          expect(localMessages[1], contains('Unlocalize refs of test1_ts'));
+          expect(
+            localMessages[2],
+            contains('The automatic change of dependencies could not be performed'),
+          );
+          expect(localMessages[2], contains('package.json'));
         });
       });
     });
@@ -253,7 +370,7 @@ void main() {
         () => readDependenciesFromJson(nonExistentFilePath),
         throwsA(
           isA<Exception>().having(
-            (e) => e.toString(),
+            (Object e) => e.toString(),
             'message',
             contains(
               'The json file $nonExistentFilePath with old '

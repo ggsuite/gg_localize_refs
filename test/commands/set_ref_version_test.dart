@@ -34,14 +34,14 @@ void main() {
   });
 
   tearDown(() {
-    deleteDirs([dNoProjectRootError, dParseError, dWorkspace]);
+    deleteDirs(<Directory>[dNoProjectRootError, dParseError, dWorkspace]);
   });
 
   group('SetRefVersion', () {
     test('shows help', () async {
       capturePrint(
         ggLog: messages.add,
-        code: () => runner.run(['set-ref-version', '--help']),
+        code: () => runner.run(<String>['set-ref-version', '--help']),
       );
       expect(messages.last, contains('Sets the version/spec'));
     });
@@ -49,7 +49,7 @@ void main() {
     group('should throw', () {
       test('when pubspec.yaml was not found', () async {
         await expectLater(
-          runner.run([
+          runner.run(<String>[
             'set-ref-version',
             '--input',
             dNoProjectRootError.path,
@@ -61,11 +61,15 @@ void main() {
           throwsA(
             isA<Exception>()
                 .having(
-                  (e) => e.toString(),
+                  (Object e) => e.toString(),
                   'message',
                   contains('pubspec.yaml'),
                 )
-                .having((e) => e.toString(), 'message', contains('not found')),
+                .having(
+                  (Object e) => e.toString(),
+                  'message',
+                  contains('not found'),
+                ),
           ),
         );
       });
@@ -75,7 +79,7 @@ void main() {
           join(dParseError.path, 'pubspec.yaml'),
         ).writeAsStringSync('invalid yaml');
         await expectLater(
-          runner.run([
+          runner.run(<String>[
             'set-ref-version',
             '--input',
             dParseError.path,
@@ -86,7 +90,7 @@ void main() {
           ]),
           throwsA(
             isA<Exception>().having(
-              (e) => e.toString(),
+              (Object e) => e.toString(),
               'message',
               contains('An error occurred'),
             ),
@@ -97,7 +101,7 @@ void main() {
       test('when dependency not found', () async {
         final d1 = Directory(join(dWorkspace.path, 'a1'));
         final d2 = Directory(join(dWorkspace.path, 'a2'));
-        createDirs([d1, d2]);
+        createDirs(<Directory>[d1, d2]);
         File(join(d1.path, 'pubspec.yaml')).writeAsStringSync(
           'name: a1\nversion: 1.0.0\ndependencies:\n  a2: ^1.0.0',
         );
@@ -106,7 +110,7 @@ void main() {
         ).writeAsStringSync('name: a2\nversion: 1.0.0');
 
         await expectLater(
-          runner.run([
+          runner.run(<String>[
             'set-ref-version',
             '--input',
             d1.path,
@@ -117,7 +121,7 @@ void main() {
           ]),
           throwsA(
             isA<Exception>().having(
-              (e) => e.toString(),
+              (Object e) => e.toString(),
               'message',
               contains('Dependency does_not_exist not found.'),
             ),
@@ -127,12 +131,12 @@ void main() {
 
       test('when --ref is missing', () async {
         final d = Directory(join(dWorkspace.path, 'missing_ref'));
-        createDirs([d]);
+        createDirs(<Directory>[d]);
         File(join(d.path, 'pubspec.yaml')).writeAsStringSync(
           'name: a\nversion: 1.0.0\ndependencies:\n  b: ^1.0.0',
         );
         await expectLater(
-          runner.run([
+          runner.run(<String>[
             'set-ref-version',
             '--input',
             d.path,
@@ -141,7 +145,7 @@ void main() {
           ]),
           throwsA(
             isA<Exception>().having(
-              (e) => e.toString(),
+              (Object e) => e.toString(),
               'message',
               contains('Please provide a dependency name via --ref.'),
             ),
@@ -151,17 +155,50 @@ void main() {
 
       test('when --version is missing', () async {
         final d = Directory(join(dWorkspace.path, 'missing_version'));
-        createDirs([d]);
+        createDirs(<Directory>[d]);
         File(join(d.path, 'pubspec.yaml')).writeAsStringSync(
           'name: a\nversion: 1.0.0\ndependencies:\n  b: ^1.0.0',
         );
         await expectLater(
-          runner.run(['set-ref-version', '--input', d.path, '--ref', 'b']),
+          runner.run(<String>[
+            'set-ref-version',
+            '--input',
+            d.path,
+            '--ref',
+            'b',
+          ]),
           throwsA(
             isA<Exception>().having(
-              (e) => e.toString(),
+              (Object e) => e.toString(),
               'message',
               contains('Please provide the new version via --version.'),
+            ),
+          ),
+        );
+      });
+
+      test('when dependency not found in package.json', () async {
+        final d = Directory(join(dWorkspace.path, 'ts_missing_dep'));
+        createDirs(<Directory>[d]);
+        File(join(d.path, 'package.json')).writeAsStringSync(
+          '{"name":"ts_missing_dep","dependencies":{"a":"^1.0.0"}}',
+        );
+
+        await expectLater(
+          runner.run(<String>[
+            'set-ref-version',
+            '--input',
+            d.path,
+            '--ref',
+            'b',
+            '--version',
+            '^2.0.0',
+          ]),
+          throwsA(
+            isA<Exception>().having(
+              (Object e) => e.toString(),
+              'message',
+              contains('Dependency b not found.'),
             ),
           ),
         );
@@ -172,7 +209,7 @@ void main() {
       test('replace scalar with scalar', () async {
         final d1 = Directory(join(dWorkspace.path, 'b1'));
         final d2 = Directory(join(dWorkspace.path, 'b2'));
-        createDirs([d1, d2]);
+        createDirs(<Directory>[d1, d2]);
         File(join(d1.path, 'pubspec.yaml')).writeAsStringSync(
           'name: b1\nversion: 1.0.0\ndependencies:\n  b2: ^1.0.0',
         );
@@ -180,7 +217,7 @@ void main() {
           join(d2.path, 'pubspec.yaml'),
         ).writeAsStringSync('name: b2\nversion: 1.0.0');
 
-        await runner.run([
+        await runner.run(<String>[
           'set-ref-version',
           '--input',
           d1.path,
@@ -196,7 +233,7 @@ void main() {
       test('replace scalar with git block', () async {
         final d1 = Directory(join(dWorkspace.path, 'c1'));
         final d2 = Directory(join(dWorkspace.path, 'c2'));
-        createDirs([d1, d2]);
+        createDirs(<Directory>[d1, d2]);
         File(join(d1.path, 'pubspec.yaml')).writeAsStringSync(
           'name: c1\nversion: 1.0.0\ndependencies:\n  c2: ^1.0.0',
         );
@@ -204,7 +241,7 @@ void main() {
           join(d2.path, 'pubspec.yaml'),
         ).writeAsStringSync('name: c2\nversion: 1.0.0');
 
-        await runner.run([
+        await runner.run(<String>[
           'set-ref-version',
           '--input',
           d1.path,
@@ -223,7 +260,7 @@ void main() {
       test('replace git block with scalar', () async {
         final d1 = Directory(join(dWorkspace.path, 'd1'));
         final d2 = Directory(join(dWorkspace.path, 'd2'));
-        createDirs([d1, d2]);
+        createDirs(<Directory>[d1, d2]);
         File(join(d1.path, 'pubspec.yaml')).writeAsStringSync(
           'name: d1\nversion: 1.0.0\ndependencies:\n  d2:\n    git:\n      url: git@github.com:user/d2.git\n      ref: main',
         );
@@ -231,7 +268,7 @@ void main() {
           join(d2.path, 'pubspec.yaml'),
         ).writeAsStringSync('name: d2\nversion: 1.0.0');
 
-        await runner.run([
+        await runner.run(<String>[
           'set-ref-version',
           '--input',
           d1.path,
@@ -248,7 +285,7 @@ void main() {
       test('replace path block with scalar', () async {
         final d1 = Directory(join(dWorkspace.path, 'e1'));
         final d2 = Directory(join(dWorkspace.path, 'e2'));
-        createDirs([d1, d2]);
+        createDirs(<Directory>[d1, d2]);
         File(join(d1.path, 'pubspec.yaml')).writeAsStringSync(
           'name: e1\nversion: 1.0.0\ndependencies:\n  e2:\n    path: ../e2',
         );
@@ -256,7 +293,7 @@ void main() {
           join(d2.path, 'pubspec.yaml'),
         ).writeAsStringSync('name: e2\nversion: 1.0.0');
 
-        await runner.run([
+        await runner.run(<String>[
           'set-ref-version',
           '--input',
           d1.path,
@@ -273,7 +310,7 @@ void main() {
       test('updates dev_dependency', () async {
         final d1 = Directory(join(dWorkspace.path, 'f1'));
         final d2 = Directory(join(dWorkspace.path, 'f2'));
-        createDirs([d1, d2]);
+        createDirs(<Directory>[d1, d2]);
         File(join(d1.path, 'pubspec.yaml')).writeAsStringSync(
           'name: f1\nversion: 1.0.0\ndev_dependencies:\n  f2: ^1.0.0',
         );
@@ -281,7 +318,7 @@ void main() {
           join(d2.path, 'pubspec.yaml'),
         ).writeAsStringSync('name: f2\nversion: 1.0.0');
 
-        await runner.run([
+        await runner.run(<String>[
           'set-ref-version',
           '--input',
           d1.path,
@@ -297,7 +334,7 @@ void main() {
       test('no change when value is equal (logs and returns)', () async {
         final d1 = Directory(join(dWorkspace.path, 'g1'));
         final d2 = Directory(join(dWorkspace.path, 'g2'));
-        createDirs([d1, d2]);
+        createDirs(<Directory>[d1, d2]);
         File(join(d1.path, 'pubspec.yaml')).writeAsStringSync(
           'name: g1\nversion: 1.0.0\ndependencies:\n  g2: ^1.0.0',
         );
@@ -305,7 +342,7 @@ void main() {
           join(d2.path, 'pubspec.yaml'),
         ).writeAsStringSync('name: g2\nversion: 1.0.0');
         messages.clear();
-        await runner.run([
+        await runner.run(<String>[
           'set-ref-version',
           '--input',
           d1.path,
@@ -320,15 +357,13 @@ void main() {
       });
 
       test('no structural change leaves content as-is and logs', () async {
-        // Cover branch where replaceDependency returns original content
-        // because dependency not found in the given section.
         final d = Directory(join(dWorkspace.path, 'g3'));
-        createDirs([d]);
+        createDirs(<Directory>[d]);
         File(join(d.path, 'pubspec.yaml')).writeAsStringSync(
           'name: g3\nversion: 1.0.0\ndependencies:\n  a: ^1.0.0',
         );
         messages.clear();
-        await runner.run([
+        await runner.run(<String>[
           'set-ref-version',
           '--input',
           d.path,
@@ -337,7 +372,67 @@ void main() {
           '--version',
           '^1.0.0',
         ]);
-        // No change expected and branch where updated == content hit.
+        expect(messages.join('\n'), contains('No files were changed'));
+      });
+
+      test('replace scalar with scalar in package.json', () async {
+        final d = Directory(join(dWorkspace.path, 'ts_scalar'));
+        createDirs(<Directory>[d]);
+        File(join(d.path, 'package.json')).writeAsStringSync(
+          '{"name":"ts_scalar","dependencies":{"dep":"^1.0.0"}}',
+        );
+
+        await runner.run(<String>[
+          'set-ref-version',
+          '--input',
+          d.path,
+          '--ref',
+          'dep',
+          '--version',
+          '^2.0.0',
+        ]);
+        final content = File(join(d.path, 'package.json')).readAsStringSync();
+        expect(content, contains('"dep":"^2.0.0"'));
+      });
+
+      test('updates devDependency in package.json', () async {
+        final d = Directory(join(dWorkspace.path, 'ts_dev'));
+        createDirs(<Directory>[d]);
+        File(join(d.path, 'package.json')).writeAsStringSync(
+          '{"name":"ts_dev","devDependencies":{"dep":"^1.0.0"}}',
+        );
+
+        await runner.run(<String>[
+          'set-ref-version',
+          '--input',
+          d.path,
+          '--ref',
+          'dep',
+          '--version',
+          '^1.1.0',
+        ]);
+        final content = File(join(d.path, 'package.json')).readAsStringSync();
+        expect(content, contains('"dep":"^1.1.0"'));
+      });
+
+      test('no change when value is equal in package.json logs and returns', () async {
+        final d = Directory(join(dWorkspace.path, 'ts_equal'));
+        createDirs(<Directory>[d]);
+        File(join(d.path, 'package.json')).writeAsStringSync(
+          '{"name":"ts_equal","dependencies":{"dep":"^1.0.0"}}',
+        );
+        messages.clear();
+        await runner.run(<String>[
+          'set-ref-version',
+          '--input',
+          d.path,
+          '--ref',
+          'dep',
+          '--version',
+          '^1.0.0',
+        ]);
+        final content = File(join(d.path, 'package.json')).readAsStringSync();
+        expect(content, contains('"dep":"^1.0.0"'));
         expect(messages.join('\n'), contains('No files were changed'));
       });
     });

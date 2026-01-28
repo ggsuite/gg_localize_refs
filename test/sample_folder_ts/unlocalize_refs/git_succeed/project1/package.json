@@ -1,0 +1,1 @@
+{"name":"test1_ts","version":"1.0.0","dependencies":{"test2_ts":"git+ssh://git@github.com:user/test2_ts.git#main"}}
