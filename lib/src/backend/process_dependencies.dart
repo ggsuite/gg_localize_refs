@@ -1,3 +1,9 @@
+// @license
+// Copyright (c) 2019 - 2025 Dr. Gabriel Gatzsche. All Rights Reserved.
+//
+// Use of this source code is governed by terms that can be
+// found in the LICENSE file in the root of this package.
+
 // ...........................................................................
 import 'dart:io';
 
@@ -8,7 +14,7 @@ import 'package:gg_localize_refs/src/backend/languages/project_language.dart';
 import 'package:gg_localize_refs/src/backend/languages/typescript_language.dart';
 import 'package:gg_localize_refs/src/backend/multi_language_graph.dart';
 import 'package:gg_log/gg_log.dart';
-import 'package:pubspec_parse/pubspec_parse.dart';
+import 'package:yaml/yaml.dart';
 
 /// Signature of a function that modifies a project manifest.
 typedef ModifyManifest =
@@ -175,12 +181,25 @@ Directory correctDir(Directory directory) {
 // ...........................................................................
 /// Get the package name from the pubspec.yaml file
 String getPackageName(String pubspecContent) {
-  late Pubspec pubspecYaml;
+  dynamic yaml;
   try {
-    pubspecYaml = Pubspec.parse(pubspecContent);
+    yaml = loadYaml(pubspecContent);
   } catch (e) {
     throw Exception(red('Error parsing pubspec.yaml:') + e.toString());
   }
 
-  return pubspecYaml.name;
+  if (yaml is! Map) {
+    throw Exception(
+      '${red('Error parsing pubspec.yaml:')} Root node is not a map.',
+    );
+  }
+
+  final name = yaml['name']?.toString();
+  if (name == null || name.isEmpty) {
+    throw Exception(
+      '${red('Error parsing pubspec.yaml:')} "name" field is missing.',
+    );
+  }
+
+  return name;
 }

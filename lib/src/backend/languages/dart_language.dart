@@ -50,22 +50,38 @@ class DartProjectLanguage extends ProjectLanguage {
     final pubspecFile = File('${node.directory.path}/$manifestFileName');
     final content = await pubspecFile.readAsString();
 
-    late Pubspec pubspec;
+    dynamic yaml;
     try {
-      pubspec = Pubspec.parse(content);
+      yaml = loadYaml(content);
     } catch (e) {
       throw Exception(red('Error parsing pubspec.yaml:') + e.toString());
     }
 
+    if (yaml is! Map) {
+      throw Exception(
+        '${red('Error parsing pubspec.yaml:')} Root node is not a map.',
+      );
+    }
+
     final result = <String, String>{};
 
-    for (final entry in pubspec.dependencies.entries) {
-      result[entry.key] = entry.value.toString();
+    void addDeps(String sectionKey) {
+      final section = yaml[sectionKey];
+      if (section is! Map) {
+        return;
+      }
+      section.forEach((dynamic key, dynamic value) {
+        if (key == null) {
+          return;
+        }
+        final name = key.toString();
+        final spec = value?.toString() ?? 'null';
+        result[name] = spec;
+      });
     }
 
-    for (final entry in pubspec.devDependencies.entries) {
-      result[entry.key] = entry.value.toString();
-    }
+    addDeps('dependencies');
+    addDeps('dev_dependencies');
 
     return result;
   }

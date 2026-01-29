@@ -22,7 +22,8 @@ class GetRefVersion extends DirCommand<dynamic> {
     : super(
         name: 'get-ref-version',
         description:
-            'Reads the current version/spec of a dependency from pubspec.yaml.',
+            'Reads the current version/spec of a dependency '
+            'from pubspec.yaml.',
       ) {
     argParser.addOption('ref', help: 'The dependency name to read.');
   }
@@ -97,6 +98,15 @@ class GetRefVersion extends DirCommand<dynamic> {
 /// Get a dependency from the YAML map
 /// (helper for pubspec.yaml based projects)
 dynamic getDependency2(String dependencyName, Map<dynamic, dynamic> yamlMap) {
-  return yamlMap['dependencies']?[dependencyName] ??
-      yamlMap['dev_dependencies']?[dependencyName];
+  final deps = yamlMap['dependencies'];
+  if (deps is Map && deps.containsKey(dependencyName)) {
+    return deps[dependencyName];
+  }
+
+  final devDeps = yamlMap['dev_dependencies'];
+  if (devDeps is Map && devDeps.containsKey(dependencyName)) {
+    return devDeps[dependencyName];
+  }
+
+  return null;
 }

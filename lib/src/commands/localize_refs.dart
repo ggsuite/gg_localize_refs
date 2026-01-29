@@ -459,7 +459,8 @@ class LocalizeRefs extends DirCommand<dynamic> {
     ], workingDirectory: depDir.path);
     if (resultUrl.exitCode != 0) {
       throw Exception(
-        'Cannot get git remote url for dependency $depName in ${depDir.path}',
+        'Cannot get git remote url for dependency '
+        '$depName in ${depDir.path}',
       );
     }
     final url = resultUrl.stdout.toString().trim();
@@ -507,7 +508,19 @@ class LocalizeRefs extends DirCommand<dynamic> {
 
 // ............................................................................
 /// Get a dependency from the YAML map
+///
+/// This helper first checks the `dependencies` section and then
+/// `dev_dependencies`. It safely handles missing sections.
 dynamic getDependency(String dependencyName, Map<dynamic, dynamic> yamlMap) {
-  return yamlMap['dependencies']?[dependencyName] ??
-      yamlMap['dev_dependencies']?[dependencyName];
+  final deps = yamlMap['dependencies'];
+  if (deps is Map && deps.containsKey(dependencyName)) {
+    return deps[dependencyName];
+  }
+
+  final devDeps = yamlMap['dev_dependencies'];
+  if (devDeps is Map && devDeps.containsKey(dependencyName)) {
+    return devDeps[dependencyName];
+  }
+
+  return null;
 }
