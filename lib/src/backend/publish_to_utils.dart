@@ -45,7 +45,7 @@ Map<String, dynamic> backupPublishTo(Map<dynamic, dynamic> yamlMap) {
 /// If backup has 'publish_to_original', replaces the current 'publish_to' value
 String restorePublishTo(String yamlString, Map<String, dynamic> backupMap) {
   final original = backupMap['publish_to_original'];
-  if (original == null || original == 'none') {
+  if (original == null) {
     return removePublishToNone(yamlString);
   }
 
