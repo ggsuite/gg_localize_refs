@@ -89,7 +89,10 @@ class UnlocalizeRefs extends DirCommand<dynamic> {
 
     ggLog('Unlocalize refs of $packageName');
 
-    File backupFile = File('${projectDir.path}/.gg_localize_refs_backup.json');
+    final backupDir = Directory(p.join(projectDir.path, '.gg'));
+    final backupFile = File(
+      p.join(backupDir.path, '.gg_localize_refs_backup.json'),
+    );
 
     if (!backupFile.existsSync()) {
       ggLog(

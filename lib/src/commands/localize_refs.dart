@@ -70,6 +70,15 @@ class LocalizeRefs extends DirCommand<dynamic> {
   /// Optional override for the git ref (branch, tag, or commit).
   String? gitRefOverride;
 
+  /// Ensures the backup directory (.gg) exists under [projectDir]
+  Directory _ensureBackupDir(Directory projectDir) {
+    final backupDir = Directory(p.join(projectDir.path, '.gg'));
+    if (!backupDir.existsSync()) {
+      backupDir.createSync(recursive: true);
+    }
+    return backupDir;
+  }
+
   // ...........................................................................
   @override
   Future<void> get({
@@ -114,6 +123,8 @@ class LocalizeRefs extends DirCommand<dynamic> {
     Directory projectDir,
     FileChangesBuffer fileChangesBuffer,
   ) async {
+    final backupDir = _ensureBackupDir(projectDir);
+
     if (!useGit) {
       // Normal path (file)
       var hasOnlineDependencies = false;
@@ -135,7 +146,7 @@ class LocalizeRefs extends DirCommand<dynamic> {
 
       // copy pubspec.yaml to pubspec.yaml.original
       final originalPubspec = File(
-        '${projectDir.path}/.gg_localize_refs_backup.yaml',
+        p.join(backupDir.path, '.gg_localize_refs_backup.yaml'),
       );
       await _writeFileCopy(source: pubspec, destination: originalPubspec);
 
@@ -183,7 +194,7 @@ class LocalizeRefs extends DirCommand<dynamic> {
       // Save the replaced dependencies to a JSON file
       await saveDependenciesAsJson(
         replacedDependencies,
-        '${projectDir.path}/.gg_localize_refs_backup.json',
+        p.join(backupDir.path, '.gg_localize_refs_backup.json'),
       );
 
       // write new pubspec.yaml.modified
@@ -208,7 +219,7 @@ class LocalizeRefs extends DirCommand<dynamic> {
 
     // backup YAML
     final originalPubspec = File(
-      '${projectDir.path}/.gg_localize_refs_backup.yaml',
+      p.join(backupDir.path, '.gg_localize_refs_backup.yaml'),
     );
     await _writeFileCopy(source: pubspec, destination: originalPubspec);
     // backup JSON of dependencies
@@ -231,7 +242,7 @@ class LocalizeRefs extends DirCommand<dynamic> {
 
     await saveDependenciesAsJson(
       replacedDependencies,
-      '${projectDir.path}/.gg_localize_refs_backup.json',
+      p.join(backupDir.path, '.gg_localize_refs_backup.json'),
     );
 
     // Replace each dependency in pubspecContent

@@ -263,7 +263,7 @@ void main() {
           // .gg_localize_refs_backup.json
           // should still save the previous version
           final backupJson = File(
-            p.join(dProject1.path, '.gg_localize_refs_backup.json'),
+            p.join(dProject1.path, '.gg', '.gg_localize_refs_backup.json'),
           ).readAsStringSync();
           expect(backupJson, contains('^1.0.0'));
         });
