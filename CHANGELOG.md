@@ -24,6 +24,7 @@
 - Use sample\_folder for test files
 - Create backend subfolder and move source files
 - changed gg\_local\_package\_dependencies to git dependency
+- kidney: changed references to git
 
 ### Fixed
 
