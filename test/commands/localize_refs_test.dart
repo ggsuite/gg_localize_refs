@@ -208,6 +208,27 @@ void main() {
           expect(gitignoreContent, contains('!.gg/.gg.json'));
         });
 
+        test('updates existing .gitignore when missing entries', () async {
+          final dProject1 = Directory(
+            p.join(dWorkspaceSucceed.path, 'project1'),
+          );
+
+          // Create an existing .gitignore without the required .gg entries.
+          final gitignoreFile = File(p.join(dProject1.path, '.gitignore'));
+          gitignoreFile.writeAsStringSync('build/\n');
+
+          final localMessages = <String>[];
+          final local = LocalizeRefs(ggLog: localMessages.add);
+
+          await local.get(directory: dProject1, ggLog: localMessages.add);
+
+          // Existing content should be preserved and required entries appended.
+          final gitignoreContent = gitignoreFile.readAsStringSync();
+          expect(gitignoreContent, contains('build/'));
+          expect(gitignoreContent, contains('.gg'));
+          expect(gitignoreContent, contains('!.gg/.gg.json'));
+        });
+
         test('when already localized', () async {
           final dProject1 = Directory(
             p.join(dWorkspaceAlreadyLocalized.path, 'project1'),
