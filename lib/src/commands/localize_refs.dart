@@ -70,13 +70,45 @@ class LocalizeRefs extends DirCommand<dynamic> {
   /// Optional override for the git ref (branch, tag, or commit).
   String? gitRefOverride;
 
-  /// Ensures the backup directory (.gg) exists under [projectDir]
+  /// Ensures the backup directory (.gg) exists under [projectDir].
   Directory _ensureBackupDir(Directory projectDir) {
     final backupDir = Directory(p.join(projectDir.path, '.gg'));
-    if (!backupDir.existsSync()) {
+    final didExist = backupDir.existsSync();
+    if (!didExist) {
       backupDir.createSync(recursive: true);
     }
     return backupDir;
+  }
+
+  /// Ensures that `.gitignore` contains entries for `.gg` and `!.gg/.gg.json`
+  void _ensureGitignoreHasGgEntries(Directory projectDir) {
+    final gitignore = File(p.join(projectDir.path, '.gitignore'));
+    const ignoreDir = '.gg';
+    const keepConfig = '!.gg/.gg.json';
+
+    if (!gitignore.existsSync()) {
+      gitignore.writeAsStringSync('$ignoreDir\n$keepConfig\n');
+      return;
+    }
+
+    final raw = gitignore.readAsStringSync();
+    final normalized = raw.replaceAll('\r\n', '\n').replaceAll('\r', '\n');
+    final content = normalized.endsWith('\n')
+        ? normalized.substring(0, normalized.length - 1)
+        : normalized;
+    final lines = content.isEmpty ? <String>[] : content.split('\n');
+
+    final hasIgnoreDir = lines.any((line) => line.trim() == ignoreDir);
+    final hasKeepConfig = lines.any((line) => line.trim() == keepConfig);
+
+    if (!hasIgnoreDir) {
+      lines.add(ignoreDir);
+    }
+    if (!hasKeepConfig) {
+      lines.add(keepConfig);
+    }
+
+    gitignore.writeAsStringSync('${lines.join('\n')}\n');
   }
 
   // ...........................................................................
@@ -124,6 +156,7 @@ class LocalizeRefs extends DirCommand<dynamic> {
     FileChangesBuffer fileChangesBuffer,
   ) async {
     final backupDir = _ensureBackupDir(projectDir);
+    _ensureGitignoreHasGgEntries(projectDir);
 
     if (!useGit) {
       // Normal path (file)

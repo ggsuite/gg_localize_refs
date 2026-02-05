@@ -199,6 +199,13 @@ void main() {
             p.join(dProject1.path, 'pubspec.yaml'),
           ).readAsStringSync();
           expect(resultYaml, contains('publish_to: none'));
+
+          // Check that .gitignore has been updated for .gg
+          final gitignoreFile = File(p.join(dProject1.path, '.gitignore'));
+          expect(gitignoreFile.existsSync(), isTrue);
+          final gitignoreContent = gitignoreFile.readAsStringSync();
+          expect(gitignoreContent, contains('.gg'));
+          expect(gitignoreContent, contains('!.gg/.gg.json'));
         });
 
         test('when already localized', () async {
