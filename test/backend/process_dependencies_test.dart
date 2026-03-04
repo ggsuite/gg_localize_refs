@@ -69,7 +69,8 @@ void main() {
           createDirs(<Directory>[dNodeNotFound]);
 
           File(join(dNodeNotFound.path, 'pubspec.yaml')).writeAsStringSync(
-            'name: test_package\nversion: 1.0.0\ndependencies:',
+            'name: test_package\nversion: 1.0.0\n'
+            'dependencies:',
           );
 
           final language = DartProjectLanguage();
@@ -137,6 +138,41 @@ void main() {
           fileChangesBuffer: FileChangesBuffer(),
           ggLog: messages.add,
         );
+      });
+
+      test('handles manifests that only contain dev_dependencies', () async {
+        final ws = createTempDir('pd_dev_deps_ws');
+        final p1 = Directory(join(ws.path, 'p1'));
+        final p2 = Directory(join(ws.path, 'p2'));
+        createDirs(<Directory>[p1, p2]);
+
+        File(join(p1.path, 'pubspec.yaml')).writeAsStringSync(
+          'name: p1\n'
+          'version: 1.0.0\n'
+          'dev_dependencies:\n'
+          '  p2: ^1.0.0\n',
+        );
+        File(
+          join(p2.path, 'pubspec.yaml'),
+        ).writeAsStringSync('name: p2\nversion: 1.0.0\n');
+
+        final messages = <String>[];
+
+        await processProject(
+          directory: p1,
+          modifyFunction:
+              (
+                ProjectNode node,
+                File manifestFile,
+                String manifestContent,
+                dynamic manifestMap,
+                FileChangesBuffer fileChangesBuffer,
+              ) async {},
+          fileChangesBuffer: FileChangesBuffer(),
+          ggLog: messages.add,
+        );
+
+        deleteDirs(<Directory>[ws]);
       });
     });
 

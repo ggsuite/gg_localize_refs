@@ -66,7 +66,7 @@ class LocalizeRefs extends DirCommand<dynamic> {
   }
 
   /// Whether to localize to git references
-  late bool useGit;
+  bool useGit = false;
 
   /// Optional override for the git ref (branch, tag, or commit).
   String? gitRefOverride;

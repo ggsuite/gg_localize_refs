@@ -7,6 +7,7 @@
 import 'dart:io';
 
 import 'package:gg_localize_refs/src/backend/languages/typescript_language.dart';
+import 'package:gg_localize_refs/src/backend/languages/project_language.dart';
 import 'package:test/test.dart';
 
 import '../../test_helpers.dart';
@@ -30,6 +31,10 @@ void main() {
       tempDirs.add(dir);
       return dir;
     }
+
+    test('id returns ProjectLanguageId.typescript', () {
+      expect(language.id, ProjectLanguageId.typescript);
+    });
 
     test('isProjectRoot returns true when package.json exists', () {
       final dir = createTempProject('ts_lang_is_root_true');

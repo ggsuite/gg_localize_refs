@@ -119,7 +119,8 @@ void main() {
         final d2 = Directory(join(dWorkspace.path, 'p2'));
         createDirs(<Directory>[d1, d2]);
         File(join(d1.path, 'pubspec.yaml')).writeAsStringSync(
-          'name: p1\nversion: 1.0.0\ndependencies:\n  p2: ^1.2.3',
+          'name: p1\nversion: 1.0.0\n'
+          'dependencies:\n  p2: ^1.2.3',
         );
         File(
           join(d2.path, 'pubspec.yaml'),
@@ -141,7 +142,8 @@ void main() {
         final d2 = Directory(join(dWorkspace.path, 'p4'));
         createDirs(<Directory>[d1, d2]);
         File(join(d1.path, 'pubspec.yaml')).writeAsStringSync(
-          'name: p3\nversion: 1.0.0\ndev_dependencies:\n  p4: ^2.0.0',
+          'name: p3\nversion: 1.0.0\n'
+          'dev_dependencies:\n  p4: ^2.0.0',
         );
         File(
           join(d2.path, 'pubspec.yaml'),
@@ -163,7 +165,8 @@ void main() {
         createDirs(<Directory>[d1, d2]);
         File(join(d1.path, 'pubspec.yaml')).writeAsStringSync(
           'name: p5\nversion: 1.0.0\ndependencies:\n'
-          '  p6:\n    git:\n      url: git@github.com:user/p6.git\n      ref: main',
+          '  p6:\n    git:\n      url: git@github.com:user/p6.git\n'
+          '      ref: main',
         );
         File(
           join(d2.path, 'pubspec.yaml'),
@@ -187,7 +190,8 @@ void main() {
         final d2 = Directory(join(dWorkspace.path, 'p8'));
         createDirs(<Directory>[d1, d2]);
         File(join(d1.path, 'pubspec.yaml')).writeAsStringSync(
-          'name: p7\nversion: 1.0.0\ndependencies:\n  p8:\n    path: ../p8',
+          'name: p7\nversion: 1.0.0\n'
+          'dependencies:\n  p8:\n    path: ../p8',
         );
         File(
           join(d2.path, 'pubspec.yaml'),
@@ -207,9 +211,10 @@ void main() {
       test('logs warning when dependency not found', () async {
         final d1 = Directory(join(dWorkspace.path, 'p9'));
         createDirs(<Directory>[d1]);
-        File(
-          join(d1.path, 'pubspec.yaml'),
-        ).writeAsStringSync('name: p9\nversion: 1.0.0\ndependencies: {}');
+        File(join(d1.path, 'pubspec.yaml')).writeAsStringSync(
+          'name: p9\nversion: 1.0.0\n'
+          'dependencies: {}',
+        );
         messages.clear();
         await runner.run(<String>[
           'get-ref-version',
@@ -225,7 +230,8 @@ void main() {
         final d = Directory(join(dWorkspace.path, 'ts1'));
         createDirs(<Directory>[d]);
         File(join(d.path, 'package.json')).writeAsStringSync(
-          '{"name":"ts1","version":"1.0.0","dependencies":{"dep":"^1.2.3"}}',
+          '{"name":"ts1","version":"1.0.0","dependencies":'
+          '{"dep":"^1.2.3"}}',
         );
         messages.clear();
         await runner.run(<String>[
@@ -238,12 +244,13 @@ void main() {
         expect(messages.last.trim(), '^1.2.3');
       });
 
-      test('reads from devDependencies when '
-          'not in dependencies in package.json', () async {
+      test('reads from devDependencies when not in dependencies '
+          'in package.json', () async {
         final d = Directory(join(dWorkspace.path, 'ts2'));
         createDirs(<Directory>[d]);
         File(join(d.path, 'package.json')).writeAsStringSync(
-          '{"name":"ts2","version":"1.0.0","devDependencies":{"dep":"^2.0.0"}}',
+          '{"name":"ts2","version":"1.0.0","devDependencies":'
+          '{"dep":"^2.0.0"}}',
         );
         messages.clear();
         await runner.run(<String>[
@@ -269,6 +276,24 @@ void main() {
           d.path,
           '--ref',
           'does_not_exist',
+        ]);
+        expect(messages.last, contains('not found'));
+      });
+
+      test('tries both devDependencies casts when key is missing', () async {
+        final d = Directory(join(dWorkspace.path, 'ts4'));
+        createDirs(<Directory>[d]);
+        File(join(d.path, 'package.json')).writeAsStringSync(
+          '{"name":"ts4","version":"1.0.0","devDependencies":'
+          '{"other":"^1.0.0"}}',
+        );
+        messages.clear();
+        await runner.run(<String>[
+          'get-ref-version',
+          '--input',
+          d.path,
+          '--ref',
+          'missing',
         ]);
         expect(messages.last, contains('not found'));
       });

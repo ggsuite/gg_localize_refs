@@ -7,6 +7,7 @@
 import 'dart:io';
 
 import 'package:gg_localize_refs/src/backend/languages/dart_language.dart';
+import 'package:gg_localize_refs/src/backend/languages/project_language.dart';
 import 'package:test/test.dart';
 
 import '../../test_helpers.dart';
@@ -30,6 +31,10 @@ void main() {
       tempDirs.add(dir);
       return dir;
     }
+
+    test('id returns ProjectLanguageId.dart', () {
+      expect(language.id, ProjectLanguageId.dart);
+    });
 
     test('isProjectRoot returns true when pubspec.yaml exists', () {
       final dir = createTempProject('dart_lang_is_root_true');
@@ -78,30 +83,30 @@ void main() {
       );
     });
 
-    test(
-      'readDeclaredDependencies returns dependencies and dev_dependencies',
-      () async {
-        final dir = createTempProject('dart_lang_read_deps');
-        File('${dir.path}/pubspec.yaml').writeAsStringSync(
-          'name: pkg\n'
-          'version: 1.0.0\n'
-          'dependencies:\n'
-          '  a: ^1.0.0\n'
-          'dev_dependencies:\n'
-          '  b: ^2.0.0\n',
-        );
+    test('readDeclaredDependencies returns dependencies and '
+        'dev_dependencies', () async {
+      final dir = createTempProject('dart_lang_read_deps');
+      File('${dir.path}/pubspec.yaml').writeAsStringSync(
+        'name: pkg\n'
+        'version: 1.0.0\n'
+        'dependencies:\n'
+        '  a: ^1.0.0\n'
+        'dev_dependencies:\n'
+        '  b: ^2.0.0\n',
+      );
 
-        final node = await language.createNode(dir);
-        final deps = await language.readDeclaredDependencies(node);
+      final node = await language.createNode(dir);
+      final deps = await language.readDeclaredDependencies(node);
 
-        expect(deps.length, 2);
-        expect(deps['a'], 'HostedDependency: ^1.0.0');
-        expect(deps['b'], 'HostedDependency: ^2.0.0');
-      },
-    );
+      expect(deps.length, 2);
+      expect(deps['a'], 'HostedDependency: ^1.0.0');
+      expect(deps['b'], 'HostedDependency: ^2.0.0');
+    });
 
     test('parseManifestContent returns a Map for valid YAML', () {
-      const content = 'name: pkg\nversion: 1.0.0\ndependencies:\n  a: ^1.0.0\n';
+      const content =
+          'name: pkg\nversion: 1.0.0\n'
+          'dependencies:\n  a: ^1.0.0\n';
 
       final manifest = language.parseManifestContent(content) as Map;
 

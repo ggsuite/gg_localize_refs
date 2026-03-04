@@ -12,6 +12,7 @@ import 'package:gg_capture_print/gg_capture_print.dart';
 import 'package:gg_localize_refs/src/backend/file_changes_buffer.dart';
 import 'package:gg_localize_refs/src/backend/languages/dart_language.dart';
 import 'package:gg_localize_refs/src/backend/languages/project_language.dart';
+import 'package:gg_localize_refs/src/backend/languages/typescript_language.dart';
 import 'package:gg_localize_refs/src/backend/process_dependencies.dart';
 import 'package:gg_localize_refs/src/commands/localize_refs.dart';
 import 'package:path/path.dart' as p;
@@ -200,7 +201,8 @@ void main() {
           final localMessages = <String>[];
 
           File(p.join(dNodeNotFound.path, 'pubspec.yaml')).writeAsStringSync(
-            'name: test_package\nversion: 1.0.0\ndependencies:',
+            'name: test_package\nversion: 1.0.0\n'
+            'dependencies:',
           );
 
           final loc = LocalizeRefs(ggLog: localMessages.add);
@@ -516,6 +518,41 @@ void main() {
                 });
           },
         );
+
+        test(
+          'TypeScript: handles package.json without dependency sections',
+          () async {
+            final root = Directory(
+              p.join(dWorkspaceSucceedTs.path, 'nodeps_root'),
+            );
+            createDirs(<Directory>[root]);
+            final pkgDir = Directory(p.join(root.path, 'project_no_deps'));
+            createDirs(<Directory>[pkgDir]);
+
+            File(
+              p.join(pkgDir.path, 'package.json'),
+            ).writeAsStringSync('{"name":"nodeps","version":"1.0.0"}');
+
+            final language = TypeScriptProjectLanguage();
+            final node = await language.createNode(pkgDir);
+            final manifestFile = File(p.join(pkgDir.path, 'package.json'));
+            final content = manifestFile.readAsStringSync();
+            final manifestMap =
+                language.parseManifestContent(content) as Map<String, dynamic>;
+
+            final buffer = FileChangesBuffer();
+            final local = LocalizeRefs(ggLog: messages.add);
+            await local.modifyManifest(
+              node,
+              manifestFile,
+              content,
+              manifestMap,
+              buffer,
+            );
+
+            expect(buffer.files, isEmpty);
+          },
+        );
       });
     });
   });
@@ -586,40 +623,33 @@ void main() {
   });
 
   group('LocalizeRefs._getGitDependencyYaml falls back to main', () {
-    test(
-      'should use "main" as ref if the git rev-parse fails (exitCode != 0)',
-      () async {
-        final fakeDepDir = Directory.systemTemp.createTempSync('fakegit');
-        final fakeRefs = FakeLocalizeRefs(
-          ggLog: (_) {},
-          runProcess:
-              (
-                String executable,
-                List<String> arguments, {
-                String? workingDirectory,
-              }) async {
-                if (arguments.join(' ') == 'remote get-url origin') {
-                  return ProcessResult(
-                    0,
-                    0,
-                    'git@github.com:user/fake.git',
-                    '',
-                  );
-                }
-                if (arguments.join(' ') == 'rev-parse --abbrev-ref HEAD') {
-                  return ProcessResult(0, 1, '', 'fail');
-                }
-                throw UnimplementedError('Unknown process for args $arguments');
-              },
-        );
+    test('should use "main" as ref if the git rev-parse fails '
+        '(exitCode != 0)', () async {
+      final fakeDepDir = Directory.systemTemp.createTempSync('fakegit');
+      final fakeRefs = FakeLocalizeRefs(
+        ggLog: (_) {},
+        runProcess:
+            (
+              String executable,
+              List<String> arguments, {
+              String? workingDirectory,
+            }) async {
+              if (arguments.join(' ') == 'remote get-url origin') {
+                return ProcessResult(0, 0, 'git@github.com:user/fake.git', '');
+              }
+              if (arguments.join(' ') == 'rev-parse --abbrev-ref HEAD') {
+                return ProcessResult(0, 1, '', 'fail');
+              }
+              throw UnimplementedError('Unknown process for args $arguments');
+            },
+      );
 
-        final yaml = await fakeRefs.rawGitDependencyYaml(fakeDepDir, 'somedep');
-        expect(yaml, contains('ref: main'));
-        expect(yaml, contains('git:'));
-        expect(yaml, contains('url: git@github.com:user/fake.git'));
-        fakeDepDir.deleteSync(recursive: true);
-      },
-    );
+      final yaml = await fakeRefs.rawGitDependencyYaml(fakeDepDir, 'somedep');
+      expect(yaml, contains('ref: main'));
+      expect(yaml, contains('git:'));
+      expect(yaml, contains('url: git@github.com:user/fake.git'));
+      fakeDepDir.deleteSync(recursive: true);
+    });
 
     test(
       'should fallback to main if git rev-parse returns HEAD as stdout',

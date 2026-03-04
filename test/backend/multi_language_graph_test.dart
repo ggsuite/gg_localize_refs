@@ -177,5 +177,69 @@ void main() {
         ),
       );
     });
+
+    test('throws when root node directory is not found among nodes', () async {
+      final workspace = createWorkspace('mlg_root_not_found');
+      final rootProject = Directory(p.join(workspace.path, 'root_project'));
+      createDirs(<Directory>[rootProject]);
+
+      final manifestFile = File(p.join(rootProject.path, 'fake.yaml'));
+      manifestFile.writeAsStringSync('name: root\n');
+
+      final graph = MultiLanguageGraph(
+        languages: <ProjectLanguage>[_FakeLanguageMissingRootNode()],
+      );
+
+      await expectLater(
+        graph.buildGraph(directory: rootProject),
+        throwsA(
+          isA<Exception>().having(
+            (Object e) => e.toString(),
+            'message',
+            allOf(
+              contains('The node for the package'),
+              contains('was not found'),
+            ),
+          ),
+        ),
+      );
+    });
   });
+}
+
+/// Fake language that returns nodes with a directory different from
+/// the one passed into [createNode]. This allows testing the error
+/// path where the root node cannot be found by directory.
+class _FakeLanguageMissingRootNode extends ProjectLanguage {
+  @override
+  ProjectLanguageId get id => ProjectLanguageId.dart;
+
+  @override
+  String get manifestFileName => 'fake.yaml';
+
+  @override
+  bool isProjectRoot(Directory directory) {
+    final file = File('${directory.path}/$manifestFileName');
+    return file.existsSync();
+  }
+
+  @override
+  Future<ProjectNode> createNode(Directory directory) async {
+    final wrongDir = Directory('${directory.path}_other');
+    return ProjectNode(
+      name: 'fake_${directory.path.split(Platform.pathSeparator).last}',
+      directory: wrongDir,
+      language: this,
+    );
+  }
+
+  @override
+  Future<Map<String, String>> readDeclaredDependencies(ProjectNode node) async {
+    return <String, String>{};
+  }
+
+  @override
+  dynamic parseManifestContent(String content) {
+    return <String, dynamic>{};
+  }
 }
