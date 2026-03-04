@@ -4,6 +4,7 @@
 // Use of this source code is governed by terms that can be
 // found in the LICENSE file in the root of this package.
 
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:gg_args/gg_args.dart';
@@ -11,7 +12,8 @@ import 'package:gg_console_colors/gg_console_colors.dart';
 import 'package:gg_log/gg_log.dart';
 import 'package:pubspec_parse/pubspec_parse.dart';
 
-/// Command that reads the current package version from pubspec.yaml
+/// Command that reads the current package version from pubspec.yaml or
+/// package.json.
 class GetVersion extends DirCommand<dynamic> {
   /// Constructor
   GetVersion({required super.ggLog})
@@ -27,16 +29,31 @@ class GetVersion extends DirCommand<dynamic> {
 
     try {
       final pubspecFile = File('${directory.path}/pubspec.yaml');
-      if (!pubspecFile.existsSync()) {
+      final packageJsonFile = File('${directory.path}/package.json');
+
+      if (!pubspecFile.existsSync() && !packageJsonFile.existsSync()) {
         throw Exception('pubspec.yaml not found at ${pubspecFile.path}');
       }
 
-      final content = pubspecFile.readAsStringSync();
-      final pubspec = Pubspec.parse(content);
+      if (pubspecFile.existsSync()) {
+        final content = pubspecFile.readAsStringSync();
+        final pubspec = Pubspec.parse(content);
 
-      final version = pubspec.version?.toString();
+        final version = pubspec.version?.toString();
+        if (version == null || version.isEmpty) {
+          ggLog?.call(yellow('No version found in pubspec.yaml.'));
+          return null;
+        }
+
+        ggLog?.call(version);
+        return version;
+      }
+
+      final content = packageJsonFile.readAsStringSync();
+      final json = jsonDecode(content) as Map<String, dynamic>;
+      final version = json['version']?.toString();
       if (version == null || version.isEmpty) {
-        ggLog?.call(yellow('No version found in pubspec.yaml.'));
+        ggLog?.call(yellow('No version found in package.json.'));
         return null;
       }
 

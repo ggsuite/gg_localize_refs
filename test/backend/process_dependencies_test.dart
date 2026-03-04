@@ -1,10 +1,12 @@
 import 'dart:io';
 
 import 'package:gg_localize_refs/src/backend/file_changes_buffer.dart';
+import 'package:gg_localize_refs/src/backend/languages/dart_language.dart';
+import 'package:gg_localize_refs/src/backend/languages/project_language.dart';
+import 'package:gg_localize_refs/src/backend/multi_language_graph.dart';
 import 'package:gg_localize_refs/src/backend/process_dependencies.dart';
 import 'package:path/path.dart';
 import 'package:test/test.dart';
-import 'package:gg_local_package_dependencies/gg_local_package_dependencies.dart';
 
 import '../test_helpers.dart';
 
@@ -20,7 +22,7 @@ void main() {
   });
 
   tearDown(() {
-    deleteDirs([dWorkspaceSucceed]);
+    deleteDirs(<Directory>[dWorkspaceSucceed]);
   });
 
   group('Process dependencies', () {
@@ -31,7 +33,7 @@ void main() {
             join(dWorkspaceSucceed.path, 'no_project_root_error'),
           );
 
-          createDirs([dNoProjectRootError]);
+          createDirs(<Directory>[dNoProjectRootError]);
 
           final messages = <String>[];
 
@@ -40,20 +42,18 @@ void main() {
               directory: dNoProjectRootError,
               modifyFunction:
                   (
-                    packageName,
-                    pubspec,
-                    pubspecContent,
-                    yamlMap,
-                    node,
-                    projectDir,
-                    fileChangesBuffer,
+                    ProjectNode node,
+                    File manifestFile,
+                    String manifestContent,
+                    dynamic manifestMap,
+                    FileChangesBuffer fileChangesBuffer,
                   ) async {},
               fileChangesBuffer: FileChangesBuffer(),
               ggLog: messages.add,
             ),
             throwsA(
               isA<Exception>().having(
-                (e) => e.toString(),
+                (Object e) => e.toString(),
                 'message',
                 contains('No project root found'),
               ),
@@ -66,38 +66,38 @@ void main() {
             join(dWorkspaceSucceed.path, 'node_not_found'),
           );
 
-          createDirs([dNodeNotFound]);
+          createDirs(<Directory>[dNodeNotFound]);
 
-          // Create a pubspec.yaml with invalid content in tempDir
           File(join(dNodeNotFound.path, 'pubspec.yaml')).writeAsStringSync(
             'name: test_package\nversion: 1.0.0\ndependencies:',
           );
 
+          final language = DartProjectLanguage();
+          final node = await language.createNode(dNodeNotFound);
+
           await expectLater(
             processNode(
-              dNodeNotFound,
-              {},
-              {},
+              node,
+              <String, ProjectNode>{},
+              <String>{},
               (
-                packageName,
-                pubspec,
-                pubspecContent,
-                yamlMap,
-                node,
-                projectDir,
-                fileChangesBuffer,
+                ProjectNode node,
+                File manifestFile,
+                String manifestContent,
+                dynamic manifestMap,
+                FileChangesBuffer fileChangesBuffer,
               ) async {},
               FileChangesBuffer(),
             ),
             throwsA(
               isA<Exception>()
                   .having(
-                    (e) => e.toString(),
+                    (Object e) => e.toString(),
                     'message',
                     contains('node for the package'),
                   )
                   .having(
-                    (e) => e.toString(),
+                    (Object e) => e.toString(),
                     'message',
                     contains('not found'),
                   ),
@@ -115,28 +115,24 @@ void main() {
           directory: dProject1,
           modifyFunction:
               (
-                packageName,
-                pubspec,
-                pubspecContent,
-                yamlMap,
-                node,
-                projectDir,
-                fileChangesBuffer,
+                ProjectNode node,
+                File manifestFile,
+                String manifestContent,
+                dynamic manifestMap,
+                FileChangesBuffer fileChangesBuffer,
               ) async {
-                expect(packageName, 'test1');
-                expect(pubspec.path, endsWith('pubspec.yaml'));
+                expect(node.name, 'test1');
+                expect(manifestFile.path, endsWith('pubspec.yaml'));
                 expect(
-                  pubspecContent,
+                  manifestContent,
                   'name: test1\nversion: 1.0.0\n'
                   'dependencies:\n  test2: ^1.0.0',
                 );
-                expect(yamlMap, {
+                expect(manifestMap, <dynamic, dynamic>{
                   'name': 'test1',
                   'version': '1.0.0',
-                  'dependencies': {'test2': '^1.0.0'},
+                  'dependencies': <dynamic, dynamic>{'test2': '^1.0.0'},
                 });
-                expect(node.name, 'test1');
-                expect(projectDir.path, endsWith('project1'));
               },
           fileChangesBuffer: FileChangesBuffer(),
           ggLog: messages.add,
@@ -159,7 +155,7 @@ void main() {
               () => getPackageName('invalid yaml'),
               throwsA(
                 isA<Exception>().having(
-                  (e) => e.toString(),
+                  (Object e) => e.toString(),
                   'message',
                   contains('Error parsing pubspec.yaml'),
                 ),
@@ -171,7 +167,10 @@ void main() {
 
       group('findNode()', () {
         test('returns null when nodes is empty', () {
-          final result = findNode(packageName: 'x', nodes: {});
+          final result = findNode(
+            packageName: 'x',
+            nodes: <String, ProjectNode>{},
+          );
           expect(result, isNull);
         });
 
@@ -179,7 +178,7 @@ void main() {
           final ws = createTempDir('pd_findnode_ws');
           final p1 = Directory(join(ws.path, 'p1'));
           final p2 = Directory(join(ws.path, 'p2'));
-          createDirs([p1, p2]);
+          createDirs(<Directory>[p1, p2]);
 
           File(join(p1.path, 'pubspec.yaml')).writeAsStringSync(
             'name: p1\nversion: 1.0.0\n'
@@ -189,24 +188,24 @@ void main() {
             join(p2.path, 'pubspec.yaml'),
           ).writeAsStringSync('name: p2\nversion: 1.0.0');
 
-          // Build graph and use only the root node in the top map so that
-          // findNode needs to recurse into dependencies.
-          final graph = Graph(ggLog: (_) {});
-          final nodes = await graph.get(directory: ws, ggLog: (_) {});
-          final top = <String, Node>{'p1': nodes['p1']!};
+          final graph = MultiLanguageGraph(
+            languages: <ProjectLanguage>[DartProjectLanguage()],
+          );
+          final result = await graph.buildGraph(directory: p1);
+          final top = <String, ProjectNode>{'p1': result.allNodes['p1']!};
 
           final found = findNode(packageName: 'p2', nodes: top);
           expect(found, isNotNull);
           expect(found!.name, 'p2');
 
-          deleteDirs([ws]);
+          deleteDirs(<Directory>[ws]);
         });
 
         test('returns null when not found recursively', () async {
           final ws = createTempDir('pd_findnode_ws2');
           final p1 = Directory(join(ws.path, 'p1'));
           final p2 = Directory(join(ws.path, 'p2'));
-          createDirs([p1, p2]);
+          createDirs(<Directory>[p1, p2]);
 
           File(join(p1.path, 'pubspec.yaml')).writeAsStringSync(
             'name: p1\nversion: 1.0.0\n'
@@ -216,14 +215,16 @@ void main() {
             join(p2.path, 'pubspec.yaml'),
           ).writeAsStringSync('name: p2\nversion: 1.0.0');
 
-          final graph = Graph(ggLog: (_) {});
-          final nodes = await graph.get(directory: ws, ggLog: (_) {});
-          final top = <String, Node>{'p1': nodes['p1']!};
+          final graph = MultiLanguageGraph(
+            languages: <ProjectLanguage>[DartProjectLanguage()],
+          );
+          final result = await graph.buildGraph(directory: p1);
+          final top = <String, ProjectNode>{'p1': result.allNodes['p1']!};
 
           final found = findNode(packageName: 'unknown', nodes: top);
           expect(found, isNull);
 
-          deleteDirs([ws]);
+          deleteDirs(<Directory>[ws]);
         });
       });
     });
