@@ -83,6 +83,30 @@ void main() {
       expect(node2.dependents['test1'], same(node1));
     });
 
+    test(
+      'builds dependency graph when starting directory ends with dot',
+      () async {
+        final workspace = createWorkspace('mlg_dart_ws_with_dot');
+        final source = Directory(
+          p.join('test', 'sample_folder', 'process_dependencies', 'succeed'),
+        );
+        copyDirectory(source, workspace);
+
+        final project1 = Directory(p.join(workspace.path, 'project1'));
+        final startDir = Directory(p.join(project1.path, '.'));
+
+        final graph = MultiLanguageGraph(
+          languages: <ProjectLanguage>[DartProjectLanguage()],
+        );
+
+        final result = await graph.buildGraph(directory: startDir);
+        final root = result.rootNode;
+
+        expect(root.name, 'test1');
+        expect(root.directory.path, project1.path);
+      },
+    );
+
     test('builds dependency graph for a TypeScript workspace', () async {
       final workspace = createWorkspace('mlg_ts_ws');
       final source = Directory(

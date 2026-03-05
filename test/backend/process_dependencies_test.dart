@@ -174,6 +174,42 @@ void main() {
 
         deleteDirs(<Directory>[ws]);
       });
+
+      test(
+        'handles TypeScript manifests that only contain devDependencies',
+        () async {
+          final ws = createTempDir('pd_ts_dev_deps_ws');
+          final p1 = Directory(join(ws.path, 'p1_ts'));
+          final p2 = Directory(join(ws.path, 'p2_ts'));
+          createDirs(<Directory>[p1, p2]);
+
+          File(join(p1.path, 'package.json')).writeAsStringSync(
+            '{"name":"p1_ts","version":"1.0.0",'
+            '"devDependencies":{"p2_ts":"^1.0.0"}}',
+          );
+          File(
+            join(p2.path, 'package.json'),
+          ).writeAsStringSync('{"name":"p2_ts","version":"1.0.0"}');
+
+          final messages = <String>[];
+
+          await processProject(
+            directory: p1,
+            modifyFunction:
+                (
+                  ProjectNode node,
+                  File manifestFile,
+                  String manifestContent,
+                  dynamic manifestMap,
+                  FileChangesBuffer fileChangesBuffer,
+                ) async {},
+            fileChangesBuffer: FileChangesBuffer(),
+            ggLog: messages.add,
+          );
+
+          deleteDirs(<Directory>[ws]);
+        },
+      );
     });
 
     group('Helper methods', () {

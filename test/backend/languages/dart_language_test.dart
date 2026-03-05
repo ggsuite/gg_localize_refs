@@ -103,6 +103,31 @@ void main() {
       expect(deps['b'], 'HostedDependency: ^2.0.0');
     });
 
+    test('readDeclaredDependencies throws when pubspec.yaml '
+        'cannot be parsed', () async {
+      final dir = createTempProject('dart_lang_read_deps_invalid');
+
+      // First write a valid pubspec so that createNode succeeds.
+      File(
+        '${dir.path}/pubspec.yaml',
+      ).writeAsStringSync('name: pkg\nversion: 1.0.0\n');
+      final node = await language.createNode(dir);
+
+      // Now overwrite with invalid content so readDeclaredDependencies fails.
+      File('${dir.path}/pubspec.yaml').writeAsStringSync('invalid yaml');
+
+      await expectLater(
+        language.readDeclaredDependencies(node),
+        throwsA(
+          isA<Exception>().having(
+            (Object e) => e.toString(),
+            'message',
+            contains('Error parsing pubspec.yaml'),
+          ),
+        ),
+      );
+    });
+
     test('parseManifestContent returns a Map for valid YAML', () {
       const content =
           'name: pkg\nversion: 1.0.0\n'

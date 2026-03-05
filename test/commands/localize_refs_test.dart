@@ -129,7 +129,7 @@ void main() {
 
   group('Local Command', () {
     group('run()', () {
-      // .......................................................................
+      // .....................................................................
       group('should print a usage description', () {
         test('when called args=[--help]', () async {
           capturePrint(
@@ -155,7 +155,7 @@ void main() {
         });
       });
 
-      // .......................................................................
+      // .....................................................................
       group('should throw', () {
         test('when project root was not found', () async {
           await expectLater(
@@ -236,7 +236,7 @@ void main() {
         });
       });
 
-      // .......................................................................
+      // .....................................................................
 
       group('should succeed', () {
         test('when pubspec is correct', () async {
@@ -278,7 +278,7 @@ void main() {
 
           await local.get(directory: dProject1, ggLog: localMessages.add);
 
-          // Existing content should be preserved and required entries appended.
+          // Existing content should be preserved and required entries added.
           final gitignoreContent = gitignoreFile.readAsStringSync();
           expect(gitignoreContent, contains('build/'));
           expect(gitignoreContent, contains('.gg'));
@@ -553,6 +553,38 @@ void main() {
             expect(buffer.files, isEmpty);
           },
         );
+
+        test('TypeScript: localizes devDependencies when dependencies are '
+            'missing', () async {
+          final workspace = createTempDir('ts_dev_only_ws');
+          final project1 = Directory(p.join(workspace.path, 'project1'));
+          final project2 = Directory(p.join(workspace.path, 'project2'));
+          createDirs(<Directory>[project1, project2]);
+
+          File(p.join(project1.path, 'package.json')).writeAsStringSync(
+            '{"name":"proj1_ts","version":"1.0.0",'
+            '"devDependencies":{"proj2_ts":"^1.0.0"}}',
+          );
+          File(
+            p.join(project2.path, 'package.json'),
+          ).writeAsStringSync('{"name":"proj2_ts","version":"1.0.0"}');
+
+          final localMessages = <String>[];
+          final local = LocalizeRefs(ggLog: localMessages.add);
+          await local.get(directory: project1, ggLog: localMessages.add);
+
+          final resultJson = File(
+            p.join(project1.path, 'package.json'),
+          ).readAsStringSync();
+          expect(resultJson, contains('"proj2_ts":"file:../project2"'));
+
+          final backupJson = File(
+            p.join(project1.path, '.gg_localize_refs_backup.json'),
+          ).readAsStringSync();
+          expect(backupJson, contains('^1.0.0'));
+
+          deleteDirs(<Directory>[workspace]);
+        });
       });
     });
   });
@@ -612,14 +644,12 @@ void main() {
       expect(result, equals('^1.0.0'));
     });
 
-    test(
-      'should handle both dependencies and dev_dependencies sections missing',
-      () {
-        final yamlMap = <String, dynamic>{};
-        final result = getDependency('some_dependency', yamlMap);
-        expect(result, isNull);
-      },
-    );
+    test('should handle both dependencies and dev_dependencies '
+        'sections missing', () {
+      final yamlMap = <String, dynamic>{};
+      final result = getDependency('some_dependency', yamlMap);
+      expect(result, isNull);
+    });
   });
 
   group('LocalizeRefs._getGitDependencyYaml falls back to main', () {

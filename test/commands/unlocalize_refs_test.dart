@@ -135,7 +135,7 @@ void main() {
 
   group('UnlocalizeRefs Command', () {
     group('run()', () {
-      // .......................................................................
+      // .....................................................................
       group('should print a usage description', () {
         test('when called args=[--help]', () async {
           capturePrint(
@@ -150,7 +150,7 @@ void main() {
         });
       });
 
-      // .......................................................................
+      // .....................................................................
       group('should throw', () {
         test('when project root was not found', () async {
           await expectLater(
@@ -231,7 +231,7 @@ void main() {
         });
       });
 
-      // .......................................................................
+      // .....................................................................
 
       group('should succeed', () {
         test('when pubspec is correct', () async {
@@ -397,6 +397,37 @@ void main() {
             expect(buffer.files, isEmpty);
           },
         );
+
+        test('TypeScript: unlocalizes devDependencies when dependencies are '
+            'missing', () async {
+          final workspace = createTempDir('unlocalize_ts_dev_only_ws');
+          final project1 = Directory(join(workspace.path, 'project1'));
+          final project2 = Directory(join(workspace.path, 'project2'));
+          createDirs(<Directory>[project1, project2]);
+
+          File(join(project1.path, 'package.json')).writeAsStringSync(
+            '{"name":"proj1_ts","version":"1.0.0",'
+            '"devDependencies":{"proj2_ts":"file:../project2"}}',
+          );
+          File(
+            join(project2.path, 'package.json'),
+          ).writeAsStringSync('{"name":"proj2_ts","version":"1.0.0"}');
+          File(
+            join(project1.path, '.gg_localize_refs_backup.json'),
+          ).writeAsStringSync('{"proj2_ts":"^2.0.0"}');
+
+          final localMessages = <String>[];
+          final unlocal = UnlocalizeRefs(ggLog: localMessages.add);
+          await unlocal.get(directory: project1, ggLog: localMessages.add);
+
+          final resultJson = File(
+            join(project1.path, 'package.json'),
+          ).readAsStringSync();
+          expect(resultJson, contains('"proj2_ts":"^2.0.0"'));
+          expect(resultJson, isNot(contains('file:')));
+
+          deleteDirs(<Directory>[workspace]);
+        });
       });
     });
   });
