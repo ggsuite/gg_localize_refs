@@ -235,6 +235,12 @@ void main() {
             );
           });
         });
+
+        test('returns package name when yaml is valid', () {
+          const content = 'name: my_pkg\nversion: 1.0.0\n';
+          final name = getPackageName(content);
+          expect(name, 'my_pkg');
+        });
       });
 
       group('findNode()', () {

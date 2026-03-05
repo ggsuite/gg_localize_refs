@@ -15,6 +15,7 @@
 - Add .gitattributes file
 - Add --git-ref option to localize-refs for custom git refs
 - Add test for updating .gitignore with missing .gg entries
+- Add tests for devDependencies handling in TS localize/unlocalize
 
 ### Changed
 

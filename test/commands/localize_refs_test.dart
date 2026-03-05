@@ -585,6 +585,63 @@ void main() {
 
           deleteDirs(<Directory>[workspace]);
         });
+
+        test('TypeScript: with --git localizes devDependencies when '
+            'dependencies are missing', () async {
+          final workspace = createTempDir('ts_git_dev_only_ws');
+          final project1 = Directory(p.join(workspace.path, 'project1'));
+          final project2 = Directory(p.join(workspace.path, 'project2'));
+          createDirs(<Directory>[project1, project2]);
+
+          File(p.join(project1.path, 'package.json')).writeAsStringSync(
+            '{"name":"proj1_ts_git","version":"1.0.0",'
+            '"devDependencies":{"proj2_ts":"^1.0.0"}}',
+          );
+          File(
+            p.join(project2.path, 'package.json'),
+          ).writeAsStringSync('{"name":"proj2_ts","version":"1.0.0"}');
+
+          final resultInit = Process.runSync('git', <String>[
+            'init',
+          ], workingDirectory: project2.path);
+          expect(resultInit.exitCode, 0, reason: resultInit.stderr.toString());
+
+          final resultMain = Process.runSync('git', <String>[
+            'checkout',
+            '-b',
+            'main',
+          ], workingDirectory: project2.path);
+          expect(resultMain.exitCode, 0, reason: resultMain.stderr.toString());
+
+          const remoteUrl = 'git@github.com:user/proj2_ts.git';
+          final resultRemote = Process.runSync('git', <String>[
+            'remote',
+            'add',
+            'origin',
+            remoteUrl,
+          ], workingDirectory: project2.path);
+          expect(
+            resultRemote.exitCode,
+            0,
+            reason: resultRemote.stderr.toString(),
+          );
+
+          await runner.run(<String>[
+            'localize-refs',
+            '--git',
+            '--input',
+            project1.path,
+          ]);
+
+          final resultJson = File(
+            p.join(project1.path, 'package.json'),
+          ).readAsStringSync();
+          expect(resultJson, contains('proj2_ts'));
+          expect(resultJson, contains('git+'));
+          expect(resultJson, contains(remoteUrl));
+
+          deleteDirs(<Directory>[workspace]);
+        });
       });
     });
   });
