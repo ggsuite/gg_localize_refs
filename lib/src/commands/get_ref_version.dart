@@ -17,7 +17,7 @@ import 'package:yaml/yaml.dart';
 /// Command that reads the current version/spec of a dependency from
 /// pubspec.yaml or package.json.
 class GetRefVersion extends DirCommand<dynamic> {
-  /// Constructor
+  /// Constructor.
   GetRefVersion({required super.ggLog})
     : super(
         name: 'get-ref-version',
@@ -59,7 +59,7 @@ class GetRefVersion extends DirCommand<dynamic> {
           return null;
         }
 
-        final result = yamlToString(value).trimRight();
+        final result = _extractDartVersionOrSpec(value);
         ggLog?.call(result);
         return result;
       }
@@ -91,10 +91,26 @@ class GetRefVersion extends DirCommand<dynamic> {
       throw Exception(red('An error occurred: $e'));
     }
   }
+
+  /// Extracts a version from a Dart dependency declaration.
+  String _extractDartVersionOrSpec(dynamic value) {
+    if (value is String) {
+      return value;
+    }
+
+    if (value is Map) {
+      final git = value['git'];
+      if (git is Map && git.containsKey('version')) {
+        return git['version'].toString();
+      }
+    }
+
+    return yamlToString(value).trimRight();
+  }
 }
 
 // ............................................................................
-/// Get a dependency from the YAML map
+/// Get a dependency from the YAML map.
 /// (helper for pubspec.yaml based projects)
 dynamic getDependency2(String dependencyName, Map<dynamic, dynamic> yamlMap) {
   return yamlMap['dependencies']?[dependencyName] ??

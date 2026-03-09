@@ -22,7 +22,7 @@ import 'package:yaml/yaml.dart';
 /// This command operates directly on the manifest in the provided
 /// input directory. It does not traverse a workspace or use project graphs.
 class SetRefVersion extends DirCommand<dynamic> {
-  /// Constructor
+  /// Constructor.
   SetRefVersion({required super.ggLog})
     : super(
         name: 'set-ref-version',
@@ -80,12 +80,13 @@ class SetRefVersion extends DirCommand<dynamic> {
             : 'dev_dependencies';
 
         final oldYaml = yamlToString(oldDep).trimRight();
+        final replacement = _buildDartReplacement(oldDep, newVersion);
 
         final updated = replaceDependency(
           content,
           dependencyName,
           oldYaml,
-          newVersion,
+          replacement,
           sectionName: sectionName,
         );
 
@@ -145,10 +146,26 @@ class SetRefVersion extends DirCommand<dynamic> {
       throw Exception(red('An error occurred: $e. No files were changed.'));
     }
   }
+
+  /// Builds the replacement YAML for a Dart dependency.
+  String _buildDartReplacement(dynamic oldDep, String newVersion) {
+    if (oldDep is Map) {
+      final git = oldDep['git'];
+      if (git is Map && git.containsKey('tag_pattern')) {
+        final updatedGit = <String, dynamic>{
+          ...git.cast<String, dynamic>(),
+          'version': newVersion,
+        };
+        return yamlToString(<String, dynamic>{'git': updatedGit}).trimRight();
+      }
+    }
+
+    return newVersion;
+  }
 }
 
 // ............................................................................
-/// Get a dependency from the YAML map (local helper)
+/// Get a dependency from the YAML map (local helper).
 dynamic _getDependency(String dependencyName, Map<dynamic, dynamic> yamlMap) {
   return yamlMap['dependencies']?[dependencyName] ??
       yamlMap['dev_dependencies']?[dependencyName];

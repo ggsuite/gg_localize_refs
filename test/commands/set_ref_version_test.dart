@@ -282,6 +282,37 @@ void main() {
         expect(content, isNot(contains('git:')));
       });
 
+      test('replace tag_pattern git block version only', () async {
+        final d1 = Directory(join(dWorkspace.path, 'd1b'));
+        final d2 = Directory(join(dWorkspace.path, 'd2b'));
+        createDirs(<Directory>[d1, d2]);
+        File(join(d1.path, 'pubspec.yaml')).writeAsStringSync(
+          'name: d1b\nversion: 1.0.0\ndependencies:\n'
+          '  d2b:\n'
+          '    git:\n'
+          '      url: git@github.com:user/d2b.git\n'
+          '      tag_pattern: v{{version}}\n'
+          '      version: ^1.0.0\n',
+        );
+        File(
+          join(d2.path, 'pubspec.yaml'),
+        ).writeAsStringSync('name: d2b\nversion: 1.0.0');
+
+        await runner.run(<String>[
+          'set-ref-version',
+          '--input',
+          d1.path,
+          '--ref',
+          'd2b',
+          '--version',
+          '^3.0.0',
+        ]);
+        final content = File(join(d1.path, 'pubspec.yaml')).readAsStringSync();
+        expect(content, contains('url: git@github.com:user/d2b.git'));
+        expect(content, contains('tag_pattern: v{{version}}'));
+        expect(content, contains('version: ^3.0.0'));
+      });
+
       test('replace path block with scalar', () async {
         final d1 = Directory(join(dWorkspace.path, 'e1'));
         final d2 = Directory(join(dWorkspace.path, 'e2'));
