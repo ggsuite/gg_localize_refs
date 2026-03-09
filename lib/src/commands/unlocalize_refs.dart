@@ -292,11 +292,8 @@ class UnlocalizeRefs extends DirCommand<dynamic> {
     );
 
     return yamlToString(<String, dynamic>{
-      'git': <String, dynamic>{
-        'url': gitUrl,
-        'tag_pattern': 'v{{version}}',
-        'version': version,
-      },
+      'git': <String, dynamic>{'url': gitUrl, 'tag_pattern': 'v{{version}}'},
+      'version': version,
     }).trimRight();
   }
 
@@ -332,11 +329,11 @@ class UnlocalizeRefs extends DirCommand<dynamic> {
     Directory directory,
     String dependencyName,
   ) async {
-    final result = await Process.run(
-      'git',
-      <String>['remote', 'get-url', 'origin'],
-      workingDirectory: directory.path,
-    );
+    final result = await Process.run('git', <String>[
+      'remote',
+      'get-url',
+      'origin',
+    ], workingDirectory: directory.path);
 
     if (result.exitCode != 0) {
       throw Exception(

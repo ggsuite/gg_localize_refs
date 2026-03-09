@@ -25,7 +25,7 @@ class MultiLanguageGraph {
   /// Returns a record containing the root node and all nodes in the workspace.
   Future<({ProjectNode rootNode, Map<String, ProjectNode> allNodes})>
   buildGraph({required Directory directory, GgLog? ggLog}) async {
-    final startDir = _correctDir(directory);
+    final startDir = _correctDir(directory.absolute);
 
     final rootInfo = await _findProjectRootAndLanguage(startDir);
     if (rootInfo == null) {
@@ -34,8 +34,13 @@ class MultiLanguageGraph {
 
     final rootDir = rootInfo.$1;
     final language = rootInfo.$2;
+    print(
+      'Found project root at ${rootDir.path} for language ${language.runtimeType}',
+    );
 
-    final workspaceRoot = rootDir.parent;
+    final workspaceRoot = rootDir.parent.absolute;
+
+    print('Scanning workspace at ${workspaceRoot.path}...');
 
     final allDirs = workspaceRoot.listSync().whereType<Directory>().toList()
       ..sort((a, b) => a.path.compareTo(b.path));
@@ -43,6 +48,7 @@ class MultiLanguageGraph {
     final nodes = <String, ProjectNode>{};
 
     for (final dir in allDirs) {
+      print('Checking ${dir.path} for project root...');
       if (!language.isProjectRoot(dir)) {
         continue;
       }
@@ -79,6 +85,9 @@ class MultiLanguageGraph {
     ProjectNode? rootNode;
     final normalizedRoot = _correctDir(rootDir).path;
     for (final node in nodes.values) {
+      print(
+        'Checking ${node.name} at ${_correctDir(node.directory).path} against $normalizedRoot',
+      );
       if (_correctDir(node.directory).path == normalizedRoot) {
         rootNode = node;
         break;
@@ -86,6 +95,7 @@ class MultiLanguageGraph {
     }
 
     if (rootNode == null) {
+      print(rootDir.path);
       throw Exception(
         'The node for the package '
         '${rootDir.path.split(Platform.pathSeparator).last} was not found.',
@@ -103,7 +113,7 @@ class MultiLanguageGraph {
     while (true) {
       for (final language in languages) {
         if (language.isProjectRoot(dir)) {
-          return (dir, language);
+          return (_correctDir(dir), language);
         }
       }
 
