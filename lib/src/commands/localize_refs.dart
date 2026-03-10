@@ -258,7 +258,7 @@ class LocalizeRefs extends DirCommand<dynamic> {
     var hasNonGitDependencies = false;
     for (final dependency in node.dependencies.entries) {
       final depYaml = yamlToString(getDependency(dependency.key, yamlMap));
-      if (!depYaml.startsWith('git:')) {
+      if (_shouldConvertToGit(depYaml)) {
         hasNonGitDependencies = true;
       }
     }
@@ -279,7 +279,7 @@ class LocalizeRefs extends DirCommand<dynamic> {
       final oldDependency = getDependency(dependencyName, yamlMap);
       final oldDependencyYaml = yamlToString(oldDependency);
 
-      if (!oldDependencyYaml.startsWith('git:')) {
+      if (_shouldBackupOriginalGitDependency(oldDependencyYaml)) {
         replacedDependencies[dependencyName] = getDependency(
           dependencyName,
           yamlMap,
@@ -301,7 +301,7 @@ class LocalizeRefs extends DirCommand<dynamic> {
       final oldDependency = getDependency(dependencyName, yamlMap);
       final oldDependencyYaml = yamlToString(oldDependency);
 
-      if (!oldDependencyYaml.startsWith('git:')) {
+      if (_shouldConvertToGit(oldDependencyYaml)) {
         final newDependencyYaml = await getGitDependencyYaml(
           dependency.value.directory,
           dependencyName,
@@ -462,6 +462,26 @@ class LocalizeRefs extends DirCommand<dynamic> {
 
     final newContent = jsonEncode(manifestMap);
     fileChangesBuffer.add(manifestFile, '$newContent\n');
+  }
+
+  /// Returns whether [dependencyYaml] should be converted to a plain git ref.
+  bool _shouldConvertToGit(String dependencyYaml) {
+    final trimmed = dependencyYaml.trimLeft();
+    if (!trimmed.startsWith('git:')) {
+      return true;
+    }
+
+    return trimmed.contains('tag_pattern:');
+  }
+
+  /// Returns whether the original dependency should be backed up.
+  bool _shouldBackupOriginalGitDependency(String dependencyYaml) {
+    final trimmed = dependencyYaml.trimLeft();
+    if (!trimmed.startsWith('git:')) {
+      return true;
+    }
+
+    return trimmed.contains('tag_pattern:');
   }
 
   // ...........................................................................

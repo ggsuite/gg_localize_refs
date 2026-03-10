@@ -347,6 +347,72 @@ void main() {
           expect(backupJson, contains('^1.0.0'));
         });
 
+        test('with --git localizes git tag_pattern dependencies back to git '
+            'refs without version', () async {
+          final workspace = createTempDir('localize_git_tag_pattern_ws');
+          final project1 = Directory(p.join(workspace.path, 'project1'));
+          final project2 = Directory(p.join(workspace.path, 'project2'));
+          createDirs(<Directory>[project1, project2]);
+
+          File(p.join(project1.path, 'pubspec.yaml')).writeAsStringSync(
+            'name: project1\n'
+            'version: 1.0.0\n'
+            'dependencies:\n'
+            '  project2:\n'
+            '    git:\n'
+            '      url: git@github.com:user/project2.git\n'
+            '      tag_pattern: v{{version}}\n'
+            '      version: ^2.0.4\n',
+          );
+          File(p.join(project2.path, 'pubspec.yaml')).writeAsStringSync(
+            'name: project2\n'
+            'version: 1.0.0\n',
+          );
+
+          final resultInit = Process.runSync('git', <String>[
+            'init',
+          ], workingDirectory: project2.path);
+          expect(resultInit.exitCode, 0, reason: resultInit.stderr.toString());
+          final resultMain = Process.runSync('git', <String>[
+            'checkout',
+            '-b',
+            'main',
+          ], workingDirectory: project2.path);
+          expect(resultMain.exitCode, 0, reason: resultMain.stderr.toString());
+          const remoteUrl = 'git@github.com:user/project2.git';
+          final resultRemote = Process.runSync('git', <String>[
+            'remote',
+            'add',
+            'origin',
+            remoteUrl,
+          ], workingDirectory: project2.path);
+          expect(
+            resultRemote.exitCode,
+            0,
+            reason: resultRemote.stderr.toString(),
+          );
+
+          final localMessages = <String>[];
+          final local = LocalizeRefs(ggLog: localMessages.add);
+          await local.get(
+            directory: project1,
+            ggLog: localMessages.add,
+            git: true,
+          );
+
+          final resultYaml = File(
+            p.join(project1.path, 'pubspec.yaml'),
+          ).readAsStringSync();
+          expect(resultYaml, contains('project2:'));
+          expect(resultYaml, contains('git:'));
+          expect(resultYaml, contains('url: $remoteUrl'));
+          expect(resultYaml, contains('ref: main'));
+          expect(resultYaml, isNot(contains('tag_pattern:')));
+          expect(resultYaml, isNot(contains('version: ^2.0.4')));
+
+          deleteDirs(<Directory>[workspace]);
+        });
+
         test('with --git and --git-ref uses provided ref', () async {
           final dProject1 = Directory(p.join(dGitSucceed.path, 'project1'));
           final dProject2 = Directory(p.join(dGitSucceed.path, 'project2'));
