@@ -5,6 +5,7 @@ import 'package:gg_localize_refs/src/backend/languages/dart_language.dart';
 import 'package:gg_localize_refs/src/backend/languages/project_language.dart';
 import 'package:gg_localize_refs/src/backend/multi_language_graph.dart';
 import 'package:gg_localize_refs/src/backend/process_dependencies.dart';
+import 'package:gg_log/gg_log.dart';
 import 'package:path/path.dart';
 import 'package:test/test.dart';
 
@@ -47,6 +48,7 @@ void main() {
                     String manifestContent,
                     dynamic manifestMap,
                     FileChangesBuffer fileChangesBuffer,
+                    GgLog ggLog,
                   ) async {},
               fileChangesBuffer: FileChangesBuffer(),
               ggLog: messages.add,
@@ -87,8 +89,10 @@ void main() {
                 String manifestContent,
                 dynamic manifestMap,
                 FileChangesBuffer fileChangesBuffer,
+                GgLog ggLog,
               ) async {},
               FileChangesBuffer(),
+              <String>[].add,
             ),
             throwsA(
               isA<Exception>()
@@ -121,6 +125,7 @@ void main() {
                 String manifestContent,
                 dynamic manifestMap,
                 FileChangesBuffer fileChangesBuffer,
+                GgLog ggLog,
               ) async {
                 expect(node.name, 'test1');
                 expect(manifestFile.path, endsWith('pubspec.yaml'));
@@ -167,6 +172,7 @@ void main() {
                 String manifestContent,
                 dynamic manifestMap,
                 FileChangesBuffer fileChangesBuffer,
+                GgLog ggLog,
               ) async {},
           fileChangesBuffer: FileChangesBuffer(),
           ggLog: messages.add,
@@ -202,6 +208,7 @@ void main() {
                   String manifestContent,
                   dynamic manifestMap,
                   FileChangesBuffer fileChangesBuffer,
+                  GgLog ggLog,
                 ) async {},
             fileChangesBuffer: FileChangesBuffer(),
             ggLog: messages.add,

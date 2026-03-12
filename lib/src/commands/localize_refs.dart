@@ -120,11 +120,11 @@ class LocalizeRefs extends DirCommand<dynamic> {
   @override
   Future<void> get({
     required Directory directory,
-    GgLog? ggLog,
+    required GgLog ggLog,
     bool? git,
     String? gitRef,
   }) async {
-    ggLog?.call('Running localize-refs in ${directory.path}');
+    ggLog('Running localize-refs in ${directory.path}');
     useGit = git ?? ((argResults?['git'] as bool?) ?? false);
     gitRefOverride = gitRef ?? (argResults?['git-ref'] as String?);
     final fileChangesBuffer = FileChangesBuffer();
@@ -138,7 +138,7 @@ class LocalizeRefs extends DirCommand<dynamic> {
       );
 
       if (fileChangesBuffer.files.isEmpty) {
-        ggLog?.call(yellow('No files were changed.'));
+        ggLog.call(yellow('No files were changed.'));
         return;
       }
 
@@ -156,6 +156,7 @@ class LocalizeRefs extends DirCommand<dynamic> {
     String manifestContent,
     dynamic manifestMap,
     FileChangesBuffer fileChangesBuffer,
+    GgLog ggLog,
   ) async {
     if (node.language.id == ProjectLanguageId.dart) {
       await _modifyDart(
@@ -164,6 +165,7 @@ class LocalizeRefs extends DirCommand<dynamic> {
         manifestContent,
         manifestMap,
         fileChangesBuffer,
+        ggLog,
       );
       return;
     }
@@ -174,6 +176,7 @@ class LocalizeRefs extends DirCommand<dynamic> {
       manifestContent,
       manifestMap as Map<String, dynamic>,
       fileChangesBuffer,
+      ggLog,
     );
   }
 
@@ -183,6 +186,7 @@ class LocalizeRefs extends DirCommand<dynamic> {
     String pubspecContent,
     dynamic yamlMap,
     FileChangesBuffer fileChangesBuffer,
+    GgLog ggLog,
   ) async {
     final projectDir = node.directory;
     _ensureBackupDir(projectDir);
@@ -333,6 +337,7 @@ class LocalizeRefs extends DirCommand<dynamic> {
     String manifestContent,
     Map<String, dynamic> manifestMap,
     FileChangesBuffer fileChangesBuffer,
+    GgLog ggLog,
   ) async {
     final references = node.language.listDependencyReferences(manifestMap);
 

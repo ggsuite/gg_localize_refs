@@ -23,6 +23,7 @@ typedef ModifyManifest =
       String manifestContent,
       dynamic manifestMap,
       FileChangesBuffer fileChangesBuffer,
+      GgLog ggLog,
     );
 
 /// Process the project
@@ -30,7 +31,7 @@ Future<void> processProject({
   required Directory directory,
   required ModifyManifest modifyFunction,
   required FileChangesBuffer fileChangesBuffer,
-  GgLog? ggLog,
+  required GgLog ggLog,
 }) async {
   final graph = MultiLanguageGraph(
     languages: <ProjectLanguage>[
@@ -52,6 +53,7 @@ Future<void> processProject({
     processedNodes,
     modifyFunction,
     fileChangesBuffer,
+    ggLog,
   );
 }
 
@@ -88,6 +90,7 @@ Future<void> processNode(
   Set<String> processedNodes,
   ModifyManifest modifyFunction,
   FileChangesBuffer fileChangesBuffer,
+  GgLog ggLog,
 ) async {
   final projectDir = correctDir(currentNode.directory);
 
@@ -109,6 +112,7 @@ Future<void> processNode(
     manifest.content,
     manifest.parsed,
     fileChangesBuffer,
+    ggLog,
   );
 
   for (final dependency in currentNode.dependencies.entries) {
@@ -122,6 +126,7 @@ Future<void> processNode(
       processedNodes,
       modifyFunction,
       fileChangesBuffer,
+      ggLog,
     );
   }
 }

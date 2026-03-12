@@ -220,6 +220,7 @@ void main() {
                 <String>{},
                 unlocal.modifyManifest,
                 FileChangesBuffer(),
+                localMessages.add,
               );
             },
             throwsA(
@@ -498,6 +499,7 @@ void main() {
               content,
               manifestMap,
               buffer,
+              messages.add,
             );
 
             expect(buffer.files, isEmpty);

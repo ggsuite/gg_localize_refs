@@ -217,6 +217,7 @@ void main() {
                 <String>{},
                 loc.modifyManifest,
                 FileChangesBuffer(),
+                <String>[].add,
               );
             },
             throwsA(
@@ -625,6 +626,7 @@ void main() {
               content,
               manifestMap,
               buffer,
+              messages.add,
             );
 
             expect(buffer.files, isEmpty);

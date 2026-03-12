@@ -35,8 +35,8 @@ class UnlocalizeRefs extends DirCommand<dynamic> {
 
   // ...........................................................................
   @override
-  Future<void> get({required Directory directory, GgLog? ggLog}) async {
-    ggLog?.call('Running unlocalize-refs in ${directory.path}');
+  Future<void> get({required Directory directory, required GgLog ggLog}) async {
+    ggLog('Running unlocalize-refs in ${directory.path}');
 
     final fileChangesBuffer = FileChangesBuffer();
 
@@ -49,7 +49,7 @@ class UnlocalizeRefs extends DirCommand<dynamic> {
     );
 
     if (fileChangesBuffer.files.isEmpty) {
-      ggLog?.call(yellow('No files were changed.'));
+      ggLog.call(yellow('No files were changed.'));
       return;
     }
 
@@ -67,6 +67,7 @@ class UnlocalizeRefs extends DirCommand<dynamic> {
     String manifestContent,
     dynamic manifestMap,
     FileChangesBuffer fileChangesBuffer,
+    GgLog ggLog,
   ) async {
     if (node.language.id == ProjectLanguageId.dart) {
       await _unlocalizeDart(
@@ -75,6 +76,7 @@ class UnlocalizeRefs extends DirCommand<dynamic> {
         manifestContent,
         manifestMap,
         fileChangesBuffer,
+        ggLog,
       );
       return;
     }
@@ -85,6 +87,7 @@ class UnlocalizeRefs extends DirCommand<dynamic> {
       manifestContent,
       manifestMap,
       fileChangesBuffer,
+      ggLog,
     );
   }
 
@@ -94,6 +97,7 @@ class UnlocalizeRefs extends DirCommand<dynamic> {
     String pubspecContent,
     dynamic yamlMap,
     FileChangesBuffer fileChangesBuffer,
+    GgLog ggLog,
   ) async {
     final references = node.language.listDependencyReferences(yamlMap);
 
@@ -161,6 +165,7 @@ class UnlocalizeRefs extends DirCommand<dynamic> {
     String manifestContent,
     dynamic manifestMap,
     FileChangesBuffer fileChangesBuffer,
+    GgLog ggLog,
   ) async {
     final references = node.language.listDependencyReferences(manifestMap);
 
