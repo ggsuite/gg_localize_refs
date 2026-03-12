@@ -10,14 +10,10 @@ import 'dart:io';
 
 import 'package:gg_args/gg_args.dart';
 import 'package:gg_console_colors/gg_console_colors.dart';
-import 'package:gg_localize_refs/src/commands/localize_refs.dart'
-    as legacy
-    show getDependency;
 import 'package:gg_localize_refs/src/backend/file_changes_buffer.dart';
 import 'package:gg_localize_refs/src/backend/languages/project_language.dart';
 import 'package:gg_localize_refs/src/backend/process_dependencies.dart';
 import 'package:gg_localize_refs/src/backend/publish_to_utils.dart';
-import 'package:gg_localize_refs/src/backend/replace_dependency.dart';
 import 'package:gg_localize_refs/src/backend/yaml_to_string.dart';
 import 'package:gg_log/gg_log.dart';
 import 'package:gg_publish/gg_publish.dart';
@@ -77,37 +73,38 @@ class UnlocalizeRefs extends DirCommand<dynamic> {
         node,
         manifestFile,
         manifestContent,
-        manifestMap as Map<dynamic, dynamic>,
+        manifestMap,
         fileChangesBuffer,
       );
       return;
     }
 
-    if (node.language.id == ProjectLanguageId.typescript) {
-      await _unlocalizeTypeScript(
-        node,
-        manifestFile,
-        manifestContent,
-        manifestMap as Map<String, dynamic>,
-        fileChangesBuffer,
-      );
-    }
+    await _unlocalizeTypeScript(
+      node,
+      manifestFile,
+      manifestContent,
+      manifestMap,
+      fileChangesBuffer,
+    );
   }
 
   Future<void> _unlocalizeDart(
     ProjectNode node,
     File pubspec,
     String pubspecContent,
-    Map<dynamic, dynamic> yamlMap,
+    dynamic yamlMap,
     FileChangesBuffer fileChangesBuffer,
   ) async {
     var hasLocalizedDependencies = false;
+    final references = node.language.listDependencyReferences(yamlMap);
 
     for (final dependency in node.dependencies.entries) {
-      final oldDependencyYaml = yamlToString(
-        legacy.getDependency(dependency.key, yamlMap),
-      );
+      final reference = references[dependency.key];
+      if (reference == null) {
+        continue;
+      }
 
+      final oldDependencyYaml = yamlToString(reference.value);
       if (_isLocalizedDartDependency(oldDependencyYaml)) {
         hasLocalizedDependencies = true;
       }
@@ -142,8 +139,12 @@ class UnlocalizeRefs extends DirCommand<dynamic> {
 
     for (final dependency in node.dependencies.entries) {
       final dependencyName = dependency.key;
-      final oldDependency = legacy.getDependency(dependencyName, yamlMap);
-      final oldDependencyYaml = yamlToString(oldDependency);
+      final reference = references[dependencyName];
+      if (reference == null) {
+        continue;
+      }
+
+      final oldDependencyYaml = yamlToString(reference.value);
 
       if (!savedDependencies.containsKey(dependencyName)) {
         continue;
@@ -158,11 +159,10 @@ class UnlocalizeRefs extends DirCommand<dynamic> {
         savedDependencies: savedDependencies,
       );
 
-      newPubspecContent = replaceDependency(
-        newPubspecContent,
-        dependencyName,
-        oldDependencyYaml,
-        newDependencyYaml,
+      newPubspecContent = node.language.replaceDependencyInContent(
+        manifestContent: newPubspecContent,
+        reference: reference,
+        newValue: newDependencyYaml,
       );
     }
 
@@ -176,21 +176,15 @@ class UnlocalizeRefs extends DirCommand<dynamic> {
     ProjectNode node,
     File manifestFile,
     String manifestContent,
-    Map<String, dynamic> manifestMap,
+    dynamic manifestMap,
     FileChangesBuffer fileChangesBuffer,
   ) async {
-    final dependencies = manifestMap['dependencies'] is Map
-        ? (manifestMap['dependencies'] as Map).cast<String, dynamic>()
-        : <String, dynamic>{};
-    final devDependencies = manifestMap['devDependencies'] is Map
-        ? (manifestMap['devDependencies'] as Map).cast<String, dynamic>()
-        : <String, dynamic>{};
+    final references = node.language.listDependencyReferences(manifestMap);
 
     var hasLocalizedDependencies = false;
     for (final dependency in node.dependencies.entries) {
-      final name = dependency.key;
-      final value =
-          dependencies[name]?.toString() ?? devDependencies[name]?.toString();
+      final reference = references[dependency.key];
+      final value = reference?.value?.toString();
       if (value == null) {
         continue;
       }
@@ -222,38 +216,30 @@ class UnlocalizeRefs extends DirCommand<dynamic> {
     }
 
     final savedDependencies = readDependenciesFromJson(backupFile.path);
+    var newContent = manifestContent;
 
     for (final dependency in node.dependencies.entries) {
       final name = dependency.key;
       final saved = savedDependencies[name];
-      if (saved == null) {
+      final reference = references[name];
+      if (saved == null || reference == null) {
         continue;
       }
 
-      if (dependencies.containsKey(name)) {
-        final current = dependencies[name]?.toString() ?? '';
-        if (_isLocalizedTypeScriptDependency(current)) {
-          dependencies[name] = await _buildTypeScriptRemoteDependency(
+      final current = reference.value?.toString() ?? '';
+      if (_isLocalizedTypeScriptDependency(current)) {
+        newContent = node.language.replaceDependencyInContent(
+          manifestContent: newContent,
+          reference: reference,
+          newValue: await _buildTypeScriptRemoteDependency(
             dependencyNode: dependency.value,
             savedDependency: saved,
-          );
-        }
-      } else if (devDependencies.containsKey(name)) {
-        final current = devDependencies[name]?.toString() ?? '';
-        if (_isLocalizedTypeScriptDependency(current)) {
-          devDependencies[name] = await _buildTypeScriptRemoteDependency(
-            dependencyNode: dependency.value,
-            savedDependency: saved,
-          );
-        }
+          ),
+        );
       }
     }
 
-    manifestMap['dependencies'] = dependencies;
-    manifestMap['devDependencies'] = devDependencies;
-
-    final newContent = jsonEncode(manifestMap);
-    fileChangesBuffer.add(manifestFile, '$newContent\n');
+    fileChangesBuffer.add(manifestFile, newContent);
   }
 
   /// Returns whether [dependencyYaml] still points to a localized Dart source.

@@ -5,7 +5,6 @@
 // Use of this source code is governed by terms that can be
 // found in the LICENSE file in the root of this package.
 
-import 'dart:convert';
 import 'dart:io';
 
 import 'package:gg_args/gg_args.dart';
@@ -14,11 +13,9 @@ import 'package:gg_localize_refs/src/backend/languages/dart_language.dart';
 import 'package:gg_localize_refs/src/backend/languages/project_language.dart';
 import 'package:gg_localize_refs/src/backend/languages/typescript_language.dart';
 import 'package:gg_localize_refs/src/backend/multi_language_graph.dart';
-import 'package:gg_localize_refs/src/backend/replace_dependency.dart';
 import 'package:gg_localize_refs/src/backend/yaml_to_string.dart';
-import 'package:gg_publish/gg_publish.dart';
 import 'package:gg_log/gg_log.dart';
-import 'package:yaml/yaml.dart';
+import 'package:gg_publish/gg_publish.dart';
 
 // #############################################################################
 /// Command that sets the version/spec of a dependency in pubspec.yaml
@@ -68,144 +65,57 @@ class SetRefVersion extends DirCommand<dynamic> {
     }
 
     try {
-      final pubspec = File('${directory.path}/pubspec.yaml');
-      final packageJson = File('${directory.path}/package.json');
+      final language = _findLanguage(directory);
+      final manifest = await language.readManifest(directory);
+      final reference = language.findDependency(manifest.parsed, dependencyName);
 
-      if (!pubspec.existsSync() && !packageJson.existsSync()) {
-        throw Exception('pubspec.yaml not found at ${pubspec.path}');
+      if (reference == null) {
+        throw Exception('Dependency $dependencyName not found.');
       }
 
-      if (pubspec.existsSync()) {
-        await _updateDartDependency(
-          directory: directory,
-          pubspecFile: pubspec,
-          dependencyName: dependencyName,
-          newVersion: newVersion,
-          ggLog: ggLog,
-        );
+      final replacement = await _buildReplacement(
+        language: language,
+        workspaceDirectory: directory,
+        dependencyName: dependencyName,
+        oldDependency: reference.value,
+        newVersion: newVersion,
+      );
+
+      final updated = language.replaceDependencyInContent(
+        manifestContent: manifest.content,
+        reference: reference,
+        newValue: replacement,
+      );
+
+      if (updated == manifest.content) {
+        ggLog?.call(yellow('No files were changed.'));
         return;
       }
 
-      _updateTypeScriptDependency(
-        packageJsonFile: packageJson,
-        dependencyName: dependencyName,
-        newVersion: newVersion,
-        ggLog: ggLog,
-      );
+      manifest.file.writeAsStringSync(updated);
     } catch (e) {
       throw Exception(red('An error occurred: $e. No files were changed.'));
     }
   }
 
-  /// Updates a dependency in pubspec.yaml.
-  Future<void> _updateDartDependency({
-    required Directory directory,
-    required File pubspecFile,
-    required String dependencyName,
-    required String newVersion,
-    required GgLog? ggLog,
-  }) async {
-    final content = pubspecFile.readAsStringSync();
-    final yamlMap = loadYaml(content) as Map<dynamic, dynamic>;
-
-    final dynamic oldDep = _getDependency(dependencyName, yamlMap);
-    if (oldDep == null) {
-      throw Exception('Dependency $dependencyName not found.');
-    }
-
-    final sectionName = yamlMap['dependencies']?[dependencyName] != null
-        ? 'dependencies'
-        : 'dev_dependencies';
-
-    final oldYaml = yamlToString(oldDep).trimRight();
-    final replacement = await _buildDartReplacement(
-      workspaceDirectory: directory,
-      dependencyName: dependencyName,
-      oldDep: oldDep,
-      newVersion: newVersion,
-    );
-
-    final updated = replaceDependency(
-      content,
-      dependencyName,
-      oldYaml,
-      replacement,
-      sectionName: sectionName,
-    );
-
-    if (updated == content) {
-      ggLog?.call(yellow('No files were changed.'));
-      return;
-    }
-
-    pubspecFile.writeAsStringSync(updated);
-  }
-
-  /// Updates a dependency in package.json.
-  void _updateTypeScriptDependency({
-    required File packageJsonFile,
-    required String dependencyName,
-    required String newVersion,
-    required GgLog? ggLog,
-  }) {
-    final content = packageJsonFile.readAsStringSync();
-    final json = jsonDecode(content) as Map<String, dynamic>;
-
-    Map<String, dynamic>? deps;
-    if (json['dependencies'] is Map) {
-      deps = (json['dependencies'] as Map).cast<String, dynamic>();
-    }
-    Map<String, dynamic>? devDeps;
-    if (json['devDependencies'] is Map) {
-      devDeps = (json['devDependencies'] as Map).cast<String, dynamic>();
-    }
-
-    dynamic oldValue;
-    String? section;
-    if (deps != null && deps.containsKey(dependencyName)) {
-      oldValue = deps[dependencyName];
-      section = 'dependencies';
-    } else if (devDeps != null && devDeps.containsKey(dependencyName)) {
-      oldValue = devDeps[dependencyName];
-      section = 'devDependencies';
-    }
-
-    if (section == null) {
-      throw Exception('Dependency $dependencyName not found.');
-    }
-
-    final oldString = oldValue.toString();
-    if (oldString == newVersion) {
-      ggLog?.call(yellow('No files were changed.'));
-      return;
-    }
-
-    if (section == 'dependencies') {
-      deps![dependencyName] = newVersion;
-      json['dependencies'] = deps;
-    } else {
-      devDeps![dependencyName] = newVersion;
-      json['devDependencies'] = devDeps;
-    }
-
-    final updated = jsonEncode(json);
-    packageJsonFile.writeAsStringSync('$updated\n');
-  }
-
-  /// Builds the replacement YAML for a Dart dependency.
-  Future<String> _buildDartReplacement({
+  Future<String> _buildReplacement({
+    required ProjectLanguage language,
     required Directory workspaceDirectory,
     required String dependencyName,
-    required dynamic oldDep,
+    required dynamic oldDependency,
     required String newVersion,
   }) async {
+    if (language.id == ProjectLanguageId.typescript) {
+      return newVersion;
+    }
+
     final dependencyDirectory = await _findDependencyDirectory(
       workspaceDirectory: workspaceDirectory,
       dependencyName: dependencyName,
     );
 
     if (dependencyDirectory == null) {
-      return _updateExistingTagPatternVersion(oldDep, newVersion);
+      return _updateExistingTagPatternVersion(oldDependency, newVersion);
     }
 
     final wasPublished = await _wasPublished(dependencyDirectory);
@@ -225,11 +135,10 @@ class SetRefVersion extends DirCommand<dynamic> {
     if (oldDep is Map) {
       final git = oldDep['git'];
       if (git is Map && git.containsKey('tag_pattern')) {
-        final updatedGit = <String, dynamic>{
-          ...git.cast<String, dynamic>(),
+        return yamlToString(<String, dynamic>{
+          'git': <String, dynamic>{...git.cast<String, dynamic>()},
           'version': newVersion,
-        };
-        return yamlToString(<String, dynamic>{'git': updatedGit}).trimRight();
+        }).trimRight();
       }
     }
 
@@ -285,11 +194,18 @@ class SetRefVersion extends DirCommand<dynamic> {
 
     return result.stdout.toString().trim();
   }
-}
 
-// ............................................................................
-/// Get a dependency from the YAML map (local helper).
-dynamic _getDependency(String dependencyName, Map<dynamic, dynamic> yamlMap) {
-  return yamlMap['dependencies']?[dependencyName] ??
-      yamlMap['dev_dependencies']?[dependencyName];
+  ProjectLanguage _findLanguage(Directory directory) {
+    final pubspec = File('${directory.path}/pubspec.yaml');
+    final packageJson = File('${directory.path}/package.json');
+
+    if (pubspec.existsSync()) {
+      return DartProjectLanguage();
+    }
+    if (packageJson.existsSync()) {
+      return TypeScriptProjectLanguage();
+    }
+
+    throw Exception('pubspec.yaml not found at ${pubspec.path}');
+  }
 }

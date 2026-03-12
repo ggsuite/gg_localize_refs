@@ -1,4 +1,9 @@
-// ...........................................................................
+// @license
+// Copyright (c) 2025 Göran Hegenberg. All Rights Reserved.
+//
+// Use of this source code is governed by terms that can be
+// found in the LICENSE file in the root of this package.
+
 import 'dart:io';
 
 import 'package:gg_console_colors/gg_console_colors.dart';
@@ -92,25 +97,17 @@ Future<void> processNode(
     );
   }
 
-  final manifestFile = File(
-    '${projectDir.path}/${currentNode.language.manifestFileName}',
-  );
+  final manifest = await currentNode.language.readManifest(projectDir);
 
-  final manifestContent = await manifestFile.readAsString();
-
-  final manifestMap = currentNode.language.parseManifestContent(
-    manifestContent,
-  );
-
-  if (!_hasDependencies(manifestMap)) {
+  if (!currentNode.language.hasAnyDependencyEntries(manifest.parsed)) {
     return;
   }
 
   await modifyFunction(
     currentNode,
-    manifestFile,
-    manifestContent,
-    manifestMap,
+    manifest.file,
+    manifest.content,
+    manifest.parsed,
     fileChangesBuffer,
   );
 
@@ -127,37 +124,6 @@ Future<void> processNode(
       fileChangesBuffer,
     );
   }
-}
-
-bool _hasDependencies(dynamic manifestMap) {
-  if (manifestMap is! Map) {
-    return false;
-  }
-
-  final hasDartDependencies =
-      manifestMap.containsKey('dependencies') &&
-      manifestMap['dependencies'] is Map &&
-      (manifestMap['dependencies'] as Map).isNotEmpty;
-
-  final hasDartDevDependencies =
-      manifestMap.containsKey('dev_dependencies') &&
-      manifestMap['dev_dependencies'] is Map &&
-      (manifestMap['dev_dependencies'] as Map).isNotEmpty;
-
-  final hasTsDependencies =
-      manifestMap.containsKey('dependencies') &&
-      manifestMap['dependencies'] is Map &&
-      (manifestMap['dependencies'] as Map).isNotEmpty;
-
-  final hasTsDevDependencies =
-      manifestMap.containsKey('devDependencies') &&
-      manifestMap['devDependencies'] is Map &&
-      (manifestMap['devDependencies'] as Map).isNotEmpty;
-
-  return hasDartDependencies ||
-      hasDartDevDependencies ||
-      hasTsDependencies ||
-      hasTsDevDependencies;
 }
 
 // ...........................................................................

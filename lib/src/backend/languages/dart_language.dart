@@ -7,10 +7,11 @@
 import 'dart:io';
 
 import 'package:gg_console_colors/gg_console_colors.dart';
+import 'package:gg_localize_refs/src/backend/languages/project_language.dart';
+import 'package:gg_localize_refs/src/backend/replace_dependency.dart';
+import 'package:gg_localize_refs/src/backend/yaml_to_string.dart';
 import 'package:pubspec_parse/pubspec_parse.dart';
 import 'package:yaml/yaml.dart';
-
-import 'package:gg_localize_refs/src/backend/languages/project_language.dart';
 
 /// Dart implementation of [ProjectLanguage].
 class DartProjectLanguage extends ProjectLanguage {
@@ -77,5 +78,128 @@ class DartProjectLanguage extends ProjectLanguage {
       return yaml;
     }
     return <String, dynamic>{};
+  }
+
+  @override
+  bool hasAnyDependencies(dynamic manifest) {
+    return manifest is Map &&
+        (manifest.containsKey('dependencies') ||
+            manifest.containsKey('dev_dependencies'));
+  }
+
+  @override
+  bool hasAnyDependencyEntries(dynamic manifest) {
+    if (manifest is! Map) {
+      return false;
+    }
+
+    final dependencies = manifest['dependencies'];
+    final devDependencies = manifest['dev_dependencies'];
+
+    return (dependencies is Map && dependencies.isNotEmpty) ||
+        (devDependencies is Map && devDependencies.isNotEmpty);
+  }
+
+  @override
+  DependencyReference? findDependency(dynamic manifest, String dependencyName) {
+    if (manifest is! Map) {
+      return null;
+    }
+
+    final dependencies = manifest['dependencies'];
+    if (dependencies is Map && dependencies.containsKey(dependencyName)) {
+      return DependencyReference(
+        sectionName: 'dependencies',
+        name: dependencyName,
+        value: dependencies[dependencyName],
+      );
+    }
+
+    final devDependencies = manifest['dev_dependencies'];
+    if (devDependencies is Map && devDependencies.containsKey(dependencyName)) {
+      return DependencyReference(
+        sectionName: 'dev_dependencies',
+        name: dependencyName,
+        value: devDependencies[dependencyName],
+      );
+    }
+
+    return null;
+  }
+
+  @override
+  Map<String, DependencyReference> listDependencyReferences(dynamic manifest) {
+    final result = <String, DependencyReference>{};
+    if (manifest is! Map) {
+      return result;
+    }
+
+    void addSection(String sectionName) {
+      final section = manifest[sectionName];
+      if (section is! Map) {
+        return;
+      }
+
+      for (final entry in section.entries) {
+        final name = entry.key.toString();
+        result.putIfAbsent(
+          name,
+          () => DependencyReference(
+            sectionName: sectionName,
+            name: name,
+            value: entry.value,
+          ),
+        );
+      }
+    }
+
+    addSection('dependencies');
+    addSection('dev_dependencies');
+    return result;
+  }
+
+  @override
+  String? readPackageVersion(dynamic manifest) {
+    if (manifest is! Map) {
+      return null;
+    }
+
+    final version = manifest['version'];
+    return version?.toString();
+  }
+
+  @override
+  String stringifyDependencyForReading(dynamic dependencyValue) {
+    print('stringifyDependencyForReading: $dependencyValue');
+    if (dependencyValue is Map) {
+      final git = dependencyValue['git'];
+      if (git is Map && git.containsKey('tag_pattern')) {
+        print(dependencyValue['version']);
+        return dependencyValue['version'].toString();
+      }
+    }
+
+    return yamlToString(dependencyValue).trimRight();
+  }
+
+  @override
+  String replaceDependencyInContent({
+    required String manifestContent,
+    required DependencyReference reference,
+    required String newValue,
+  }) {
+    final oldValue = yamlToString(reference.value).trimRight();
+    return replaceDependency(
+      manifestContent,
+      reference.name,
+      oldValue,
+      newValue,
+      sectionName: reference.sectionName,
+    );
+  }
+
+  @override
+  String stringifyManifest(dynamic manifest) {
+    return yamlToString(manifest).trimRight();
   }
 }

@@ -147,5 +147,34 @@ void main() {
 
       expect(manifest, isEmpty);
     });
+
+    test('findDependency returns dependency from dependencies first', () {
+      final manifest = language.parseManifestContent(
+        'dependencies:\n  a: ^1.0.0\n'
+        'dev_dependencies:\n  a: ^2.0.0\n',
+      );
+
+      final reference = language.findDependency(manifest, 'a');
+
+      expect(reference, isNotNull);
+      expect(reference!.sectionName, 'dependencies');
+      expect(reference.value, '^1.0.0');
+    });
+
+    test('stringifyDependencyForReading returns version for git tag_pattern', () {
+      final manifest = language.parseManifestContent(
+        'dependencies:\n'
+        '  a:\n'
+        '    git:\n'
+        '      url: git@github.com:user/a.git\n'
+        '      tag_pattern: {{version}}\n'
+        '    version: ^2.0.0\n',
+      );
+      final reference = language.findDependency(manifest, 'a')!;
+
+      final result = language.stringifyDependencyForReading(reference.value);
+
+      expect(result, '^2.0.0');
+    });
   });
 }

@@ -15,6 +15,44 @@ enum ProjectLanguageId {
   typescript,
 }
 
+/// Describes where a dependency was found inside a manifest.
+class DependencyReference {
+  /// Creates a dependency reference.
+  const DependencyReference({
+    required this.sectionName,
+    required this.name,
+    required this.value,
+  });
+
+  /// The section name that contains the dependency.
+  final String sectionName;
+
+  /// The dependency name.
+  final String name;
+
+  /// The raw dependency value from the manifest.
+  final dynamic value;
+}
+
+/// Holds a manifest file together with its parsed representation.
+class ProjectManifest {
+  /// Creates a project manifest.
+  const ProjectManifest({
+    required this.file,
+    required this.content,
+    required this.parsed,
+  });
+
+  /// The manifest file on disk.
+  final File file;
+
+  /// The raw manifest content.
+  final String content;
+
+  /// The parsed language specific manifest object.
+  final dynamic parsed;
+}
+
 /// Represents a generic project node independent of the concrete language.
 class ProjectNode {
   /// Creates a project node.
@@ -76,4 +114,46 @@ abstract class ProjectLanguage {
   /// `loadYaml`, for TypeScript a `Map<String, dynamic>` created via
   /// `jsonDecode`.
   dynamic parseManifestContent(String content);
+
+  /// Reads and parses the manifest for [directory].
+  Future<ProjectManifest> readManifest(Directory directory) async {
+    final file = File('${directory.path}/$manifestFileName');
+    final content = await file.readAsString();
+    return ProjectManifest(
+      file: file,
+      content: content,
+      parsed: parseManifestContent(content),
+    );
+  }
+
+  /// Returns true when [manifest] contains at least one dependency section.
+  bool hasAnyDependencies(dynamic manifest);
+
+  /// Returns true when [manifest] contains at least one dependency entry.
+  bool hasAnyDependencyEntries(dynamic manifest);
+
+  /// Finds [dependencyName] in the manifest and returns its reference.
+  DependencyReference? findDependency(
+    dynamic manifest,
+    String dependencyName,
+  );
+
+  /// Returns all known dependency references indexed by dependency name.
+  Map<String, DependencyReference> listDependencyReferences(dynamic manifest);
+
+  /// Extracts the version from the root manifest.
+  String? readPackageVersion(dynamic manifest);
+
+  /// Returns the display value for a dependency when reading it.
+  String stringifyDependencyForReading(dynamic dependencyValue);
+
+  /// Builds new manifest content after replacing one dependency.
+  String replaceDependencyInContent({
+    required String manifestContent,
+    required DependencyReference reference,
+    required String newValue,
+  });
+
+  /// Builds new manifest content after writing [manifest].
+  String stringifyManifest(dynamic manifest);
 }

@@ -290,4 +290,48 @@ class _FakeLanguageMissingRootNode extends ProjectLanguage {
   dynamic parseManifestContent(String content) {
     return <String, dynamic>{};
   }
+
+  @override
+  bool hasAnyDependencies(dynamic manifest) {
+    return false;
+  }
+
+  @override
+  bool hasAnyDependencyEntries(dynamic manifest) {
+    return false;
+  }
+
+  @override
+  DependencyReference? findDependency(dynamic manifest, String dependencyName) {
+    return null;
+  }
+
+  @override
+  Map<String, DependencyReference> listDependencyReferences(dynamic manifest) {
+    return <String, DependencyReference>{};
+  }
+
+  @override
+  String? readPackageVersion(dynamic manifest) {
+    return null;
+  }
+
+  @override
+  String stringifyDependencyForReading(dynamic dependencyValue) {
+    return dependencyValue.toString();
+  }
+
+  @override
+  String replaceDependencyInContent({
+    required String manifestContent,
+    required DependencyReference reference,
+    required String newValue,
+  }) {
+    return manifestContent;
+  }
+
+  @override
+  String stringifyManifest(dynamic manifest) {
+    return '';
+  }
 }

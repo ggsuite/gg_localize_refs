@@ -8,17 +8,15 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:gg_args/gg_args.dart';
 import 'package:gg_console_colors/gg_console_colors.dart';
 import 'package:gg_localize_refs/src/backend/file_changes_buffer.dart';
-import 'package:path/path.dart' as p;
-
-import 'package:gg_args/gg_args.dart';
 import 'package:gg_localize_refs/src/backend/languages/project_language.dart';
 import 'package:gg_localize_refs/src/backend/process_dependencies.dart';
-import 'package:gg_localize_refs/src/backend/replace_dependency.dart';
-import 'package:gg_localize_refs/src/backend/yaml_to_string.dart';
 import 'package:gg_localize_refs/src/backend/publish_to_utils.dart';
+import 'package:gg_localize_refs/src/backend/yaml_to_string.dart';
 import 'package:gg_log/gg_log.dart';
+import 'package:path/path.dart' as p;
 
 // #############################################################################
 /// Command for localizing references
@@ -158,41 +156,42 @@ class LocalizeRefs extends DirCommand<dynamic> {
         node,
         manifestFile,
         manifestContent,
-        manifestMap as Map<dynamic, dynamic>,
+        manifestMap,
         fileChangesBuffer,
       );
       return;
     }
 
-    if (node.language.id == ProjectLanguageId.typescript) {
-      await _modifyTypeScript(
-        node,
-        manifestFile,
-        manifestContent,
-        manifestMap as Map<String, dynamic>,
-        fileChangesBuffer,
-      );
-    }
+    await _modifyTypeScript(
+      node,
+      manifestFile,
+      manifestContent,
+      manifestMap as Map<String, dynamic>,
+      fileChangesBuffer,
+    );
   }
 
   Future<void> _modifyDart(
     ProjectNode node,
     File pubspec,
     String pubspecContent,
-    Map<dynamic, dynamic> yamlMap,
+    dynamic yamlMap,
     FileChangesBuffer fileChangesBuffer,
   ) async {
     final projectDir = node.directory;
     final backupDir = _ensureBackupDir(projectDir);
     _ensureGitignoreHasGgEntries(projectDir);
+    final references = node.language.listDependencyReferences(yamlMap);
 
     if (!useGit) {
       var hasOnlineDependencies = false;
 
       for (final dependency in node.dependencies.entries) {
-        if (!yamlToString(
-          getDependency(dependency.key, yamlMap),
-        ).startsWith('path:')) {
+        final reference = references[dependency.key];
+        if (reference == null) {
+          continue;
+        }
+        if (!yamlToString(reference.value).startsWith('path:')) {
           hasOnlineDependencies = true;
         }
       }
@@ -218,8 +217,12 @@ class LocalizeRefs extends DirCommand<dynamic> {
         final relativeDepPath = p
             .relative(dependencyPath, from: node.directory.path)
             .replaceAll('\\', '/');
-        final oldDependency = getDependency(dependencyName, yamlMap);
-        final oldDependencyYaml = yamlToString(oldDependency);
+        final reference = references[dependencyName];
+        if (reference == null) {
+          continue;
+        }
+
+        final oldDependencyYaml = yamlToString(reference.value);
         final oldDependencyYamlCompressed = oldDependencyYaml.replaceAll(
           RegExp(r'[\n\r\t{}]'),
           '',
@@ -227,19 +230,18 @@ class LocalizeRefs extends DirCommand<dynamic> {
 
         if (!oldDependencyYamlCompressed.startsWith('path:')) {
           replacedDependencies[dependencyName] = _backupDependencyValue(
-            oldDependency,
+            reference.value,
           );
         }
 
-        newPubspecContent = replaceDependency(
-          newPubspecContent,
-          dependencyName,
-          oldDependencyYaml,
-          'path: $relativeDepPath # $oldDependencyYamlCompressed',
+        newPubspecContent = node.language.replaceDependencyInContent(
+          manifestContent: newPubspecContent,
+          reference: reference,
+          newValue: 'path: $relativeDepPath # $oldDependencyYamlCompressed',
         );
       }
 
-      final publishBackup = backupPublishTo(yamlMap);
+      final publishBackup = backupPublishTo(yamlMap as Map<dynamic, dynamic>);
       replacedDependencies.addAll(publishBackup);
 
       newPubspecContent = addPublishToNone(newPubspecContent);
@@ -256,7 +258,11 @@ class LocalizeRefs extends DirCommand<dynamic> {
 
     var hasNonGitDependencies = false;
     for (final dependency in node.dependencies.entries) {
-      final depYaml = yamlToString(getDependency(dependency.key, yamlMap));
+      final reference = references[dependency.key];
+      if (reference == null) {
+        continue;
+      }
+      final depYaml = yamlToString(reference.value);
       if (_shouldConvertToGit(depYaml)) {
         hasNonGitDependencies = true;
       }
@@ -274,18 +280,20 @@ class LocalizeRefs extends DirCommand<dynamic> {
 
     final replacedDependencies = <String, dynamic>{};
     for (final dependency in node.dependencies.entries) {
-      final dependencyName = dependency.key;
-      final oldDependency = getDependency(dependencyName, yamlMap);
-      final oldDependencyYaml = yamlToString(oldDependency);
+      final reference = references[dependency.key];
+      if (reference == null) {
+        continue;
+      }
+      final oldDependencyYaml = yamlToString(reference.value);
 
       if (_shouldBackupOriginalGitDependency(oldDependencyYaml)) {
-        replacedDependencies[dependencyName] = _backupDependencyValue(
-          oldDependency,
+        replacedDependencies[dependency.key] = _backupDependencyValue(
+          reference.value,
         );
       }
     }
 
-    final publishBackup = backupPublishTo(yamlMap);
+    final publishBackup = backupPublishTo(yamlMap as Map<dynamic, dynamic>);
     replacedDependencies.addAll(publishBackup);
 
     await saveDependenciesAsJson(
@@ -295,20 +303,21 @@ class LocalizeRefs extends DirCommand<dynamic> {
 
     var newPubspecContent = pubspecContent;
     for (final dependency in node.dependencies.entries) {
-      final dependencyName = dependency.key;
-      final oldDependency = getDependency(dependencyName, yamlMap);
-      final oldDependencyYaml = yamlToString(oldDependency);
+      final reference = references[dependency.key];
+      if (reference == null) {
+        continue;
+      }
+      final oldDependencyYaml = yamlToString(reference.value);
 
       if (_shouldConvertToGit(oldDependencyYaml)) {
         final newDependencyYaml = await getGitDependencyYaml(
           dependency.value.directory,
-          dependencyName,
+          dependency.key,
         );
-        newPubspecContent = replaceDependency(
-          newPubspecContent,
-          dependencyName,
-          oldDependencyYaml,
-          newDependencyYaml,
+        newPubspecContent = node.language.replaceDependencyInContent(
+          manifestContent: newPubspecContent,
+          reference: reference,
+          newValue: newDependencyYaml,
         );
       }
     }
@@ -325,20 +334,14 @@ class LocalizeRefs extends DirCommand<dynamic> {
     Map<String, dynamic> manifestMap,
     FileChangesBuffer fileChangesBuffer,
   ) async {
-    final dependencies = manifestMap['dependencies'] is Map
-        ? (manifestMap['dependencies'] as Map).cast<String, dynamic>()
-        : <String, dynamic>{};
-    final devDependencies = manifestMap['devDependencies'] is Map
-        ? (manifestMap['devDependencies'] as Map).cast<String, dynamic>()
-        : <String, dynamic>{};
+    final references = node.language.listDependencyReferences(manifestMap);
 
     if (!useGit) {
       var hasOnlineDependencies = false;
 
       for (final dependency in node.dependencies.entries) {
-        final name = dependency.key;
-        final value =
-            dependencies[name]?.toString() ?? devDependencies[name]?.toString();
+        final reference = references[dependency.key];
+        final value = reference?.value?.toString();
         if (value == null) {
           continue;
         }
@@ -354,33 +357,31 @@ class LocalizeRefs extends DirCommand<dynamic> {
       ggLog('Localize refs of ${node.name}');
 
       final replacedDependencies = <String, dynamic>{};
+      var updatedContent = manifestContent;
 
       for (final dependency in node.dependencies.entries) {
-        final name = dependency.key;
+        final reference = references[dependency.key];
+        if (reference == null) {
+          continue;
+        }
+
         final depDir = dependency.value.directory.path;
         final relativePath = p
             .relative(depDir, from: node.directory.path)
             .replaceAll('\\', '/');
 
-        if (dependencies.containsKey(name)) {
-          final oldValue = dependencies[name];
-          final oldString = oldValue.toString();
-          if (!oldString.trim().startsWith('file:')) {
-            replacedDependencies[name] = oldValue;
-          }
-          dependencies[name] = 'file:$relativePath';
-        } else if (devDependencies.containsKey(name)) {
-          final oldValue = devDependencies[name];
-          final oldString = oldValue.toString();
-          if (!oldString.trim().startsWith('file:')) {
-            replacedDependencies[name] = oldValue;
-          }
-          devDependencies[name] = 'file:$relativePath';
+        final oldValue = reference.value;
+        final oldString = oldValue.toString();
+        if (!oldString.trim().startsWith('file:')) {
+          replacedDependencies[dependency.key] = oldValue;
         }
-      }
 
-      manifestMap['dependencies'] = dependencies;
-      manifestMap['devDependencies'] = devDependencies;
+        updatedContent = node.language.replaceDependencyInContent(
+          manifestContent: updatedContent,
+          reference: reference,
+          newValue: 'file:$relativePath',
+        );
+      }
 
       if (replacedDependencies.isEmpty) {
         return;
@@ -391,16 +392,14 @@ class LocalizeRefs extends DirCommand<dynamic> {
       );
       await backupFile.writeAsString(jsonEncode(replacedDependencies));
 
-      final newContent = jsonEncode(manifestMap);
-      fileChangesBuffer.add(manifestFile, '$newContent\n');
+      fileChangesBuffer.add(manifestFile, updatedContent);
       return;
     }
 
     var hasNonGitDependencies = false;
     for (final dependency in node.dependencies.entries) {
-      final name = dependency.key;
-      final value =
-          dependencies[name]?.toString() ?? devDependencies[name]?.toString();
+      final reference = references[dependency.key];
+      final value = reference?.value?.toString();
       if (value == null) {
         continue;
       }
@@ -418,14 +417,13 @@ class LocalizeRefs extends DirCommand<dynamic> {
     final replacedDependencies = <String, dynamic>{};
 
     for (final dependency in node.dependencies.entries) {
-      final name = dependency.key;
-      final value =
-          dependencies[name]?.toString() ?? devDependencies[name]?.toString();
+      final reference = references[dependency.key];
+      final value = reference?.value?.toString();
       if (value == null) {
         continue;
       }
       if (!value.trim().startsWith('git+')) {
-        replacedDependencies[name] = value;
+        replacedDependencies[dependency.key] = value;
       }
     }
 
@@ -434,32 +432,29 @@ class LocalizeRefs extends DirCommand<dynamic> {
     );
     await backupFile.writeAsString(jsonEncode(replacedDependencies));
 
+    var updatedContent = manifestContent;
     for (final dependency in node.dependencies.entries) {
-      final name = dependency.key;
-      final depDir = dependency.value.directory;
-
-      final value =
-          dependencies[name]?.toString() ?? devDependencies[name]?.toString();
-      if (value == null) {
+      final reference = references[dependency.key];
+      final value = reference?.value?.toString();
+      if (reference == null || value == null) {
         continue;
       }
       if (value.trim().startsWith('git+')) {
         continue;
       }
 
-      final gitSpec = await getGitDependencySpecForTs(depDir, name);
-      if (dependencies.containsKey(name)) {
-        dependencies[name] = gitSpec;
-      } else if (devDependencies.containsKey(name)) {
-        devDependencies[name] = gitSpec;
-      }
+      final gitSpec = await getGitDependencySpecForTs(
+        dependency.value.directory,
+        dependency.key,
+      );
+      updatedContent = node.language.replaceDependencyInContent(
+        manifestContent: updatedContent,
+        reference: reference,
+        newValue: gitSpec,
+      );
     }
 
-    manifestMap['dependencies'] = dependencies;
-    manifestMap['devDependencies'] = devDependencies;
-
-    final newContent = jsonEncode(manifestMap);
-    fileChangesBuffer.add(manifestFile, '$newContent\n');
+    fileChangesBuffer.add(manifestFile, updatedContent);
   }
 
   /// Returns the compact backup value for a dependency.
@@ -590,11 +585,4 @@ class LocalizeRefs extends DirCommand<dynamic> {
     final file = File(filePath);
     await file.writeAsString(jsonString);
   }
-}
-
-// ............................................................................
-/// Get a dependency from the YAML map
-dynamic getDependency(String dependencyName, Map<dynamic, dynamic> yamlMap) {
-  return yamlMap['dependencies']?[dependencyName] ??
-      yamlMap['dev_dependencies']?[dependencyName];
 }

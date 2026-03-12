@@ -53,6 +53,18 @@ void main() {
       expect(description, contains('my_pkg'));
       expect(description, contains(dir.path));
     });
+
+    test('DependencyReference stores section, name and value', () {
+      const reference = DependencyReference(
+        sectionName: 'dependencies',
+        name: 'dep',
+        value: '^1.0.0',
+      );
+
+      expect(reference.sectionName, 'dependencies');
+      expect(reference.name, 'dep');
+      expect(reference.value, '^1.0.0');
+    });
   });
 }
 
@@ -80,5 +92,49 @@ class _FakeLanguage extends ProjectLanguage {
   @override
   dynamic parseManifestContent(String content) {
     return <String, dynamic>{};
+  }
+
+  @override
+  bool hasAnyDependencies(dynamic manifest) {
+    return false;
+  }
+
+  @override
+  bool hasAnyDependencyEntries(dynamic manifest) {
+    return false;
+  }
+
+  @override
+  DependencyReference? findDependency(dynamic manifest, String dependencyName) {
+    return null;
+  }
+
+  @override
+  Map<String, DependencyReference> listDependencyReferences(dynamic manifest) {
+    return <String, DependencyReference>{};
+  }
+
+  @override
+  String? readPackageVersion(dynamic manifest) {
+    return null;
+  }
+
+  @override
+  String stringifyDependencyForReading(dynamic dependencyValue) {
+    return dependencyValue.toString();
+  }
+
+  @override
+  String replaceDependencyInContent({
+    required String manifestContent,
+    required DependencyReference reference,
+    required String newValue,
+  }) {
+    return manifestContent;
+  }
+
+  @override
+  String stringifyManifest(dynamic manifest) {
+    return '';
   }
 }

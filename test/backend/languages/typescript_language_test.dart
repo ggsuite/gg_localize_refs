@@ -6,8 +6,8 @@
 
 import 'dart:io';
 
-import 'package:gg_localize_refs/src/backend/languages/typescript_language.dart';
 import 'package:gg_localize_refs/src/backend/languages/project_language.dart';
+import 'package:gg_localize_refs/src/backend/languages/typescript_language.dart';
 import 'package:test/test.dart';
 
 import '../../test_helpers.dart';
@@ -118,6 +118,35 @@ void main() {
           language.parseManifestContent(content) as Map<String, dynamic>;
 
       expect(manifest, isEmpty);
+    });
+
+    test('findDependency returns dependency from devDependencies', () {
+      const content =
+          '{"name":"pkg","devDependencies":{"dep":"^2.0.0"}}';
+
+      final manifest =
+          language.parseManifestContent(content) as Map<String, dynamic>;
+      final reference = language.findDependency(manifest, 'dep');
+
+      expect(reference, isNotNull);
+      expect(reference!.sectionName, 'devDependencies');
+      expect(reference.value, '^2.0.0');
+    });
+
+    test('replaceDependencyInContent updates package.json section', () {
+      const content =
+          '{"name":"pkg","dependencies":{"dep":"^1.0.0"}}';
+      final manifest =
+          language.parseManifestContent(content) as Map<String, dynamic>;
+      final reference = language.findDependency(manifest, 'dep')!;
+
+      final updated = language.replaceDependencyInContent(
+        manifestContent: content,
+        reference: reference,
+        newValue: '^2.0.0',
+      );
+
+      expect(updated, contains('"dep":"^2.0.0"'));
     });
   });
 }

@@ -4,14 +4,14 @@
 // Use of this source code is governed by terms that can be
 // found in the LICENSE file in the root of this package.
 
-import 'dart:convert';
 import 'dart:io';
 
 import 'package:gg_args/gg_args.dart';
 import 'package:gg_console_colors/gg_console_colors.dart';
-import 'package:gg_localize_refs/src/backend/yaml_to_string.dart';
+import 'package:gg_localize_refs/src/backend/languages/dart_language.dart';
+import 'package:gg_localize_refs/src/backend/languages/project_language.dart';
+import 'package:gg_localize_refs/src/backend/languages/typescript_language.dart';
 import 'package:gg_log/gg_log.dart';
-import 'package:yaml/yaml.dart';
 
 // #############################################################################
 /// Command that reads the current version/spec of a dependency from
@@ -42,49 +42,16 @@ class GetRefVersion extends DirCommand<dynamic> {
     }
 
     try {
-      final pubspec = File('${directory.path}/pubspec.yaml');
-      final packageJson = File('${directory.path}/package.json');
+      final language = _findLanguage(directory);
+      final manifest = await language.readManifest(directory);
 
-      if (!pubspec.existsSync() && !packageJson.existsSync()) {
-        throw Exception('pubspec.yaml not found at ${pubspec.path}');
-      }
-
-      if (pubspec.existsSync()) {
-        final content = pubspec.readAsStringSync();
-        final yamlMap = loadYaml(content) as Map<dynamic, dynamic>;
-
-        final dynamic value = getDependency2(dependencyName, yamlMap);
-        if (value == null) {
-          ggLog?.call(yellow('Dependency $dependencyName not found.'));
-          return null;
-        }
-
-        final result = _extractDartVersionOrSpec(value);
-        ggLog?.call(result);
-        return result;
-      }
-
-      final content = packageJson.readAsStringSync();
-      final json = jsonDecode(content) as Map<String, dynamic>;
-
-      dynamic value;
-      if (json['dependencies'] is Map) {
-        value =
-            (json['dependencies'] as Map)[dependencyName] ??
-            (json['dependencies'] as Map<String, dynamic>)[dependencyName];
-      }
-      if (value == null && json['devDependencies'] is Map) {
-        value =
-            (json['devDependencies'] as Map)[dependencyName] ??
-            (json['devDependencies'] as Map<String, dynamic>)[dependencyName];
-      }
-
-      if (value == null) {
+      final reference = language.findDependency(manifest.parsed, dependencyName);
+      if (reference == null) {
         ggLog?.call(yellow('Dependency $dependencyName not found.'));
         return null;
       }
 
-      final result = value is String ? value : jsonEncode(value);
+      final result = language.stringifyDependencyForReading(reference.value);
       ggLog?.call(result);
       return result;
     } catch (e) {
@@ -92,27 +59,17 @@ class GetRefVersion extends DirCommand<dynamic> {
     }
   }
 
-  /// Extracts a version from a Dart dependency declaration.
-  String _extractDartVersionOrSpec(dynamic value) {
-    if (value is String) {
-      return value;
+  ProjectLanguage _findLanguage(Directory directory) {
+    final pubspec = File('${directory.path}/pubspec.yaml');
+    final packageJson = File('${directory.path}/package.json');
+
+    if (pubspec.existsSync()) {
+      return DartProjectLanguage();
+    }
+    if (packageJson.existsSync()) {
+      return TypeScriptProjectLanguage();
     }
 
-    if (value is Map) {
-      final git = value['git'];
-      if (git is Map && git.containsKey('version')) {
-        return git['version'].toString();
-      }
-    }
-
-    return yamlToString(value).trimRight();
+    throw Exception('pubspec.yaml not found at ${pubspec.path}');
   }
-}
-
-// ............................................................................
-/// Get a dependency from the YAML map.
-/// (helper for pubspec.yaml based projects)
-dynamic getDependency2(String dependencyName, Map<dynamic, dynamic> yamlMap) {
-  return yamlMap['dependencies']?[dependencyName] ??
-      yamlMap['dev_dependencies']?[dependencyName];
 }

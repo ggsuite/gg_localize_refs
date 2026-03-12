@@ -747,69 +747,6 @@ void main() {
     });
   });
 
-  group('getDependency', () {
-    test('should return the dependency from dependencies', () {
-      final yamlMap = <String, dynamic>{
-        'dependencies': <String, dynamic>{'some_dependency': '^1.0.0'},
-        'dev_dependencies': <String, dynamic>{},
-      };
-      final result = getDependency('some_dependency', yamlMap);
-      expect(result, equals('^1.0.0'));
-    });
-
-    test('should return the dependency from dev_dependencies '
-        'when not in dependencies', () {
-      final yamlMap = <String, dynamic>{
-        'dependencies': <String, dynamic>{},
-        'dev_dependencies': <String, dynamic>{'some_dependency': '^2.0.0'},
-      };
-      final result = getDependency('some_dependency', yamlMap);
-      expect(result, equals('^2.0.0'));
-    });
-
-    test('should return the dependency from dependencies when '
-        'in both dependencies and dev_dependencies', () {
-      final yamlMap = <String, dynamic>{
-        'dependencies': <String, dynamic>{'some_dependency': '^1.0.0'},
-        'dev_dependencies': <String, dynamic>{'some_dependency': '^2.0.0'},
-      };
-      final result = getDependency('some_dependency', yamlMap);
-      expect(result, equals('^1.0.0'));
-    });
-
-    test('should return null when the dependency is not present', () {
-      final yamlMap = <String, dynamic>{
-        'dependencies': <String, dynamic>{},
-        'dev_dependencies': <String, dynamic>{},
-      };
-      final result = getDependency('some_dependency', yamlMap);
-      expect(result, isNull);
-    });
-
-    test('should handle missing dependencies section', () {
-      final yamlMap = <String, dynamic>{
-        'dev_dependencies': <String, dynamic>{'some_dependency': '^1.0.0'},
-      };
-      final result = getDependency('some_dependency', yamlMap);
-      expect(result, equals('^1.0.0'));
-    });
-
-    test('should handle missing dev_dependencies section', () {
-      final yamlMap = <String, dynamic>{
-        'dependencies': <String, dynamic>{'some_dependency': '^1.0.0'},
-      };
-      final result = getDependency('some_dependency', yamlMap);
-      expect(result, equals('^1.0.0'));
-    });
-
-    test('should handle both dependencies and dev_dependencies '
-        'sections missing', () {
-      final yamlMap = <String, dynamic>{};
-      final result = getDependency('some_dependency', yamlMap);
-      expect(result, isNull);
-    });
-  });
-
   group('LocalizeRefs._getGitDependencyYaml falls back to main', () {
     test('should use "main" as ref if the git rev-parse fails '
         '(exitCode != 0)', () async {

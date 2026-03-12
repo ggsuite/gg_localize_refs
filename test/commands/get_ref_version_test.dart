@@ -195,7 +195,7 @@ void main() {
           '    git:\n'
           '      url: git@github.com:user/p6b.git\n'
           '      tag_pattern: {{version}}\n'
-          '      version: ^2.0.1\n',
+          '    version: ^2.0.1\n',
         );
         File(
           join(d2.path, 'pubspec.yaml'),
