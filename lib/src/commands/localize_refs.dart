@@ -226,9 +226,8 @@ class LocalizeRefs extends DirCommand<dynamic> {
         );
 
         if (!oldDependencyYamlCompressed.startsWith('path:')) {
-          replacedDependencies[dependencyName] = getDependency(
-            dependencyName,
-            yamlMap,
+          replacedDependencies[dependencyName] = _backupDependencyValue(
+            oldDependency,
           );
         }
 
@@ -280,9 +279,8 @@ class LocalizeRefs extends DirCommand<dynamic> {
       final oldDependencyYaml = yamlToString(oldDependency);
 
       if (_shouldBackupOriginalGitDependency(oldDependencyYaml)) {
-        replacedDependencies[dependencyName] = getDependency(
-          dependencyName,
-          yamlMap,
+        replacedDependencies[dependencyName] = _backupDependencyValue(
+          oldDependency,
         );
       }
     }
@@ -462,6 +460,30 @@ class LocalizeRefs extends DirCommand<dynamic> {
 
     final newContent = jsonEncode(manifestMap);
     fileChangesBuffer.add(manifestFile, '$newContent\n');
+  }
+
+  /// Returns the compact backup value for a dependency.
+  dynamic _backupDependencyValue(dynamic dependency) {
+    if (dependency is String) {
+      return dependency;
+    }
+
+    if (dependency is Map) {
+      final version = dependency['version'];
+      if (version != null) {
+        return version.toString();
+      }
+
+      final git = dependency['git'];
+      if (git is Map) {
+        final gitVersion = git['version'];
+        if (gitVersion != null) {
+          return gitVersion.toString();
+        }
+      }
+    }
+
+    return dependency;
   }
 
   /// Returns whether [dependencyYaml] should be converted to a plain git ref.

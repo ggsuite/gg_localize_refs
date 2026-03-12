@@ -5,6 +5,7 @@
 // found in the LICENSE file in the root of this package.
 
 import 'dart:async';
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:args/command_runner.dart';
@@ -296,6 +297,40 @@ void main() {
 
           expect(localMessages[0], contains('Running localize-refs in'));
           expect(localMessages[1], contains('No files were changed.'));
+        });
+
+        test('stores only version strings in Dart backup json', () async {
+          final workspace = createTempDir('localize_backup_versions_only_ws');
+          final project1 = Directory(p.join(workspace.path, 'project1'));
+          final project2 = Directory(p.join(workspace.path, 'project2'));
+          createDirs(<Directory>[project1, project2]);
+
+          File(p.join(project1.path, 'pubspec.yaml')).writeAsStringSync(
+            'name: project1\n'
+            'version: 1.0.0\n'
+            'dependencies:\n'
+            '  project2:\n'
+            '    git:\n'
+            '      url: git@github.com:ggsuite/testproject_gg_2.git\n'
+            '      tag_pattern: {{version}}\n'
+            '    version: ^1.0.0\n',
+          );
+          File(p.join(project2.path, 'pubspec.yaml')).writeAsStringSync(
+            'name: project2\n'
+            'version: 1.0.0\n',
+          );
+
+          final local = LocalizeRefs(ggLog: messages.add);
+          await local.get(directory: project1, ggLog: messages.add, git: true);
+
+          final backupJson = File(
+            p.join(project1.path, '.gg', '.gg_localize_refs_backup.json'),
+          ).readAsStringSync();
+          final backupMap = jsonDecode(backupJson) as Map<String, dynamic>;
+
+          expect(backupMap['project2'], '^1.0.0');
+
+          deleteDirs(<Directory>[workspace]);
         });
 
         test('with --git option should succeed', () async {
