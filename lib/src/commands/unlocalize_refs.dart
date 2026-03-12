@@ -40,23 +40,23 @@ class UnlocalizeRefs extends DirCommand<dynamic> {
 
     final fileChangesBuffer = FileChangesBuffer();
 
-    try {
-      await processProject(
-        directory: directory,
-        modifyFunction: modifyManifest,
-        fileChangesBuffer: fileChangesBuffer,
-        ggLog: ggLog,
-      );
+    //try {
+    await processProject(
+      directory: directory,
+      modifyFunction: modifyManifest,
+      fileChangesBuffer: fileChangesBuffer,
+      ggLog: ggLog,
+    );
 
-      if (fileChangesBuffer.files.isEmpty) {
-        ggLog?.call(yellow('No files were changed.'));
-        return;
-      }
-
-      await fileChangesBuffer.apply();
-    } catch (e) {
-      throw Exception(red('An error occurred: $e. No files were changed.'));
+    if (fileChangesBuffer.files.isEmpty) {
+      ggLog?.call(yellow('No files were changed.'));
+      return;
     }
+
+    await fileChangesBuffer.apply();
+    //} catch (e) {
+    //  throw Exception(red('An error occurred: $e. No files were changed.'));
+    //}
   }
 
   // ...........................................................................
@@ -288,15 +288,6 @@ class UnlocalizeRefs extends DirCommand<dynamic> {
     required ProjectNode dependencyNode,
     required dynamic savedDependency,
   }) async {
-    final savedValue = savedDependency.toString();
-    final published = await isOnPubDev.get(
-      directory: dependencyNode.directory,
-      ggLog: (_) {},
-    );
-    if (published) {
-      return savedValue;
-    }
-
     final gitUrl = await Utils.getGitRemoteUrl(
       dependencyNode.directory,
       dependencyNode.name,

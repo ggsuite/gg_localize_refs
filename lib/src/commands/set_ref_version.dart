@@ -83,11 +83,13 @@ class SetRefVersion extends DirCommand<dynamic> {
         newVersion: newVersion,
       );
 
-      final updated = language.replaceDependencyInContent(
-        manifestContent: manifest.content,
-        reference: reference,
-        newValue: replacement,
-      );
+      final updated = language
+          .replaceDependencyInContent(
+            manifestContent: manifest.content,
+            reference: reference,
+            newValue: replacement,
+          )
+          .trim();
 
       if (updated == manifest.content) {
         ggLog?.call(yellow('No files were changed.'));
