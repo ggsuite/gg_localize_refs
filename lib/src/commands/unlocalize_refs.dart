@@ -28,14 +28,14 @@ import 'package:path/path.dart' as p;
 class UnlocalizeRefs extends DirCommand<dynamic> {
   /// Creates the command.
   UnlocalizeRefs({required super.ggLog})
-    : isPublished = IsPublished(ggLog: ggLog),
+    : isOnPubDev = IsOnPubDev(ggLog: ggLog),
       super(
         name: 'unlocalize-refs',
         description: 'Changes dependencies to remote dependencies.',
       );
 
   /// Service used to check whether a dependency was published before.
-  final IsPublished isPublished;
+  final IsOnPubDev isOnPubDev;
 
   // ...........................................................................
   @override
@@ -292,7 +292,7 @@ class UnlocalizeRefs extends DirCommand<dynamic> {
     );
 
     return yamlToString(<String, dynamic>{
-      'git': <String, dynamic>{'url': gitUrl, 'tag_pattern': 'v{{version}}'},
+      'git': <String, dynamic>{'url': gitUrl, 'tag_pattern': '{{version}}'},
       'version': version,
     }).trimRight();
   }
@@ -318,7 +318,7 @@ class UnlocalizeRefs extends DirCommand<dynamic> {
   /// Returns true when the project in [directory] was published before.
   Future<bool> _wasPublished(Directory directory) async {
     try {
-      return await isPublished.get(directory: directory, ggLog: (_) {});
+      return await isOnPubDev.get(directory: directory, ggLog: (_) {});
     } catch (_) {
       return false;
     }

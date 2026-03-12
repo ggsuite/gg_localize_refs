@@ -206,56 +206,75 @@ void main() {
     });
 
     group('should succeed', () {
-      test('replace scalar with scalar', () async {
-        final d1 = Directory(join(dWorkspace.path, 'b1'));
-        final d2 = Directory(join(dWorkspace.path, 'b2'));
-        createDirs(<Directory>[d1, d2]);
-        File(join(d1.path, 'pubspec.yaml')).writeAsStringSync(
-          'name: b1\nversion: 1.0.0\ndependencies:\n  b2: ^1.0.0',
-        );
-        File(
-          join(d2.path, 'pubspec.yaml'),
-        ).writeAsStringSync('name: b2\nversion: 1.0.0');
+      test(
+        'replace scalar with pub.dev scalar when dependency is published',
+        () async {
+          final d1 = Directory(join(dWorkspace.path, 'b1'));
+          final d2 = Directory(join(dWorkspace.path, 'b2'));
+          createDirs(<Directory>[d1, d2]);
+          File(join(d1.path, 'pubspec.yaml')).writeAsStringSync(
+            'name: b1\nversion: 1.0.0\ndependencies:\n  b2: ^1.0.0',
+          );
+          File(
+            join(d2.path, 'pubspec.yaml'),
+          ).writeAsStringSync('name: b2\nversion: 1.0.0');
 
-        await runner.run(<String>[
-          'set-ref-version',
-          '--input',
-          d1.path,
-          '--ref',
-          'b2',
-          '--version',
-          '^2.0.0',
-        ]);
-        final content = File(join(d1.path, 'pubspec.yaml')).readAsStringSync();
-        expect(content, contains('b2: ^2.0.0'));
-      });
+          await runner.run(<String>[
+            'set-ref-version',
+            '--input',
+            d1.path,
+            '--ref',
+            'b2',
+            '--version',
+            '^2.0.0',
+          ]);
+          final content = File(
+            join(d1.path, 'pubspec.yaml'),
+          ).readAsStringSync();
+          expect(content, contains('b2: ^2.0.0'));
+        },
+      );
 
-      test('replace scalar with git block', () async {
-        final d1 = Directory(join(dWorkspace.path, 'c1'));
-        final d2 = Directory(join(dWorkspace.path, 'c2'));
-        createDirs(<Directory>[d1, d2]);
-        File(join(d1.path, 'pubspec.yaml')).writeAsStringSync(
-          'name: c1\nversion: 1.0.0\ndependencies:\n  c2: ^1.0.0',
-        );
-        File(
-          join(d2.path, 'pubspec.yaml'),
-        ).writeAsStringSync('name: c2\nversion: 1.0.0');
+      test(
+        'replace scalar with git tag_pattern when dependency is unpublished',
+        () async {
+          final d1 = Directory(join(dWorkspace.path, 'c1'));
+          final d2 = Directory(join(dWorkspace.path, 'c2'));
+          createDirs(<Directory>[d1, d2]);
+          File(join(d1.path, 'pubspec.yaml')).writeAsStringSync(
+            'name: c1\nversion: 1.0.0\ndependencies:\n  c2: ^1.0.0',
+          );
+          File(
+            join(d2.path, 'pubspec.yaml'),
+          ).writeAsStringSync('name: c2\nversion: 1.0.0\npublish_to: none\n');
 
-        await runner.run(<String>[
-          'set-ref-version',
-          '--input',
-          d1.path,
-          '--ref',
-          'c2',
-          '--version',
-          'git:\n  url: git@github.com:user/c2.git\n  ref: main',
-        ]);
-        final content = File(join(d1.path, 'pubspec.yaml')).readAsStringSync();
-        expect(content, contains('c2:'));
-        expect(content, contains('git:'));
-        expect(content, contains('url: git@github.com:user/c2.git'));
-        expect(content, contains('ref: main'));
-      });
+          Process.runSync('git', <String>['init'], workingDirectory: d2.path);
+          Process.runSync('git', <String>[
+            'remote',
+            'add',
+            'origin',
+            'git@github.com:user/c2.git',
+          ], workingDirectory: d2.path);
+
+          await runner.run(<String>[
+            'set-ref-version',
+            '--input',
+            d1.path,
+            '--ref',
+            'c2',
+            '--version',
+            '^3.0.0',
+          ]);
+          final content = File(
+            join(d1.path, 'pubspec.yaml'),
+          ).readAsStringSync();
+          expect(content, contains('c2:'));
+          expect(content, contains('git:'));
+          expect(content, contains('url: git@github.com:user/c2.git'));
+          expect(content, contains('tag_pattern: {{version}}'));
+          expect(content, contains('version: ^3.0.0'));
+        },
+      );
 
       test('replace git block with scalar', () async {
         final d1 = Directory(join(dWorkspace.path, 'd1'));
@@ -291,12 +310,20 @@ void main() {
           '  d2b:\n'
           '    git:\n'
           '      url: git@github.com:user/d2b.git\n'
-          '      tag_pattern: v{{version}}\n'
+          '      tag_pattern: {{version}}\n'
           '      version: ^1.0.0\n',
         );
         File(
           join(d2.path, 'pubspec.yaml'),
-        ).writeAsStringSync('name: d2b\nversion: 1.0.0');
+        ).writeAsStringSync('name: d2b\nversion: 1.0.0\npublish_to: none\n');
+
+        Process.runSync('git', <String>['init'], workingDirectory: d2.path);
+        Process.runSync('git', <String>[
+          'remote',
+          'add',
+          'origin',
+          'git@github.com:user/d2b.git',
+        ], workingDirectory: d2.path);
 
         await runner.run(<String>[
           'set-ref-version',
@@ -309,7 +336,7 @@ void main() {
         ]);
         final content = File(join(d1.path, 'pubspec.yaml')).readAsStringSync();
         expect(content, contains('url: git@github.com:user/d2b.git'));
-        expect(content, contains('tag_pattern: v{{version}}'));
+        expect(content, contains('tag_pattern: {{version}}'));
         expect(content, contains('version: ^3.0.0'));
       });
 

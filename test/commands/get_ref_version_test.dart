@@ -194,7 +194,7 @@ void main() {
           '  p6b:\n'
           '    git:\n'
           '      url: git@github.com:user/p6b.git\n'
-          '      tag_pattern: v{{version}}\n'
+          '      tag_pattern: {{version}}\n'
           '      version: ^2.0.1\n',
         );
         File(

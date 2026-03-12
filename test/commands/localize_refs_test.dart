@@ -361,8 +361,8 @@ void main() {
             '  project2:\n'
             '    git:\n'
             '      url: git@github.com:user/project2.git\n'
-            '      tag_pattern: v{{version}}\n'
-            '      version: ^2.0.4\n',
+            '      tag_pattern: {{version}}\n'
+            '    version: ^2.0.4\n',
           );
           File(p.join(project2.path, 'pubspec.yaml')).writeAsStringSync(
             'name: project2\n'
