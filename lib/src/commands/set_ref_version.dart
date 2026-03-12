@@ -124,7 +124,7 @@ class SetRefVersion extends DirCommand<dynamic> {
 
     final published = await isOnPubDev.get(
       directory: dependencyDirectory,
-      ggLog: (_) {},
+      ggLog: ggLog,
     );
     if (published) {
       return newVersion;

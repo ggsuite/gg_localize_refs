@@ -261,7 +261,7 @@ class UnlocalizeRefs extends DirCommand<dynamic> {
 
     final published = await isOnPubDev.get(
       directory: dependencyNode.directory,
-      ggLog: (_) {},
+      ggLog: ggLog,
     );
     if (published) {
       return savedDependencyYaml;

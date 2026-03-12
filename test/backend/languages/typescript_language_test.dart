@@ -121,8 +121,7 @@ void main() {
     });
 
     test('findDependency returns dependency from devDependencies', () {
-      const content =
-          '{"name":"pkg","devDependencies":{"dep":"^2.0.0"}}';
+      const content = '{"name":"pkg","devDependencies":{"dep":"^2.0.0"}}';
 
       final manifest =
           language.parseManifestContent(content) as Map<String, dynamic>;
@@ -134,8 +133,7 @@ void main() {
     });
 
     test('replaceDependencyInContent updates package.json section', () {
-      const content =
-          '{"name":"pkg","dependencies":{"dep":"^1.0.0"}}';
+      const content = '{"name":"pkg","dependencies":{"dep":"^1.0.0"}}';
       final manifest =
           language.parseManifestContent(content) as Map<String, dynamic>;
       final reference = language.findDependency(manifest, 'dep')!;

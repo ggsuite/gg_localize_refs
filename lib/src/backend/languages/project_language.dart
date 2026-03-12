@@ -133,10 +133,7 @@ abstract class ProjectLanguage {
   bool hasAnyDependencyEntries(dynamic manifest);
 
   /// Finds [dependencyName] in the manifest and returns its reference.
-  DependencyReference? findDependency(
-    dynamic manifest,
-    String dependencyName,
-  );
+  DependencyReference? findDependency(dynamic manifest, String dependencyName);
 
   /// Returns all known dependency references indexed by dependency name.
   Map<String, DependencyReference> listDependencyReferences(dynamic manifest);
