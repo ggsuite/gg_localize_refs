@@ -76,6 +76,7 @@ void main() {
         File(
           join(dParseError.path, 'pubspec.yaml'),
         ).writeAsStringSync('invalid yaml');
+        await initGit(dParseError);
         await expectLater(
           runner.run(<String>[
             'get-ref-version',
@@ -96,7 +97,7 @@ void main() {
 
       test('when --ref is missing', () async {
         final d = Directory(join(dWorkspace.path, 'missing_ref'));
-        createDirs(<Directory>[d]);
+        await createDirs(<Directory>[d]);
         File(
           join(d.path, 'pubspec.yaml'),
         ).writeAsStringSync('name: a\nversion: 1.0.0');
@@ -117,7 +118,7 @@ void main() {
       test('reads scalar from dependencies', () async {
         final d1 = Directory(join(dWorkspace.path, 'p1'));
         final d2 = Directory(join(dWorkspace.path, 'p2'));
-        createDirs(<Directory>[d1, d2]);
+        await createDirs(<Directory>[d1, d2]);
         File(join(d1.path, 'pubspec.yaml')).writeAsStringSync(
           'name: p1\nversion: 1.0.0\n'
           'dependencies:\n  p2: ^1.2.3',
@@ -140,7 +141,7 @@ void main() {
       test('reads from dev_dependencies when not in dependencies', () async {
         final d1 = Directory(join(dWorkspace.path, 'p3'));
         final d2 = Directory(join(dWorkspace.path, 'p4'));
-        createDirs(<Directory>[d1, d2]);
+        await createDirs(<Directory>[d1, d2]);
         File(join(d1.path, 'pubspec.yaml')).writeAsStringSync(
           'name: p3\nversion: 1.0.0\n'
           'dev_dependencies:\n  p4: ^2.0.0',
@@ -162,7 +163,7 @@ void main() {
       test('reads git block', () async {
         final d1 = Directory(join(dWorkspace.path, 'p5'));
         final d2 = Directory(join(dWorkspace.path, 'p6'));
-        createDirs(<Directory>[d1, d2]);
+        await createDirs(<Directory>[d1, d2]);
         File(join(d1.path, 'pubspec.yaml')).writeAsStringSync(
           'name: p5\nversion: 1.0.0\ndependencies:\n'
           '  p6:\n    git:\n      url: git@github.com:user/p6.git\n'
@@ -188,7 +189,7 @@ void main() {
       test('reads version from git tag_pattern block', () async {
         final d1 = Directory(join(dWorkspace.path, 'p5b'));
         final d2 = Directory(join(dWorkspace.path, 'p6b'));
-        createDirs(<Directory>[d1, d2]);
+        await createDirs(<Directory>[d1, d2]);
         File(join(d1.path, 'pubspec.yaml')).writeAsStringSync(
           'name: p5b\nversion: 1.0.0\ndependencies:\n'
           '  p6b:\n'
@@ -214,7 +215,7 @@ void main() {
       test('reads path block', () async {
         final d1 = Directory(join(dWorkspace.path, 'p7'));
         final d2 = Directory(join(dWorkspace.path, 'p8'));
-        createDirs(<Directory>[d1, d2]);
+        await createDirs(<Directory>[d1, d2]);
         File(join(d1.path, 'pubspec.yaml')).writeAsStringSync(
           'name: p7\nversion: 1.0.0\n'
           'dependencies:\n  p8:\n    path: ../p8',
@@ -236,7 +237,7 @@ void main() {
 
       test('logs warning when dependency not found', () async {
         final d1 = Directory(join(dWorkspace.path, 'p9'));
-        createDirs(<Directory>[d1]);
+        await createDirs(<Directory>[d1]);
         File(join(d1.path, 'pubspec.yaml')).writeAsStringSync(
           'name: p9\nversion: 1.0.0\n'
           'dependencies: {}',
@@ -254,7 +255,7 @@ void main() {
 
       test('reads scalar from dependencies in package.json', () async {
         final d = Directory(join(dWorkspace.path, 'ts1'));
-        createDirs(<Directory>[d]);
+        await createDirs(<Directory>[d]);
         File(join(d.path, 'package.json')).writeAsStringSync(
           '{"name":"ts1","version":"1.0.0","dependencies":'
           '{"dep":"^1.2.3"}}',
@@ -273,7 +274,7 @@ void main() {
       test('reads from devDependencies when not in dependencies '
           'in package.json', () async {
         final d = Directory(join(dWorkspace.path, 'ts2'));
-        createDirs(<Directory>[d]);
+        await createDirs(<Directory>[d]);
         File(join(d.path, 'package.json')).writeAsStringSync(
           '{"name":"ts2","version":"1.0.0","devDependencies":'
           '{"dep":"^2.0.0"}}',
@@ -291,7 +292,7 @@ void main() {
 
       test('logs warning when dependency not found in package.json', () async {
         final d = Directory(join(dWorkspace.path, 'ts3'));
-        createDirs(<Directory>[d]);
+        await createDirs(<Directory>[d]);
         File(join(d.path, 'package.json')).writeAsStringSync(
           '{"name":"ts3","version":"1.0.0","dependencies":{}}',
         );
@@ -308,7 +309,7 @@ void main() {
 
       test('tries both devDependencies casts when key is missing', () async {
         final d = Directory(join(dWorkspace.path, 'ts4'));
-        createDirs(<Directory>[d]);
+        await createDirs(<Directory>[d]);
         File(join(d.path, 'package.json')).writeAsStringSync(
           '{"name":"ts4","version":"1.0.0","devDependencies":'
           '{"other":"^1.0.0"}}',
@@ -328,7 +329,7 @@ void main() {
         'throws package.json not found message when no manifest exists',
         () async {
           final d = Directory(join(dWorkspace.path, 'missing_manifest'));
-          createDirs(<Directory>[d]);
+          await createDirs(<Directory>[d]);
 
           await expectLater(
             runner.run(<String>[

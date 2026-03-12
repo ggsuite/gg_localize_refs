@@ -1,15 +1,28 @@
 import 'dart:io';
 
+import 'package:gg_git/gg_git_test_helpers.dart';
 import 'package:path/path.dart';
 import 'package:test/test.dart';
 
-void createDirs(List<Directory> dirs) {
+Future<void> createDirs(List<Directory> dirs) async {
   for (final dir in dirs) {
     if (!dir.existsSync()) {
       dir.createSync(recursive: true);
     }
     expect(dir.existsSync(), isTrue);
+
+    await initGit(dir);
   }
+}
+
+Future<void> initGit(Directory dir) async {
+  await initLocalGit(dir);
+  Directory dRemote = await Directory.systemTemp.createTemp('remote');
+  if (!dRemote.existsSync()) {
+    dRemote.createSync(recursive: true);
+  }
+  await initRemoteGit(dRemote);
+  await addRemoteToLocal(local: dir, remote: dRemote);
 }
 
 Directory createTempDir(String suffix, [String? folderName]) {

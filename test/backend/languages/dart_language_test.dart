@@ -140,14 +140,6 @@ void main() {
       expect((manifest['dependencies'] as Map)['a'], '^1.0.0');
     });
 
-    test('parseManifestContent returns empty Map for non-Map YAML root', () {
-      const content = 'just a scalar value';
-
-      final manifest = language.parseManifestContent(content) as Map;
-
-      expect(manifest, isEmpty);
-    });
-
     test('findDependency returns dependency from dependencies first', () {
       final manifest = language.parseManifestContent(
         'dependencies:\n  a: ^1.0.0\n'

@@ -77,7 +77,7 @@ class DartProjectLanguage extends ProjectLanguage {
     if (yaml is Map) {
       return yaml;
     }
-    return <String, dynamic>{};
+    throw Exception('Unexpected pubspec.yaml format: expected a YAML map.');
   }
 
   @override

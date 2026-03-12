@@ -70,6 +70,7 @@ void main() {
         File(
           join(dParseError.path, 'pubspec.yaml'),
         ).writeAsStringSync('invalid yaml');
+        await initGit(dParseError);
         await expectLater(
           runner.run(<String>['get-version', '--input', dParseError.path]),
           throwsA(
@@ -87,7 +88,7 @@ void main() {
       test('reads version from pubspec.yaml', () async {
         final d1 = Directory(join(dWorkspace.path, 'v1'));
         final d2 = Directory(join(dWorkspace.path, 'v2'));
-        createDirs(<Directory>[d1, d2]);
+        await createDirs(<Directory>[d1, d2]);
         File(
           join(d1.path, 'pubspec.yaml'),
         ).writeAsStringSync('name: v1\nversion: 1.2.3');
@@ -102,7 +103,7 @@ void main() {
 
       test('logs warning when version missing in pubspec.yaml', () async {
         final d = Directory(join(dWorkspace.path, 'v3'));
-        createDirs(<Directory>[d]);
+        await createDirs(<Directory>[d]);
         File(join(d.path, 'pubspec.yaml')).writeAsStringSync('name: v3');
         messages.clear();
         await runner.run(<String>['get-version', '--input', d.path]);
@@ -111,7 +112,7 @@ void main() {
 
       test('reads version from package.json', () async {
         final d = Directory(join(dWorkspace.path, 'ts1'));
-        createDirs(<Directory>[d]);
+        await createDirs(<Directory>[d]);
         File(
           join(d.path, 'package.json'),
         ).writeAsStringSync('{"name":"ts1","version":"2.3.4"}');
@@ -123,7 +124,7 @@ void main() {
 
       test('logs warning when version missing in package.json', () async {
         final d = Directory(join(dWorkspace.path, 'ts2'));
-        createDirs(<Directory>[d]);
+        await createDirs(<Directory>[d]);
         File(join(d.path, 'package.json')).writeAsStringSync('{"name":"ts2"}');
         messages.clear();
         await runner.run(<String>['get-version', '--input', d.path]);
@@ -134,7 +135,7 @@ void main() {
         'throws package.json not found message when no manifest exists',
         () async {
           final d = Directory(join(dWorkspace.path, 'missing_manifest'));
-          createDirs(<Directory>[d]);
+          await createDirs(<Directory>[d]);
 
           await expectLater(
             runner.run(<String>['get-version', '--input', d.path]),

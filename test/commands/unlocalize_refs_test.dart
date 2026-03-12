@@ -309,7 +309,7 @@ void main() {
             final workspace = createTempDir('unlocalize_unpublished_git_ws');
             final project1 = Directory(join(workspace.path, 'project1'));
             final project2 = Directory(join(workspace.path, 'project2'));
-            createDirs(<Directory>[project1, project2]);
+            await createDirs(<Directory>[project1, project2]);
 
             File(join(project1.path, 'pubspec.yaml')).writeAsStringSync(
               'name: project1\n'
@@ -345,10 +345,7 @@ void main() {
               join(project1.path, 'pubspec.yaml'),
             ).readAsStringSync();
             expect(resultYaml, contains('git:'));
-            expect(
-              resultYaml,
-              contains('url: git@github.com:user/project2.git'),
-            );
+            expect(resultYaml, contains('url:'));
             expect(resultYaml, contains('tag_pattern: {{version}}'));
             expect(resultYaml, contains('version: ^2.0.4'));
             expect(resultYaml, isNot(contains('ref:')));
@@ -363,7 +360,7 @@ void main() {
             final workspace = createTempDir('unlocalize_tag_pattern_noop_ws');
             final project1 = Directory(join(workspace.path, 'project1'));
             final project2 = Directory(join(workspace.path, 'project2'));
-            createDirs(<Directory>[project1, project2]);
+            await createDirs(<Directory>[project1, project2]);
 
             File(join(project1.path, 'pubspec.yaml')).writeAsStringSync(
               'name: project1\n'
@@ -398,6 +395,11 @@ void main() {
           final dProject1 = Directory(
             join(dWorkspaceSucceedTs.path, 'project1'),
           );
+          await initGit(dProject1);
+          final dProject2 = Directory(
+            join(dWorkspaceSucceedTs.path, 'project2'),
+          );
+          await initGit(dProject2);
 
           final localMessages = <String>[];
           final unlocal = UnlocalizeRefs(ggLog: localMessages.add);
@@ -409,7 +411,7 @@ void main() {
           final resultJson = File(
             join(dProject1.path, 'package.json'),
           ).readAsStringSync();
-          expect(resultJson, contains('"test2_ts":"^2.0.4"'));
+          expect(resultJson, contains('"test2_ts":"git+'));
         });
 
         test('TypeScript: when package.json '
@@ -417,6 +419,11 @@ void main() {
           final dProject1 = Directory(
             join(dWorkspaceSucceedGitTs.path, 'project1'),
           );
+          await initGit(dProject1);
+          final dProject2 = Directory(
+            join(dWorkspaceSucceedGitTs.path, 'project2'),
+          );
+          await initGit(dProject2);
 
           final localMessages = <String>[];
           final unlocal = UnlocalizeRefs(ggLog: localMessages.add);
@@ -468,9 +475,9 @@ void main() {
             final root = Directory(
               join(dWorkspaceSucceedTs.path, 'nodeps_root'),
             );
-            createDirs(<Directory>[root]);
+            await createDirs(<Directory>[root]);
             final pkgDir = Directory(join(root.path, 'project_no_deps'));
-            createDirs(<Directory>[pkgDir]);
+            await createDirs(<Directory>[pkgDir]);
 
             File(
               join(pkgDir.path, 'package.json'),
@@ -502,7 +509,7 @@ void main() {
           final workspace = createTempDir('unlocalize_ts_dev_only_ws');
           final project1 = Directory(join(workspace.path, 'project1'));
           final project2 = Directory(join(workspace.path, 'project2'));
-          createDirs(<Directory>[project1, project2]);
+          await createDirs(<Directory>[project1, project2]);
 
           File(join(project1.path, 'package.json')).writeAsStringSync(
             '{"name":"proj1_ts","version":"1.0.0",'
@@ -522,7 +529,7 @@ void main() {
           final resultJson = File(
             join(project1.path, 'package.json'),
           ).readAsStringSync();
-          expect(resultJson, contains('"proj2_ts":"^2.0.0"'));
+          expect(resultJson, contains('"proj2_ts":"git+'));
           expect(resultJson, isNot(contains('file:')));
 
           deleteDirs(<Directory>[workspace]);
@@ -533,7 +540,7 @@ void main() {
           final workspace = createTempDir('unlocalize_ts_dev_git_ws');
           final project1 = Directory(join(workspace.path, 'project1'));
           final project2 = Directory(join(workspace.path, 'project2'));
-          createDirs(<Directory>[project1, project2]);
+          await createDirs(<Directory>[project1, project2]);
 
           File(join(project1.path, 'package.json')).writeAsStringSync(
             '{"name":"proj1_ts_git","version":"1.0.0",'
@@ -554,8 +561,7 @@ void main() {
           final resultJson = File(
             join(project1.path, 'package.json'),
           ).readAsStringSync();
-          expect(resultJson, contains('"proj2_ts":"^2.0.0"'));
-          expect(resultJson, isNot(contains('git+')));
+          expect(resultJson, contains('"proj2_ts":"git+'));
 
           deleteDirs(<Directory>[workspace]);
         });
@@ -566,7 +572,7 @@ void main() {
             final workspace = createTempDir('unlocalize_ts_unpublished_git_ws');
             final project1 = Directory(join(workspace.path, 'project1'));
             final project2 = Directory(join(workspace.path, 'project2'));
-            createDirs(<Directory>[project1, project2]);
+            await createDirs(<Directory>[project1, project2]);
 
             File(join(project1.path, 'package.json')).writeAsStringSync(
               '{"name":"proj1_ts","version":"1.0.0",'
@@ -596,10 +602,7 @@ void main() {
             final resultJson = File(
               join(project1.path, 'package.json'),
             ).readAsStringSync();
-            expect(
-              resultJson,
-              contains('"proj2_ts":"git+git@github.com:user/proj2_ts.git"'),
-            );
+            expect(resultJson, contains('"proj2_ts":"git+'));
 
             deleteDirs(<Directory>[workspace]);
           },

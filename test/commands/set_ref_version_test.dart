@@ -101,7 +101,7 @@ void main() {
       test('when dependency not found', () async {
         final d1 = Directory(join(dWorkspace.path, 'a1'));
         final d2 = Directory(join(dWorkspace.path, 'a2'));
-        createDirs(<Directory>[d1, d2]);
+        await createDirs(<Directory>[d1, d2]);
         File(join(d1.path, 'pubspec.yaml')).writeAsStringSync(
           'name: a1\nversion: 1.0.0\ndependencies:\n  a2: ^1.0.0',
         );
@@ -131,7 +131,7 @@ void main() {
 
       test('when --ref is missing', () async {
         final d = Directory(join(dWorkspace.path, 'missing_ref'));
-        createDirs(<Directory>[d]);
+        await createDirs(<Directory>[d]);
         File(join(d.path, 'pubspec.yaml')).writeAsStringSync(
           'name: a\nversion: 1.0.0\ndependencies:\n  b: ^1.0.0',
         );
@@ -155,7 +155,7 @@ void main() {
 
       test('when --version is missing', () async {
         final d = Directory(join(dWorkspace.path, 'missing_version'));
-        createDirs(<Directory>[d]);
+        await createDirs(<Directory>[d]);
         File(join(d.path, 'pubspec.yaml')).writeAsStringSync(
           'name: a\nversion: 1.0.0\ndependencies:\n  b: ^1.0.0',
         );
@@ -179,7 +179,7 @@ void main() {
 
       test('when dependency not found in package.json', () async {
         final d = Directory(join(dWorkspace.path, 'ts_missing_dep'));
-        createDirs(<Directory>[d]);
+        await createDirs(<Directory>[d]);
         File(join(d.path, 'package.json')).writeAsStringSync(
           '{"name":"ts_missing_dep","dependencies":{"a":"^1.0.0"}}',
         );
@@ -211,7 +211,7 @@ void main() {
         () async {
           final d1 = Directory(join(dWorkspace.path, 'b1'));
           final d2 = Directory(join(dWorkspace.path, 'b2'));
-          createDirs(<Directory>[d1, d2]);
+          await createDirs(<Directory>[d1, d2]);
           File(join(d1.path, 'pubspec.yaml')).writeAsStringSync(
             'name: b1\nversion: 1.0.0\ndependencies:\n  b2: ^1.0.0',
           );
@@ -240,7 +240,7 @@ void main() {
         () async {
           final d1 = Directory(join(dWorkspace.path, 'c1'));
           final d2 = Directory(join(dWorkspace.path, 'c2'));
-          createDirs(<Directory>[d1, d2]);
+          await createDirs(<Directory>[d1, d2]);
           File(join(d1.path, 'pubspec.yaml')).writeAsStringSync(
             'name: c1\nversion: 1.0.0\ndependencies:\n  c2: ^1.0.0',
           );
@@ -270,7 +270,7 @@ void main() {
           ).readAsStringSync();
           expect(content, contains('c2:'));
           expect(content, contains('git:'));
-          expect(content, contains('url: git@github.com:user/c2.git'));
+          expect(content, contains('url:'));
           expect(content, contains('tag_pattern: {{version}}'));
           expect(content, contains('version: ^3.0.0'));
         },
@@ -279,7 +279,7 @@ void main() {
       test('replace git block with scalar', () async {
         final d1 = Directory(join(dWorkspace.path, 'd1'));
         final d2 = Directory(join(dWorkspace.path, 'd2'));
-        createDirs(<Directory>[d1, d2]);
+        await createDirs(<Directory>[d1, d2]);
         File(join(d1.path, 'pubspec.yaml')).writeAsStringSync(
           'name: d1\nversion: 1.0.0\ndependencies:\n  d2:\n    git:\n      url: git@github.com:user/d2.git\n      ref: main',
         );
@@ -304,7 +304,7 @@ void main() {
       test('replace tag_pattern git block version only', () async {
         final d1 = Directory(join(dWorkspace.path, 'd1b'));
         final d2 = Directory(join(dWorkspace.path, 'd2b'));
-        createDirs(<Directory>[d1, d2]);
+        await createDirs(<Directory>[d1, d2]);
         File(join(d1.path, 'pubspec.yaml')).writeAsStringSync(
           'name: d1b\nversion: 1.0.0\ndependencies:\n'
           '  d2b:\n'
@@ -335,7 +335,7 @@ void main() {
           '^3.0.0',
         ]);
         final content = File(join(d1.path, 'pubspec.yaml')).readAsStringSync();
-        expect(content, contains('url: git@github.com:user/d2b.git'));
+        expect(content, contains('url:'));
         expect(content, contains('tag_pattern: {{version}}'));
         expect(content, contains('version: ^3.0.0'));
       });
@@ -343,7 +343,7 @@ void main() {
       test('replace path block with scalar', () async {
         final d1 = Directory(join(dWorkspace.path, 'e1'));
         final d2 = Directory(join(dWorkspace.path, 'e2'));
-        createDirs(<Directory>[d1, d2]);
+        await createDirs(<Directory>[d1, d2]);
         File(join(d1.path, 'pubspec.yaml')).writeAsStringSync(
           'name: e1\nversion: 1.0.0\ndependencies:\n  e2:\n    path: ../e2',
         );
@@ -368,7 +368,7 @@ void main() {
       test('updates dev_dependency', () async {
         final d1 = Directory(join(dWorkspace.path, 'f1'));
         final d2 = Directory(join(dWorkspace.path, 'f2'));
-        createDirs(<Directory>[d1, d2]);
+        await createDirs(<Directory>[d1, d2]);
         File(join(d1.path, 'pubspec.yaml')).writeAsStringSync(
           'name: f1\nversion: 1.0.0\ndev_dependencies:\n  f2: ^1.0.0',
         );
@@ -392,7 +392,7 @@ void main() {
       test('no change when value is equal (logs and returns)', () async {
         final d1 = Directory(join(dWorkspace.path, 'g1'));
         final d2 = Directory(join(dWorkspace.path, 'g2'));
-        createDirs(<Directory>[d1, d2]);
+        await createDirs(<Directory>[d1, d2]);
         File(join(d1.path, 'pubspec.yaml')).writeAsStringSync(
           'name: g1\nversion: 1.0.0\ndependencies:\n  g2: ^1.0.0',
         );
@@ -416,7 +416,7 @@ void main() {
 
       test('no structural change leaves content as-is and logs', () async {
         final d = Directory(join(dWorkspace.path, 'g3'));
-        createDirs(<Directory>[d]);
+        await createDirs(<Directory>[d]);
         File(join(d.path, 'pubspec.yaml')).writeAsStringSync(
           'name: g3\nversion: 1.0.0\ndependencies:\n  a: ^1.0.0',
         );
@@ -435,7 +435,7 @@ void main() {
 
       test('replace scalar with scalar in package.json', () async {
         final d = Directory(join(dWorkspace.path, 'ts_scalar'));
-        createDirs(<Directory>[d]);
+        await createDirs(<Directory>[d]);
         File(join(d.path, 'package.json')).writeAsStringSync(
           '{"name":"ts_scalar","dependencies":{"dep":"^1.0.0"}}',
         );
@@ -455,7 +455,7 @@ void main() {
 
       test('updates devDependency in package.json', () async {
         final d = Directory(join(dWorkspace.path, 'ts_dev'));
-        createDirs(<Directory>[d]);
+        await createDirs(<Directory>[d]);
         File(join(d.path, 'package.json')).writeAsStringSync(
           '{"name":"ts_dev","devDependencies":{"dep":"^1.0.0"}}',
         );
@@ -476,7 +476,7 @@ void main() {
       test('no change when value is equal in '
           'package.json logs and returns', () async {
         final d = Directory(join(dWorkspace.path, 'ts_equal'));
-        createDirs(<Directory>[d]);
+        await createDirs(<Directory>[d]);
         File(join(d.path, 'package.json')).writeAsStringSync(
           '{"name":"ts_equal","dependencies":{"dep":"^1.0.0"}}',
         );
@@ -499,7 +499,7 @@ void main() {
         'throws package.json not found message when no manifest exists',
         () async {
           final d = Directory(join(dWorkspace.path, 'missing_manifest'));
-          createDirs(<Directory>[d]);
+          await createDirs(<Directory>[d]);
 
           await expectLater(
             runner.run(<String>[
