@@ -12,6 +12,7 @@ import 'package:gg_console_colors/gg_console_colors.dart';
 import 'package:gg_localize_refs/src/backend/languages/dart_language.dart';
 import 'package:gg_localize_refs/src/backend/languages/project_language.dart';
 import 'package:gg_localize_refs/src/backend/languages/typescript_language.dart';
+import 'package:gg_localize_refs/src/backend/utils.dart';
 import 'package:gg_localize_refs/src/backend/multi_language_graph.dart';
 import 'package:gg_localize_refs/src/backend/yaml_to_string.dart';
 import 'package:gg_log/gg_log.dart';
@@ -52,8 +53,6 @@ class SetRefVersion extends DirCommand<dynamic> {
     String? ref,
     String? version,
   }) async {
-    ggLog?.call('Running set-ref-version in ${directory.path}');
-
     final String? dependencyName = ref ?? (argResults?['ref'] as String?);
     final String? newVersion = version ?? (argResults?['version'] as String?);
 
@@ -65,9 +64,12 @@ class SetRefVersion extends DirCommand<dynamic> {
     }
 
     try {
-      final language = _findLanguage(directory);
+      final language = Utils.findLanguage(directory);
       final manifest = await language.readManifest(directory);
-      final reference = language.findDependency(manifest.parsed, dependencyName);
+      final reference = language.findDependency(
+        manifest.parsed,
+        dependencyName,
+      );
 
       if (reference == null) {
         throw Exception('Dependency $dependencyName not found.');
@@ -118,12 +120,18 @@ class SetRefVersion extends DirCommand<dynamic> {
       return _updateExistingTagPatternVersion(oldDependency, newVersion);
     }
 
-    final wasPublished = await _wasPublished(dependencyDirectory);
-    if (wasPublished) {
+    final published = await isOnPubDev.get(
+      directory: dependencyDirectory,
+      ggLog: (_) {},
+    );
+    if (published) {
       return newVersion;
     }
 
-    final gitUrl = await _getGitRemoteUrl(dependencyDirectory, dependencyName);
+    final gitUrl = await Utils.getGitRemoteUrl(
+      dependencyDirectory,
+      dependencyName,
+    );
     return yamlToString(<String, dynamic>{
       'git': <String, dynamic>{'url': gitUrl, 'tag_pattern': '{{version}}'},
       'version': newVersion,
@@ -163,49 +171,5 @@ class SetRefVersion extends DirCommand<dynamic> {
     } catch (_) {
       return null;
     }
-  }
-
-  /// Returns true when the project in [directory] was published before.
-  Future<bool> _wasPublished(Directory directory) async {
-    try {
-      return await isOnPubDev.get(directory: directory, ggLog: (_) {});
-    } catch (_) {
-      return false;
-    }
-  }
-
-  /// Reads the origin URL from git for [dependencyName].
-  Future<String> _getGitRemoteUrl(
-    Directory directory,
-    String dependencyName,
-  ) async {
-    final result = await Process.run('git', <String>[
-      'remote',
-      'get-url',
-      'origin',
-    ], workingDirectory: directory.path);
-
-    if (result.exitCode != 0) {
-      throw Exception(
-        'Cannot get git remote url for dependency '
-        '$dependencyName in ${directory.path}',
-      );
-    }
-
-    return result.stdout.toString().trim();
-  }
-
-  ProjectLanguage _findLanguage(Directory directory) {
-    final pubspec = File('${directory.path}/pubspec.yaml');
-    final packageJson = File('${directory.path}/package.json');
-
-    if (pubspec.existsSync()) {
-      return DartProjectLanguage();
-    }
-    if (packageJson.existsSync()) {
-      return TypeScriptProjectLanguage();
-    }
-
-    throw Exception('pubspec.yaml not found at ${pubspec.path}');
   }
 }

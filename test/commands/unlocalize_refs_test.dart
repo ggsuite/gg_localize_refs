@@ -13,6 +13,7 @@ import 'package:gg_localize_refs/src/backend/languages/dart_language.dart';
 import 'package:gg_localize_refs/src/backend/languages/project_language.dart';
 import 'package:gg_localize_refs/src/backend/languages/typescript_language.dart';
 import 'package:gg_localize_refs/src/backend/process_dependencies.dart';
+import 'package:gg_localize_refs/src/backend/utils.dart';
 import 'package:gg_localize_refs/src/commands/unlocalize_refs.dart';
 import 'package:path/path.dart';
 import 'package:test/test.dart';
@@ -612,7 +613,7 @@ void main() {
       const nonExistentFilePath = 'non_existent_file.json';
 
       expect(
-        () => readDependenciesFromJson(nonExistentFilePath),
+        () => Utils.readDependenciesFromJson(nonExistentFilePath),
         throwsA(
           isA<Exception>().having(
             (Object e) => e.toString(),

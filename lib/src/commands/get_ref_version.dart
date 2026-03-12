@@ -8,9 +8,7 @@ import 'dart:io';
 
 import 'package:gg_args/gg_args.dart';
 import 'package:gg_console_colors/gg_console_colors.dart';
-import 'package:gg_localize_refs/src/backend/languages/dart_language.dart';
-import 'package:gg_localize_refs/src/backend/languages/project_language.dart';
-import 'package:gg_localize_refs/src/backend/languages/typescript_language.dart';
+import 'package:gg_localize_refs/src/backend/utils.dart';
 import 'package:gg_log/gg_log.dart';
 
 // #############################################################################
@@ -42,10 +40,13 @@ class GetRefVersion extends DirCommand<dynamic> {
     }
 
     try {
-      final language = _findLanguage(directory);
+      final language = Utils.findLanguage(directory);
       final manifest = await language.readManifest(directory);
 
-      final reference = language.findDependency(manifest.parsed, dependencyName);
+      final reference = language.findDependency(
+        manifest.parsed,
+        dependencyName,
+      );
       if (reference == null) {
         ggLog?.call(yellow('Dependency $dependencyName not found.'));
         return null;
@@ -57,19 +58,5 @@ class GetRefVersion extends DirCommand<dynamic> {
     } catch (e) {
       throw Exception(red('An error occurred: $e'));
     }
-  }
-
-  ProjectLanguage _findLanguage(Directory directory) {
-    final pubspec = File('${directory.path}/pubspec.yaml');
-    final packageJson = File('${directory.path}/package.json');
-
-    if (pubspec.existsSync()) {
-      return DartProjectLanguage();
-    }
-    if (packageJson.existsSync()) {
-      return TypeScriptProjectLanguage();
-    }
-
-    throw Exception('pubspec.yaml not found at ${pubspec.path}');
   }
 }

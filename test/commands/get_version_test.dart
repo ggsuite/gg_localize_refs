@@ -129,6 +129,25 @@ void main() {
         await runner.run(<String>['get-version', '--input', d.path]);
         expect(messages.last, contains('No version found in package.json.'));
       });
+
+      test(
+        'throws package.json not found message when no manifest exists',
+        () async {
+          final d = Directory(join(dWorkspace.path, 'missing_manifest'));
+          createDirs(<Directory>[d]);
+
+          await expectLater(
+            runner.run(<String>['get-version', '--input', d.path]),
+            throwsA(
+              isA<Exception>().having(
+                (Object e) => e.toString(),
+                'message',
+                contains('pubspec.yaml not found'),
+              ),
+            ),
+          );
+        },
+      );
     });
   });
 }

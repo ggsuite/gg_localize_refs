@@ -5,13 +5,13 @@
 // found in the LICENSE file in the root of this package.
 
 import 'dart:async';
-import 'dart:convert';
 import 'dart:io';
 
 import 'package:gg_args/gg_args.dart';
 import 'package:gg_console_colors/gg_console_colors.dart';
 import 'package:gg_localize_refs/src/backend/file_changes_buffer.dart';
 import 'package:gg_localize_refs/src/backend/languages/project_language.dart';
+import 'package:gg_localize_refs/src/backend/utils.dart';
 import 'package:gg_localize_refs/src/backend/process_dependencies.dart';
 import 'package:gg_localize_refs/src/backend/publish_to_utils.dart';
 import 'package:gg_localize_refs/src/backend/yaml_to_string.dart';
@@ -95,31 +95,15 @@ class UnlocalizeRefs extends DirCommand<dynamic> {
     dynamic yamlMap,
     FileChangesBuffer fileChangesBuffer,
   ) async {
-    var hasLocalizedDependencies = false;
     final references = node.language.listDependencyReferences(yamlMap);
 
-    for (final dependency in node.dependencies.entries) {
-      final reference = references[dependency.key];
-      if (reference == null) {
-        continue;
-      }
-
-      final oldDependencyYaml = yamlToString(reference.value);
-      if (_isLocalizedDartDependency(oldDependencyYaml)) {
-        hasLocalizedDependencies = true;
-      }
-    }
-
-    if (!hasLocalizedDependencies) {
+    if (!_hasLocalizedDependencies(node: node, references: references)) {
       return;
     }
 
     ggLog('Unlocalize refs of ${node.name}');
 
-    final backupDir = Directory(p.join(node.directory.path, '.gg'));
-    final backupFile = File(
-      p.join(backupDir.path, '.gg_localize_refs_backup.json'),
-    );
+    final backupFile = Utils.dartBackupFile(node.directory);
 
     if (!backupFile.existsSync()) {
       ggLog(
@@ -133,7 +117,7 @@ class UnlocalizeRefs extends DirCommand<dynamic> {
       return;
     }
 
-    final savedDependencies = readDependenciesFromJson(backupFile.path);
+    final savedDependencies = Utils.readDependenciesFromJson(backupFile.path);
 
     var newPubspecContent = pubspecContent;
 
@@ -168,8 +152,7 @@ class UnlocalizeRefs extends DirCommand<dynamic> {
 
     newPubspecContent = restorePublishTo(newPubspecContent, savedDependencies);
 
-    final modifiedPubspec = File('${node.directory.path}/pubspec.yaml');
-    fileChangesBuffer.add(modifiedPubspec, newPubspecContent);
+    fileChangesBuffer.add(pubspec, newPubspecContent);
   }
 
   Future<void> _unlocalizeTypeScript(
@@ -181,27 +164,13 @@ class UnlocalizeRefs extends DirCommand<dynamic> {
   ) async {
     final references = node.language.listDependencyReferences(manifestMap);
 
-    var hasLocalizedDependencies = false;
-    for (final dependency in node.dependencies.entries) {
-      final reference = references[dependency.key];
-      final value = reference?.value?.toString();
-      if (value == null) {
-        continue;
-      }
-      if (_isLocalizedTypeScriptDependency(value)) {
-        hasLocalizedDependencies = true;
-      }
-    }
-
-    if (!hasLocalizedDependencies) {
+    if (!_hasLocalizedDependencies(node: node, references: references)) {
       return;
     }
 
     ggLog('Unlocalize refs of ${node.name}');
 
-    final backupFile = File(
-      '${node.directory.path}/.gg_localize_refs_backup.json',
-    );
+    final backupFile = Utils.typeScriptBackupFile(node.directory);
 
     if (!backupFile.existsSync()) {
       ggLog(
@@ -215,7 +184,7 @@ class UnlocalizeRefs extends DirCommand<dynamic> {
       return;
     }
 
-    final savedDependencies = readDependenciesFromJson(backupFile.path);
+    final savedDependencies = Utils.readDependenciesFromJson(backupFile.path);
     var newContent = manifestContent;
 
     for (final dependency in node.dependencies.entries) {
@@ -242,6 +211,34 @@ class UnlocalizeRefs extends DirCommand<dynamic> {
     fileChangesBuffer.add(manifestFile, newContent);
   }
 
+  /// Returns true when any workspace dependency is still localized.
+  bool _hasLocalizedDependencies({
+    required ProjectNode node,
+    required Map<String, DependencyReference> references,
+  }) {
+    for (final dependency in node.dependencies.entries) {
+      final reference = references[dependency.key];
+      if (reference == null) {
+        continue;
+      }
+
+      if (node.language.id == ProjectLanguageId.dart) {
+        final value = yamlToString(reference.value);
+        if (_isLocalizedDartDependency(value)) {
+          return true;
+        }
+        continue;
+      }
+
+      final value = reference.value?.toString();
+      if (value != null && _isLocalizedTypeScriptDependency(value)) {
+        return true;
+      }
+    }
+
+    return false;
+  }
+
   /// Returns whether [dependencyYaml] still points to a localized Dart source.
   bool _isLocalizedDartDependency(String dependencyYaml) {
     return dependencyYaml.contains('path:') ||
@@ -262,8 +259,11 @@ class UnlocalizeRefs extends DirCommand<dynamic> {
     final savedDependency = savedDependencies[dependencyNode.name];
     final savedDependencyYaml = yamlToString(savedDependency).trimRight();
 
-    final wasPublished = await _wasPublished(dependencyNode.directory);
-    if (wasPublished) {
+    final published = await isOnPubDev.get(
+      directory: dependencyNode.directory,
+      ggLog: (_) {},
+    );
+    if (published) {
       return savedDependencyYaml;
     }
 
@@ -272,7 +272,7 @@ class UnlocalizeRefs extends DirCommand<dynamic> {
       return savedDependencyYaml;
     }
 
-    final gitUrl = await _getGitRemoteUrl(
+    final gitUrl = await Utils.getGitRemoteUrl(
       dependencyNode.directory,
       dependencyNode.name,
     );
@@ -289,46 +289,19 @@ class UnlocalizeRefs extends DirCommand<dynamic> {
     required dynamic savedDependency,
   }) async {
     final savedValue = savedDependency.toString();
-    final wasPublished = await _wasPublished(dependencyNode.directory);
-    if (wasPublished) {
+    final published = await isOnPubDev.get(
+      directory: dependencyNode.directory,
+      ggLog: (_) {},
+    );
+    if (published) {
       return savedValue;
     }
 
-    final gitUrl = await _getGitRemoteUrl(
+    final gitUrl = await Utils.getGitRemoteUrl(
       dependencyNode.directory,
       dependencyNode.name,
     );
     return 'git+$gitUrl';
-  }
-
-  /// Returns true when the project in [directory] was published before.
-  Future<bool> _wasPublished(Directory directory) async {
-    try {
-      return await isOnPubDev.get(directory: directory, ggLog: (_) {});
-    } catch (_) {
-      return false;
-    }
-  }
-
-  /// Reads the origin URL from git for [dependencyName].
-  Future<String> _getGitRemoteUrl(
-    Directory directory,
-    String dependencyName,
-  ) async {
-    final result = await Process.run('git', <String>[
-      'remote',
-      'get-url',
-      'origin',
-    ], workingDirectory: directory.path);
-
-    if (result.exitCode != 0) {
-      throw Exception(
-        'Cannot get git remote url for dependency '
-        '$dependencyName in ${directory.path}',
-      );
-    }
-
-    return result.stdout.toString().trim();
   }
 
   /// Extracts a version constraint from [savedDependency] if available.
@@ -359,19 +332,4 @@ class UnlocalizeRefs extends DirCommand<dynamic> {
 
     return true;
   }
-}
-
-// ...........................................................................
-/// Read dependencies from a JSON file.
-Map<String, dynamic> readDependenciesFromJson(String filePath) {
-  final file = File(filePath);
-
-  if (!file.existsSync()) {
-    throw Exception(
-      'The json file $filePath with old dependencies does not exist.',
-    );
-  }
-
-  final jsonString = file.readAsStringSync();
-  return jsonDecode(jsonString) as Map<String, dynamic>;
 }

@@ -181,7 +181,8 @@ class TypeScriptProjectLanguage extends ProjectLanguage {
     required DependencyReference reference,
     required String newValue,
   }) {
-    final manifest = parseManifestContent(manifestContent) as Map<String, dynamic>;
+    final manifest =
+        parseManifestContent(manifestContent) as Map<String, dynamic>;
     final section = manifest[reference.sectionName];
     if (section is! Map) {
       return '$manifestContent\n';

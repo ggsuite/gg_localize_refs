@@ -12,10 +12,12 @@ import 'package:gg_args/gg_args.dart';
 import 'package:gg_console_colors/gg_console_colors.dart';
 import 'package:gg_localize_refs/src/backend/file_changes_buffer.dart';
 import 'package:gg_localize_refs/src/backend/languages/project_language.dart';
+import 'package:gg_localize_refs/src/backend/utils.dart';
 import 'package:gg_localize_refs/src/backend/process_dependencies.dart';
 import 'package:gg_localize_refs/src/backend/publish_to_utils.dart';
 import 'package:gg_localize_refs/src/backend/yaml_to_string.dart';
 import 'package:gg_log/gg_log.dart';
+import 'package:gg_publish/gg_publish.dart';
 import 'package:path/path.dart' as p;
 
 // #############################################################################
@@ -32,7 +34,8 @@ class LocalizeRefs extends DirCommand<dynamic> {
 
   /// Constructor
   LocalizeRefs({required super.ggLog})
-    : super(
+    : isOnPubDev = IsOnPubDev(ggLog: ggLog),
+      super(
         name: 'localize-refs',
         description: 'Changes dependencies to local dependencies.',
       ) {
@@ -63,6 +66,9 @@ class LocalizeRefs extends DirCommand<dynamic> {
         };
   }
 
+  /// Service used to check whether a dependency was published before.
+  final IsOnPubDev isOnPubDev;
+
   /// Whether to localize to git references
   bool useGit = false;
 
@@ -71,7 +77,7 @@ class LocalizeRefs extends DirCommand<dynamic> {
 
   /// Ensures the backup directory (.gg) exists under [projectDir].
   Directory _ensureBackupDir(Directory projectDir) {
-    final backupDir = Directory(p.join(projectDir.path, '.gg'));
+    final backupDir = Utils.dartBackupDir(projectDir);
     final didExist = backupDir.existsSync();
     if (!didExist) {
       backupDir.createSync(recursive: true);
@@ -179,7 +185,7 @@ class LocalizeRefs extends DirCommand<dynamic> {
     FileChangesBuffer fileChangesBuffer,
   ) async {
     final projectDir = node.directory;
-    final backupDir = _ensureBackupDir(projectDir);
+    _ensureBackupDir(projectDir);
     _ensureGitignoreHasGgEntries(projectDir);
     final references = node.language.listDependencyReferences(yamlMap);
 
@@ -202,9 +208,7 @@ class LocalizeRefs extends DirCommand<dynamic> {
 
       ggLog('Localize refs of ${node.name}');
 
-      final originalPubspec = File(
-        p.join(backupDir.path, '.gg_localize_refs_backup.yaml'),
-      );
+      final originalPubspec = Utils.dartBackupYamlFile(projectDir);
       await _writeFileCopy(source: pubspec, destination: originalPubspec);
 
       var newPubspecContent = pubspecContent;
@@ -248,11 +252,10 @@ class LocalizeRefs extends DirCommand<dynamic> {
 
       await saveDependenciesAsJson(
         replacedDependencies,
-        p.join(backupDir.path, '.gg_localize_refs_backup.json'),
+        Utils.dartBackupFile(projectDir).path,
       );
 
-      final modifiedPubspec = File('${node.directory.path}/pubspec.yaml');
-      fileChangesBuffer.add(modifiedPubspec, newPubspecContent);
+      fileChangesBuffer.add(pubspec, newPubspecContent);
       return;
     }
 
@@ -273,9 +276,7 @@ class LocalizeRefs extends DirCommand<dynamic> {
 
     ggLog('Localize refs of ${node.name}');
 
-    final originalPubspec = File(
-      p.join(backupDir.path, '.gg_localize_refs_backup.yaml'),
-    );
+    final originalPubspec = Utils.dartBackupYamlFile(projectDir);
     await _writeFileCopy(source: pubspec, destination: originalPubspec);
 
     final replacedDependencies = <String, dynamic>{};
@@ -298,7 +299,7 @@ class LocalizeRefs extends DirCommand<dynamic> {
 
     await saveDependenciesAsJson(
       replacedDependencies,
-      p.join(backupDir.path, '.gg_localize_refs_backup.json'),
+      Utils.dartBackupFile(projectDir).path,
     );
 
     var newPubspecContent = pubspecContent;
@@ -323,8 +324,7 @@ class LocalizeRefs extends DirCommand<dynamic> {
     }
 
     newPubspecContent = addPublishToNone(newPubspecContent);
-    final modifiedPubspec = File('${node.directory.path}/pubspec.yaml');
-    fileChangesBuffer.add(modifiedPubspec, newPubspecContent);
+    fileChangesBuffer.add(pubspec, newPubspecContent);
   }
 
   Future<void> _modifyTypeScript(
@@ -387,10 +387,7 @@ class LocalizeRefs extends DirCommand<dynamic> {
         return;
       }
 
-      final backupFile = File(
-        '${node.directory.path}/.gg_localize_refs_backup.json',
-      );
-      await backupFile.writeAsString(jsonEncode(replacedDependencies));
+      await _writeTypeScriptBackup(node.directory, replacedDependencies);
 
       fileChangesBuffer.add(manifestFile, updatedContent);
       return;
@@ -427,10 +424,7 @@ class LocalizeRefs extends DirCommand<dynamic> {
       }
     }
 
-    final backupFile = File(
-      '${node.directory.path}/.gg_localize_refs_backup.json',
-    );
-    await backupFile.writeAsString(jsonEncode(replacedDependencies));
+    await _writeTypeScriptBackup(node.directory, replacedDependencies);
 
     var updatedContent = manifestContent;
     for (final dependency in node.dependencies.entries) {
@@ -455,6 +449,14 @@ class LocalizeRefs extends DirCommand<dynamic> {
     }
 
     fileChangesBuffer.add(manifestFile, updatedContent);
+  }
+
+  Future<void> _writeTypeScriptBackup(
+    Directory projectDirectory,
+    Map<String, dynamic> replacedDependencies,
+  ) async {
+    final backupFile = Utils.typeScriptBackupFile(projectDirectory);
+    await backupFile.writeAsString(jsonEncode(replacedDependencies));
   }
 
   /// Returns the compact backup value for a dependency.
@@ -534,17 +536,7 @@ class LocalizeRefs extends DirCommand<dynamic> {
     Directory depDir,
     String depName,
   ) async {
-    final resultUrl = await runProcess('git', <String>[
-      'remote',
-      'get-url',
-      'origin',
-    ], workingDirectory: depDir.path);
-    if (resultUrl.exitCode != 0) {
-      throw Exception(
-        'Cannot get git remote url for dependency $depName in ${depDir.path}',
-      );
-    }
-    final url = resultUrl.stdout.toString().trim();
+    final url = await Utils.getGitRemoteUrl(depDir, depName);
 
     var ref = gitRefOverride?.trim() ?? '';
 

@@ -494,6 +494,33 @@ void main() {
         expect(content, contains('"dep":"^1.0.0"'));
         expect(messages.join('\n'), contains('No files were changed'));
       });
+
+      test(
+        'throws package.json not found message when no manifest exists',
+        () async {
+          final d = Directory(join(dWorkspace.path, 'missing_manifest'));
+          createDirs(<Directory>[d]);
+
+          await expectLater(
+            runner.run(<String>[
+              'set-ref-version',
+              '--input',
+              d.path,
+              '--ref',
+              'dep',
+              '--version',
+              '^1.0.0',
+            ]),
+            throwsA(
+              isA<Exception>().having(
+                (Object e) => e.toString(),
+                'message',
+                contains('pubspec.yaml not found'),
+              ),
+            ),
+          );
+        },
+      );
     });
   });
 }
