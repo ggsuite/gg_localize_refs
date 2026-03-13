@@ -1,5 +1,6 @@
 // @license
-// Copyright (c) 2019 - 2024 Dr. Gabriel Gatzsche. All Rights Reserved.
+// Copyright (c) 2019 - 2024 Dr. Gabriel Gatzsche. All Rights
+// Reserved.
 //
 // Use of this source code is governed by terms that can be
 // found in the LICENSE file in the root of this package.
@@ -169,6 +170,38 @@ void main() {
       expect(language.hasAnyDependencies(manifest), isTrue);
     });
 
+    test('hasAnyDependencyEntries returns false for non-map manifest', () {
+      expect(language.hasAnyDependencyEntries('not_a_map'), isFalse);
+    });
+
+    test('hasAnyDependencyEntries returns false for empty sections', () {
+      final manifest = language.parseManifestContent(
+        'dependencies: {}\n'
+        'dev_dependencies: {}\n',
+      );
+
+      expect(language.hasAnyDependencyEntries(manifest), isFalse);
+    });
+
+    test('hasAnyDependencyEntries returns true for dependencies entries', () {
+      final manifest = language.parseManifestContent(
+        'dependencies:\n'
+        '  a: ^1.0.0\n',
+      );
+
+      expect(language.hasAnyDependencyEntries(manifest), isTrue);
+    });
+
+    test('hasAnyDependencyEntries returns true for '
+        'dev_dependencies entries', () {
+      final manifest = language.parseManifestContent(
+        'dev_dependencies:\n'
+        '  a: ^1.0.0\n',
+      );
+
+      expect(language.hasAnyDependencyEntries(manifest), isTrue);
+    });
+
     test('findDependency returns dependency from dependencies first', () {
       final manifest = language.parseManifestContent(
         'dependencies:\n  a: ^1.0.0\n'
@@ -180,6 +213,19 @@ void main() {
       expect(reference, isNotNull);
       expect(reference!.sectionName, 'dependencies');
       expect(reference.value, '^1.0.0');
+    });
+
+    test('findDependency returns dependency from dev_dependencies', () {
+      final manifest = language.parseManifestContent(
+        'dev_dependencies:\n'
+        '  a: ^2.0.0\n',
+      );
+
+      final reference = language.findDependency(manifest, 'a');
+
+      expect(reference, isNotNull);
+      expect(reference!.sectionName, 'dev_dependencies');
+      expect(reference.value, '^2.0.0');
     });
 
     test(
@@ -200,5 +246,90 @@ void main() {
         expect(result, '^2.0.0');
       },
     );
+
+    test('stringifyDependencyForReading returns yaml for non git map', () {
+      final manifest = language.parseManifestContent(
+        'dependencies:\n'
+        '  a:\n'
+        '    path: ../a\n',
+      );
+      final reference = language.findDependency(manifest, 'a')!;
+
+      final result = language.stringifyDependencyForReading(reference.value);
+
+      expect(result, 'path: ../a');
+    });
+
+    test('listDependencyReferences returns both dependency sections', () {
+      final manifest = language.parseManifestContent(
+        'dependencies:\n'
+        '  a: ^1.0.0\n'
+        'dev_dependencies:\n'
+        '  b: ^2.0.0\n',
+      );
+
+      final references = language.listDependencyReferences(manifest);
+
+      expect(references.keys, containsAll(<String>['a', 'b']));
+      expect(references['a']!.sectionName, 'dependencies');
+      expect(references['a']!.value, '^1.0.0');
+      expect(references['b']!.sectionName, 'dev_dependencies');
+      expect(references['b']!.value, '^2.0.0');
+    });
+
+    test('readPackageVersion returns null for non-map manifest', () {
+      final version = language.readPackageVersion('not_a_map');
+
+      expect(version, isNull);
+    });
+
+    test('readPackageVersion returns version for pubspec map', () {
+      final manifest = language.parseManifestContent(
+        'name: pkg\n'
+        'version: 3.2.1\n',
+      );
+
+      final version = language.readPackageVersion(manifest);
+
+      expect(version, '3.2.1');
+    });
+
+    test('replaceDependencyInContent replaces scalar dependency', () {
+      const content =
+          'name: pkg\n'
+          'version: 1.0.0\n'
+          'dependencies:\n'
+          '  a: ^1.0.0\n';
+      final manifest = language.parseManifestContent(content);
+      final reference = language.findDependency(manifest, 'a')!;
+
+      final updated = language.replaceDependencyInContent(
+        manifestContent: content,
+        reference: reference,
+        newValue: '^2.0.0',
+      );
+
+      expect(updated, contains('a: ^2.0.0'));
+      expect(updated, isNot(contains('a: ^1.0.0')));
+    });
+
+    test('stringifyManifest returns yaml without trailing newline', () {
+      final manifest = language.parseManifestContent(
+        'name: pkg\n'
+        'version: 1.0.0\n'
+        'dependencies:\n'
+        '  a: ^1.0.0\n',
+      );
+
+      final result = language.stringifyManifest(manifest);
+
+      expect(
+        result,
+        'name: pkg\n'
+        'version: 1.0.0\n'
+        'dependencies:\n'
+        '  a: ^1.0.0',
+      );
+    });
   });
 }
