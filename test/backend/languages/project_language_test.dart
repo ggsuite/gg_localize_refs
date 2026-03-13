@@ -21,6 +21,23 @@ void main() {
       );
     });
 
+    test('ProjectManifest initializes fields correctly', () {
+      final file = File('/tmp/pubspec.yaml');
+      const content = 'name: pkg\nversion: 1.0.0\n';
+      final parsed = <String, dynamic>{'name': 'pkg'};
+
+      const matcherContent = 'name: pkg\nversion: 1.0.0\n';
+      final manifest = ProjectManifest(
+        file: file,
+        content: matcherContent,
+        parsed: parsed,
+      );
+
+      expect(manifest.file.path, file.path);
+      expect(manifest.content, content);
+      expect(manifest.parsed, same(parsed));
+    });
+
     test('ProjectNode initializes fields and relations correctly', () {
       final language = _FakeLanguage();
       final dir = Directory('/tmp/project');

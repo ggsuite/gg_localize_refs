@@ -140,6 +140,27 @@ void main() {
       expect((manifest['dependencies'] as Map)['a'], '^1.0.0');
     });
 
+    test('parseManifestContent throws for non-map yaml root', () {
+      expect(
+        () => language.parseManifestContent('- a\n- b\n'),
+        throwsA(
+          isA<Exception>().having(
+            (Object e) => e.toString(),
+            'message',
+            contains('Unexpected pubspec.yaml format'),
+          ),
+        ),
+      );
+    });
+
+    test('hasAnyDependencies returns true for dependencies', () {
+      final manifest = language.parseManifestContent(
+        'dependencies:\n  a: ^1.0.0\n',
+      );
+
+      expect(language.hasAnyDependencies(manifest), isTrue);
+    });
+
     test('findDependency returns dependency from dependencies first', () {
       final manifest = language.parseManifestContent(
         'dependencies:\n  a: ^1.0.0\n'

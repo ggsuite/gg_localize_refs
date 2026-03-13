@@ -392,6 +392,53 @@ void main() {
           },
         );
 
+        test(
+          'uses saved dependency map version when backup entry is a map',
+          () async {
+            final workspace = createTempDir('unlocalize_map_backup_version_ws');
+            final project1 = Directory(join(workspace.path, 'project1'));
+            final project2 = Directory(join(workspace.path, 'project2'));
+            await createDirs(<Directory>[project1, project2]);
+
+            File(join(project1.path, 'pubspec.yaml')).writeAsStringSync(
+              'name: project1\n'
+              'version: 1.0.0\n'
+              'dependencies:\n'
+              '  project2:\n'
+              '    path: ../project2\n',
+            );
+            File(join(project2.path, 'pubspec.yaml')).writeAsStringSync(
+              'name: project2\n'
+              'version: 1.0.0\n'
+              'publish_to: none\n',
+            );
+            File(join(project1.path, '.gg', '.gg_localize_refs_backup.json'))
+              ..createSync(recursive: true)
+              ..writeAsStringSync('{"project2":{"version":"^5.0.0"}}');
+
+            Process.runSync('git', <String>[
+              'init',
+            ], workingDirectory: project2.path);
+            Process.runSync('git', <String>[
+              'remote',
+              'add',
+              'origin',
+              'git@github.com:user/project2.git',
+            ], workingDirectory: project2.path);
+
+            final localMessages = <String>[];
+            final unlocal = UnlocalizeRefs(ggLog: localMessages.add);
+            await unlocal.get(directory: project1, ggLog: localMessages.add);
+
+            final resultYaml = File(
+              join(project1.path, 'pubspec.yaml'),
+            ).readAsStringSync();
+            expect(resultYaml, contains('version: ^5.0.0'));
+
+            deleteDirs(<Directory>[workspace]);
+          },
+        );
+
         test('TypeScript: when package.json is correct (path)', () async {
           final dProject1 = Directory(
             join(dWorkspaceSucceedTs.path, 'project1'),

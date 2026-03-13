@@ -203,6 +203,42 @@ void main() {
           ),
         );
       });
+
+      test('when dependency is unpublished and not in workspace', () async {
+        final d1 = Directory(join(dWorkspace.path, 'workspace_root', 'a1'));
+        final outside = Directory(join(dWorkspace.path, 'outside_dep'));
+        await createDirs(<Directory>[d1, outside]);
+
+        File(join(d1.path, 'pubspec.yaml')).writeAsStringSync(
+          'name: a1\nversion: 1.0.0\npublish_to: none\n'
+          'dependencies:\n  outside_dep: ^1.0.0',
+        );
+        File(join(outside.path, 'pubspec.yaml')).writeAsStringSync(
+          'name: outside_dep\nversion: 1.0.0\npublish_to: none\n',
+        );
+
+        await expectLater(
+          runner.run(<String>[
+            'set-ref-version',
+            '--input',
+            d1.path,
+            '--ref',
+            'outside_dep',
+            '--version',
+            '^2.0.0',
+          ]),
+          throwsA(
+            isA<Exception>().having(
+              (Object e) => e.toString(),
+              'message',
+              contains(
+                'Could not find local directory for dependency '
+                'outside_dep.',
+              ),
+            ),
+          ),
+        );
+      });
     });
 
     group('should succeed', () {
@@ -281,7 +317,9 @@ void main() {
         final d2 = Directory(join(dWorkspace.path, 'd2'));
         await createDirs(<Directory>[d1, d2]);
         File(join(d1.path, 'pubspec.yaml')).writeAsStringSync(
-          'name: d1\nversion: 1.0.0\ndependencies:\n  d2:\n    git:\n      url: git@github.com:user/d2.git\n      ref: main',
+          'name: d1\nversion: 1.0.0\ndependencies:\n  d2:\n'
+          '    git:\n      url: git@github.com:user/d2.git\n'
+          '      ref: main',
         );
         File(
           join(d2.path, 'pubspec.yaml'),

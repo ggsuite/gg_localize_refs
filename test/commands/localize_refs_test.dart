@@ -333,6 +333,42 @@ void main() {
           deleteDirs(<Directory>[workspace]);
         });
 
+        test(
+          'backs up git.version when dependency map has nested git version',
+          () async {
+            final workspace = createTempDir('localize_backup_git_version_ws');
+            final project1 = Directory(p.join(workspace.path, 'project1'));
+            final project2 = Directory(p.join(workspace.path, 'project2'));
+            await createDirs(<Directory>[project1, project2]);
+
+            File(p.join(project1.path, 'pubspec.yaml')).writeAsStringSync(
+              'name: project1\n'
+              'version: 1.0.0\n'
+              'dependencies:\n'
+              '  project2:\n'
+              '    git:\n'
+              '      url: git@github.com:user/project2.git\n'
+              '      version: ^4.0.0\n',
+            );
+            File(p.join(project2.path, 'pubspec.yaml')).writeAsStringSync(
+              'name: project2\n'
+              'version: 1.0.0\n',
+            );
+
+            final local = LocalizeRefs(ggLog: messages.add);
+            await local.get(directory: project1, ggLog: messages.add);
+
+            final backupJson = File(
+              p.join(project1.path, '.gg', '.gg_localize_refs_backup.json'),
+            ).readAsStringSync();
+            final backupMap = jsonDecode(backupJson) as Map<String, dynamic>;
+
+            expect(backupMap['project2'], '^4.0.0');
+
+            deleteDirs(<Directory>[workspace]);
+          },
+        );
+
         test('with --git option should succeed', () async {
           final dProject1 = Directory(p.join(dGitSucceed.path, 'project1'));
           final dProject2 = Directory(p.join(dGitSucceed.path, 'project2'));
