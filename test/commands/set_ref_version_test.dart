@@ -414,25 +414,6 @@ void main() {
         expect(messages.join('\n'), contains('No files were changed'));
       });
 
-      test('no structural change leaves content as-is and logs', () async {
-        final d = Directory(join(dWorkspace.path, 'g3'));
-        await createDirs(<Directory>[d]);
-        File(join(d.path, 'pubspec.yaml')).writeAsStringSync(
-          'name: g3\nversion: 1.0.0\ndependencies:\n  a: ^1.0.0',
-        );
-        messages.clear();
-        await runner.run(<String>[
-          'set-ref-version',
-          '--input',
-          d.path,
-          '--ref',
-          'a',
-          '--version',
-          '^1.0.0',
-        ]);
-        expect(messages.join('\n'), contains('No files were changed'));
-      });
-
       test('replace scalar with scalar in package.json', () async {
         final d = Directory(join(dWorkspace.path, 'ts_scalar'));
         await createDirs(<Directory>[d]);

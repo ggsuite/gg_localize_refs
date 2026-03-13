@@ -119,7 +119,10 @@ class SetRefVersion extends DirCommand<dynamic> {
     );
 
     if (dependencyDirectory == null) {
-      return _updateExistingTagPatternVersion(oldDependency, newVersion);
+      throw Exception(
+        'Could not find local directory for dependency $dependencyName. '
+        'Make sure it is part of the workspace.',
+      );
     }
 
     final published = await isOnPubDev.get(
@@ -138,21 +141,6 @@ class SetRefVersion extends DirCommand<dynamic> {
       'git': <String, dynamic>{'url': gitUrl, 'tag_pattern': '{{version}}'},
       'version': newVersion,
     }).trimRight();
-  }
-
-  /// Preserves a tag_pattern git dependency and only updates its version.
-  String _updateExistingTagPatternVersion(dynamic oldDep, String newVersion) {
-    if (oldDep is Map) {
-      final git = oldDep['git'];
-      if (git is Map && git.containsKey('tag_pattern')) {
-        return yamlToString(<String, dynamic>{
-          'git': <String, dynamic>{...git.cast<String, dynamic>()},
-          'version': newVersion,
-        }).trimRight();
-      }
-    }
-
-    return newVersion;
   }
 
   /// Finds the local dependency directory for [dependencyName] if available.
