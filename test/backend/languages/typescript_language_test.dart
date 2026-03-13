@@ -128,6 +128,14 @@ void main() {
       expect(language.hasAnyDependencies(manifest), isTrue);
     });
 
+    test('hasAnyDependencies returns true for devDependencies', () {
+      const content = '{"devDependencies":{"dep":"^1.0.0"}}';
+      final manifest =
+          language.parseManifestContent(content) as Map<String, dynamic>;
+
+      expect(language.hasAnyDependencies(manifest), isTrue);
+    });
+
     test('findDependency returns dependency from devDependencies', () {
       const content = '{"name":"pkg","devDependencies":{"dep":"^2.0.0"}}';
 

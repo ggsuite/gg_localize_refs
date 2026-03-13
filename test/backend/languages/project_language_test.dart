@@ -7,7 +7,10 @@
 import 'dart:io';
 
 import 'package:gg_localize_refs/src/backend/languages/project_language.dart';
+import 'package:path/path.dart' as p;
 import 'package:test/test.dart';
+
+import '../../test_helpers.dart';
 
 void main() {
   group('ProjectLanguage and ProjectNode', () {
@@ -82,6 +85,28 @@ void main() {
       expect(reference.name, 'dep');
       expect(reference.value, '^1.0.0');
     });
+
+    test('readManifest reads file content and parsed manifest', () async {
+      final workspace = createTempDir('project_language_read_manifest');
+      final project = Directory(p.join(workspace.path, 'project'));
+      project.createSync(recursive: true);
+      final file = File(p.join(project.path, 'fake.yaml'));
+      file.writeAsStringSync('name: pkg\nversion: 1.0.0\n');
+
+      final language = _FakeLanguage();
+      final manifest = await language.readManifest(project);
+
+      expect(
+        manifest.file.absolute.path.replaceAll('\\', '/'),
+        file.absolute.path.replaceAll('\\', '/'),
+      );
+      expect(manifest.content, 'name: pkg\nversion: 1.0.0\n');
+      expect(manifest.parsed, <String, dynamic>{
+        'content': 'name: pkg\nversion: 1.0.0\n',
+      });
+
+      deleteDirs(<Directory>[workspace]);
+    });
   });
 }
 
@@ -108,7 +133,7 @@ class _FakeLanguage extends ProjectLanguage {
 
   @override
   dynamic parseManifestContent(String content) {
-    return <String, dynamic>{};
+    return <String, dynamic>{'content': content};
   }
 
   @override

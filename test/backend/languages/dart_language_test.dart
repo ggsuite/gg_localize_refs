@@ -161,6 +161,14 @@ void main() {
       expect(language.hasAnyDependencies(manifest), isTrue);
     });
 
+    test('hasAnyDependencies returns true for dev_dependencies', () {
+      final manifest = language.parseManifestContent(
+        'dev_dependencies:\n  a: ^1.0.0\n',
+      );
+
+      expect(language.hasAnyDependencies(manifest), isTrue);
+    });
+
     test('findDependency returns dependency from dependencies first', () {
       final manifest = language.parseManifestContent(
         'dependencies:\n  a: ^1.0.0\n'
