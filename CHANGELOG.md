@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## [1.0.0] - 2026-03-24
 
 ### Added
 
@@ -17,6 +17,7 @@
 - Add test for updating .gitignore with missing .gg entries
 - Add tests for devDependencies handling in TS localize/unlocalize
 - Add tests for dependency and manifest methods in language tests
+- Add canCheckout to .gg.json; rename example and update print msg
 
 ### Changed
 
@@ -28,6 +29,7 @@
 - Create backend subfolder and move source files
 - changed gg\_local\_package\_dependencies to git dependency
 - Update repository URL to ggsuite organization
+- Downgrade package version from 1.0.0 to 0.0.1
 
 ### Fixed
 
@@ -36,3 +38,5 @@
 ### Removed
 
 - Update gg\_publish to ^^3.2.0 and remove publish\_to field
+
+[1.0.0]: https://github.com/ggsuite/gg_localize_refs/tag/%tag
