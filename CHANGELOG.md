@@ -29,6 +29,7 @@
 - Create backend subfolder and move source files
 - changed gg\_local\_package\_dependencies to git dependency
 - Update repository URL to ggsuite organization
+- Downgrade package version from 1.0.0 to 0.0.1
 
 ### Fixed
 
