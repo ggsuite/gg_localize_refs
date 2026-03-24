@@ -163,7 +163,7 @@ void main() {
       final workspace = createWorkspace('mlg_circular');
       final p1 = Directory(p.join(workspace.path, 'p1'));
       final p2 = Directory(p.join(workspace.path, 'p2'));
-      createDirs(<Directory>[p1, p2]);
+      await createDirs(<Directory>[p1, p2]);
 
       File(p.join(p1.path, 'pubspec.yaml')).writeAsStringSync(
         'name: p1\n'
@@ -201,7 +201,7 @@ void main() {
       final workspace = createWorkspace('mlg_duplicate');
       final p1 = Directory(p.join(workspace.path, 'pkg1'));
       final p2 = Directory(p.join(workspace.path, 'pkg2'));
-      createDirs(<Directory>[p1, p2]);
+      await createDirs(<Directory>[p1, p2]);
 
       File(
         p.join(p1.path, 'pubspec.yaml'),
@@ -229,7 +229,7 @@ void main() {
     test('throws when root node directory is not found among nodes', () async {
       final workspace = createWorkspace('mlg_root_not_found');
       final rootProject = Directory(p.join(workspace.path, 'root_project'));
-      createDirs(<Directory>[rootProject]);
+      await createDirs(<Directory>[rootProject]);
 
       final manifestFile = File(p.join(rootProject.path, 'fake.yaml'));
       manifestFile.writeAsStringSync('name: root\n');
@@ -289,5 +289,49 @@ class _FakeLanguageMissingRootNode extends ProjectLanguage {
   @override
   dynamic parseManifestContent(String content) {
     return <String, dynamic>{};
+  }
+
+  @override
+  bool hasAnyDependencies(dynamic manifest) {
+    return false;
+  }
+
+  @override
+  bool hasAnyDependencyEntries(dynamic manifest) {
+    return false;
+  }
+
+  @override
+  DependencyReference? findDependency(dynamic manifest, String dependencyName) {
+    return null;
+  }
+
+  @override
+  Map<String, DependencyReference> listDependencyReferences(dynamic manifest) {
+    return <String, DependencyReference>{};
+  }
+
+  @override
+  String? readPackageVersion(dynamic manifest) {
+    return null;
+  }
+
+  @override
+  String stringifyDependencyForReading(dynamic dependencyValue) {
+    return dependencyValue.toString();
+  }
+
+  @override
+  String replaceDependencyInContent({
+    required String manifestContent,
+    required DependencyReference reference,
+    required String newValue,
+  }) {
+    return manifestContent;
+  }
+
+  @override
+  String stringifyManifest(dynamic manifest) {
+    return '';
   }
 }

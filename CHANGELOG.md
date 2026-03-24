@@ -16,6 +16,7 @@
 - Add --git-ref option to localize-refs for custom git refs
 - Add test for updating .gitignore with missing .gg entries
 - Add tests for devDependencies handling in TS localize/unlocalize
+- Add tests for dependency and manifest methods in language tests
 
 ### Changed
 
@@ -26,7 +27,12 @@
 - Use sample\_folder for test files
 - Create backend subfolder and move source files
 - changed gg\_local\_package\_dependencies to git dependency
+- Update repository URL to ggsuite organization
 
 ### Fixed
 
 - Fix tests on windows
+
+### Removed
+
+- Update gg\_publish to ^^3.2.0 and remove publish\_to field

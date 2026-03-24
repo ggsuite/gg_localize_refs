@@ -25,7 +25,7 @@ class MultiLanguageGraph {
   /// Returns a record containing the root node and all nodes in the workspace.
   Future<({ProjectNode rootNode, Map<String, ProjectNode> allNodes})>
   buildGraph({required Directory directory, GgLog? ggLog}) async {
-    final startDir = _correctDir(directory);
+    final startDir = _correctDir(directory.absolute);
 
     final rootInfo = await _findProjectRootAndLanguage(startDir);
     if (rootInfo == null) {
@@ -35,7 +35,7 @@ class MultiLanguageGraph {
     final rootDir = rootInfo.$1;
     final language = rootInfo.$2;
 
-    final workspaceRoot = rootDir.parent;
+    final workspaceRoot = rootDir.parent.absolute;
 
     final allDirs = workspaceRoot.listSync().whereType<Directory>().toList()
       ..sort((a, b) => a.path.compareTo(b.path));
@@ -103,7 +103,7 @@ class MultiLanguageGraph {
     while (true) {
       for (final language in languages) {
         if (language.isProjectRoot(dir)) {
-          return (dir, language);
+          return (_correctDir(dir), language);
         }
       }
 

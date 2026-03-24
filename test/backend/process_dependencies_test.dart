@@ -5,6 +5,7 @@ import 'package:gg_localize_refs/src/backend/languages/dart_language.dart';
 import 'package:gg_localize_refs/src/backend/languages/project_language.dart';
 import 'package:gg_localize_refs/src/backend/multi_language_graph.dart';
 import 'package:gg_localize_refs/src/backend/process_dependencies.dart';
+import 'package:gg_log/gg_log.dart';
 import 'package:path/path.dart';
 import 'package:test/test.dart';
 
@@ -33,7 +34,7 @@ void main() {
             join(dWorkspaceSucceed.path, 'no_project_root_error'),
           );
 
-          createDirs(<Directory>[dNoProjectRootError]);
+          await createDirs(<Directory>[dNoProjectRootError]);
 
           final messages = <String>[];
 
@@ -47,6 +48,7 @@ void main() {
                     String manifestContent,
                     dynamic manifestMap,
                     FileChangesBuffer fileChangesBuffer,
+                    GgLog ggLog,
                   ) async {},
               fileChangesBuffer: FileChangesBuffer(),
               ggLog: messages.add,
@@ -66,7 +68,7 @@ void main() {
             join(dWorkspaceSucceed.path, 'node_not_found'),
           );
 
-          createDirs(<Directory>[dNodeNotFound]);
+          await createDirs(<Directory>[dNodeNotFound]);
 
           File(join(dNodeNotFound.path, 'pubspec.yaml')).writeAsStringSync(
             'name: test_package\nversion: 1.0.0\n'
@@ -87,8 +89,10 @@ void main() {
                 String manifestContent,
                 dynamic manifestMap,
                 FileChangesBuffer fileChangesBuffer,
+                GgLog ggLog,
               ) async {},
               FileChangesBuffer(),
+              <String>[].add,
             ),
             throwsA(
               isA<Exception>()
@@ -121,6 +125,7 @@ void main() {
                 String manifestContent,
                 dynamic manifestMap,
                 FileChangesBuffer fileChangesBuffer,
+                GgLog ggLog,
               ) async {
                 expect(node.name, 'test1');
                 expect(manifestFile.path, endsWith('pubspec.yaml'));
@@ -144,7 +149,7 @@ void main() {
         final ws = createTempDir('pd_dev_deps_ws');
         final p1 = Directory(join(ws.path, 'p1'));
         final p2 = Directory(join(ws.path, 'p2'));
-        createDirs(<Directory>[p1, p2]);
+        await createDirs(<Directory>[p1, p2]);
 
         File(join(p1.path, 'pubspec.yaml')).writeAsStringSync(
           'name: p1\n'
@@ -167,6 +172,7 @@ void main() {
                 String manifestContent,
                 dynamic manifestMap,
                 FileChangesBuffer fileChangesBuffer,
+                GgLog ggLog,
               ) async {},
           fileChangesBuffer: FileChangesBuffer(),
           ggLog: messages.add,
@@ -181,7 +187,7 @@ void main() {
           final ws = createTempDir('pd_ts_dev_deps_ws');
           final p1 = Directory(join(ws.path, 'p1_ts'));
           final p2 = Directory(join(ws.path, 'p2_ts'));
-          createDirs(<Directory>[p1, p2]);
+          await createDirs(<Directory>[p1, p2]);
 
           File(join(p1.path, 'package.json')).writeAsStringSync(
             '{"name":"p1_ts","version":"1.0.0",'
@@ -202,6 +208,7 @@ void main() {
                   String manifestContent,
                   dynamic manifestMap,
                   FileChangesBuffer fileChangesBuffer,
+                  GgLog ggLog,
                 ) async {},
             fileChangesBuffer: FileChangesBuffer(),
             ggLog: messages.add,
@@ -256,7 +263,7 @@ void main() {
           final ws = createTempDir('pd_findnode_ws');
           final p1 = Directory(join(ws.path, 'p1'));
           final p2 = Directory(join(ws.path, 'p2'));
-          createDirs(<Directory>[p1, p2]);
+          await createDirs(<Directory>[p1, p2]);
 
           File(join(p1.path, 'pubspec.yaml')).writeAsStringSync(
             'name: p1\nversion: 1.0.0\n'
@@ -283,7 +290,7 @@ void main() {
           final ws = createTempDir('pd_findnode_ws2');
           final p1 = Directory(join(ws.path, 'p1'));
           final p2 = Directory(join(ws.path, 'p2'));
-          createDirs(<Directory>[p1, p2]);
+          await createDirs(<Directory>[p1, p2]);
 
           File(join(p1.path, 'pubspec.yaml')).writeAsStringSync(
             'name: p1\nversion: 1.0.0\n'

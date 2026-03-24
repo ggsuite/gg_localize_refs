@@ -101,7 +101,7 @@ void main() {
       test('when dependency not found', () async {
         final d1 = Directory(join(dWorkspace.path, 'a1'));
         final d2 = Directory(join(dWorkspace.path, 'a2'));
-        createDirs(<Directory>[d1, d2]);
+        await createDirs(<Directory>[d1, d2]);
         File(join(d1.path, 'pubspec.yaml')).writeAsStringSync(
           'name: a1\nversion: 1.0.0\ndependencies:\n  a2: ^1.0.0',
         );
@@ -131,7 +131,7 @@ void main() {
 
       test('when --ref is missing', () async {
         final d = Directory(join(dWorkspace.path, 'missing_ref'));
-        createDirs(<Directory>[d]);
+        await createDirs(<Directory>[d]);
         File(join(d.path, 'pubspec.yaml')).writeAsStringSync(
           'name: a\nversion: 1.0.0\ndependencies:\n  b: ^1.0.0',
         );
@@ -155,7 +155,7 @@ void main() {
 
       test('when --version is missing', () async {
         final d = Directory(join(dWorkspace.path, 'missing_version'));
-        createDirs(<Directory>[d]);
+        await createDirs(<Directory>[d]);
         File(join(d.path, 'pubspec.yaml')).writeAsStringSync(
           'name: a\nversion: 1.0.0\ndependencies:\n  b: ^1.0.0',
         );
@@ -179,7 +179,7 @@ void main() {
 
       test('when dependency not found in package.json', () async {
         final d = Directory(join(dWorkspace.path, 'ts_missing_dep'));
-        createDirs(<Directory>[d]);
+        await createDirs(<Directory>[d]);
         File(join(d.path, 'package.json')).writeAsStringSync(
           '{"name":"ts_missing_dep","dependencies":{"a":"^1.0.0"}}',
         );
@@ -203,66 +203,123 @@ void main() {
           ),
         );
       });
+
+      test('when dependency is unpublished and not in workspace', () async {
+        final d1 = Directory(join(dWorkspace.path, 'workspace_root', 'a1'));
+        final outside = Directory(join(dWorkspace.path, 'outside_dep'));
+        await createDirs(<Directory>[d1, outside]);
+
+        File(join(d1.path, 'pubspec.yaml')).writeAsStringSync(
+          'name: a1\nversion: 1.0.0\npublish_to: none\n'
+          'dependencies:\n  outside_dep: ^1.0.0',
+        );
+        File(join(outside.path, 'pubspec.yaml')).writeAsStringSync(
+          'name: outside_dep\nversion: 1.0.0\npublish_to: none\n',
+        );
+
+        await expectLater(
+          runner.run(<String>[
+            'set-ref-version',
+            '--input',
+            d1.path,
+            '--ref',
+            'outside_dep',
+            '--version',
+            '^2.0.0',
+          ]),
+          throwsA(
+            isA<Exception>().having(
+              (Object e) => e.toString(),
+              'message',
+              contains(
+                'Could not find local directory for dependency '
+                'outside_dep.',
+              ),
+            ),
+          ),
+        );
+      });
     });
 
     group('should succeed', () {
-      test('replace scalar with scalar', () async {
-        final d1 = Directory(join(dWorkspace.path, 'b1'));
-        final d2 = Directory(join(dWorkspace.path, 'b2'));
-        createDirs(<Directory>[d1, d2]);
-        File(join(d1.path, 'pubspec.yaml')).writeAsStringSync(
-          'name: b1\nversion: 1.0.0\ndependencies:\n  b2: ^1.0.0',
-        );
-        File(
-          join(d2.path, 'pubspec.yaml'),
-        ).writeAsStringSync('name: b2\nversion: 1.0.0');
+      test(
+        'replace scalar with pub.dev scalar when dependency is published',
+        () async {
+          final d1 = Directory(join(dWorkspace.path, 'b1'));
+          final d2 = Directory(join(dWorkspace.path, 'b2'));
+          await createDirs(<Directory>[d1, d2]);
+          File(join(d1.path, 'pubspec.yaml')).writeAsStringSync(
+            'name: b1\nversion: 1.0.0\ndependencies:\n  b2: ^1.0.0',
+          );
+          File(
+            join(d2.path, 'pubspec.yaml'),
+          ).writeAsStringSync('name: b2\nversion: 1.0.0');
 
-        await runner.run(<String>[
-          'set-ref-version',
-          '--input',
-          d1.path,
-          '--ref',
-          'b2',
-          '--version',
-          '^2.0.0',
-        ]);
-        final content = File(join(d1.path, 'pubspec.yaml')).readAsStringSync();
-        expect(content, contains('b2: ^2.0.0'));
-      });
+          await runner.run(<String>[
+            'set-ref-version',
+            '--input',
+            d1.path,
+            '--ref',
+            'b2',
+            '--version',
+            '^2.0.0',
+          ]);
+          final content = File(
+            join(d1.path, 'pubspec.yaml'),
+          ).readAsStringSync();
+          expect(content, contains('b2: ^2.0.0'));
+        },
+      );
 
-      test('replace scalar with git block', () async {
-        final d1 = Directory(join(dWorkspace.path, 'c1'));
-        final d2 = Directory(join(dWorkspace.path, 'c2'));
-        createDirs(<Directory>[d1, d2]);
-        File(join(d1.path, 'pubspec.yaml')).writeAsStringSync(
-          'name: c1\nversion: 1.0.0\ndependencies:\n  c2: ^1.0.0',
-        );
-        File(
-          join(d2.path, 'pubspec.yaml'),
-        ).writeAsStringSync('name: c2\nversion: 1.0.0');
+      test(
+        'replace scalar with git tag_pattern when dependency is unpublished',
+        () async {
+          final d1 = Directory(join(dWorkspace.path, 'c1'));
+          final d2 = Directory(join(dWorkspace.path, 'c2'));
+          await createDirs(<Directory>[d1, d2]);
+          File(join(d1.path, 'pubspec.yaml')).writeAsStringSync(
+            'name: c1\nversion: 1.0.0\ndependencies:\n  c2: ^1.0.0',
+          );
+          File(
+            join(d2.path, 'pubspec.yaml'),
+          ).writeAsStringSync('name: c2\nversion: 1.0.0\npublish_to: none\n');
 
-        await runner.run(<String>[
-          'set-ref-version',
-          '--input',
-          d1.path,
-          '--ref',
-          'c2',
-          '--version',
-          'git:\n  url: git@github.com:user/c2.git\n  ref: main',
-        ]);
-        final content = File(join(d1.path, 'pubspec.yaml')).readAsStringSync();
-        expect(content, contains('c2:'));
-        expect(content, contains('git:'));
-        expect(content, contains('url: git@github.com:user/c2.git'));
-        expect(content, contains('ref: main'));
-      });
+          Process.runSync('git', <String>['init'], workingDirectory: d2.path);
+          Process.runSync('git', <String>[
+            'remote',
+            'add',
+            'origin',
+            'git@github.com:user/c2.git',
+          ], workingDirectory: d2.path);
+
+          await runner.run(<String>[
+            'set-ref-version',
+            '--input',
+            d1.path,
+            '--ref',
+            'c2',
+            '--version',
+            '^3.0.0',
+          ]);
+          final content = File(
+            join(d1.path, 'pubspec.yaml'),
+          ).readAsStringSync();
+          expect(content, contains('c2:'));
+          expect(content, contains('git:'));
+          expect(content, contains('url:'));
+          expect(content, contains('tag_pattern: {{version}}'));
+          expect(content, contains('version: ^3.0.0'));
+        },
+      );
 
       test('replace git block with scalar', () async {
         final d1 = Directory(join(dWorkspace.path, 'd1'));
         final d2 = Directory(join(dWorkspace.path, 'd2'));
-        createDirs(<Directory>[d1, d2]);
+        await createDirs(<Directory>[d1, d2]);
         File(join(d1.path, 'pubspec.yaml')).writeAsStringSync(
-          'name: d1\nversion: 1.0.0\ndependencies:\n  d2:\n    git:\n      url: git@github.com:user/d2.git\n      ref: main',
+          'name: d1\nversion: 1.0.0\ndependencies:\n  d2:\n'
+          '    git:\n      url: git@github.com:user/d2.git\n'
+          '      ref: main',
         );
         File(
           join(d2.path, 'pubspec.yaml'),
@@ -282,10 +339,49 @@ void main() {
         expect(content, isNot(contains('git:')));
       });
 
+      test('replace tag_pattern git block version only', () async {
+        final d1 = Directory(join(dWorkspace.path, 'd1b'));
+        final d2 = Directory(join(dWorkspace.path, 'd2b'));
+        await createDirs(<Directory>[d1, d2]);
+        File(join(d1.path, 'pubspec.yaml')).writeAsStringSync(
+          'name: d1b\nversion: 1.0.0\ndependencies:\n'
+          '  d2b:\n'
+          '    git:\n'
+          '      url: git@github.com:user/d2b.git\n'
+          '      tag_pattern: {{version}}\n'
+          '      version: ^1.0.0\n',
+        );
+        File(
+          join(d2.path, 'pubspec.yaml'),
+        ).writeAsStringSync('name: d2b\nversion: 1.0.0\npublish_to: none\n');
+
+        Process.runSync('git', <String>['init'], workingDirectory: d2.path);
+        Process.runSync('git', <String>[
+          'remote',
+          'add',
+          'origin',
+          'git@github.com:user/d2b.git',
+        ], workingDirectory: d2.path);
+
+        await runner.run(<String>[
+          'set-ref-version',
+          '--input',
+          d1.path,
+          '--ref',
+          'd2b',
+          '--version',
+          '^3.0.0',
+        ]);
+        final content = File(join(d1.path, 'pubspec.yaml')).readAsStringSync();
+        expect(content, contains('url:'));
+        expect(content, contains('tag_pattern: {{version}}'));
+        expect(content, contains('version: ^3.0.0'));
+      });
+
       test('replace path block with scalar', () async {
         final d1 = Directory(join(dWorkspace.path, 'e1'));
         final d2 = Directory(join(dWorkspace.path, 'e2'));
-        createDirs(<Directory>[d1, d2]);
+        await createDirs(<Directory>[d1, d2]);
         File(join(d1.path, 'pubspec.yaml')).writeAsStringSync(
           'name: e1\nversion: 1.0.0\ndependencies:\n  e2:\n    path: ../e2',
         );
@@ -310,7 +406,7 @@ void main() {
       test('updates dev_dependency', () async {
         final d1 = Directory(join(dWorkspace.path, 'f1'));
         final d2 = Directory(join(dWorkspace.path, 'f2'));
-        createDirs(<Directory>[d1, d2]);
+        await createDirs(<Directory>[d1, d2]);
         File(join(d1.path, 'pubspec.yaml')).writeAsStringSync(
           'name: f1\nversion: 1.0.0\ndev_dependencies:\n  f2: ^1.0.0',
         );
@@ -334,7 +430,7 @@ void main() {
       test('no change when value is equal (logs and returns)', () async {
         final d1 = Directory(join(dWorkspace.path, 'g1'));
         final d2 = Directory(join(dWorkspace.path, 'g2'));
-        createDirs(<Directory>[d1, d2]);
+        await createDirs(<Directory>[d1, d2]);
         File(join(d1.path, 'pubspec.yaml')).writeAsStringSync(
           'name: g1\nversion: 1.0.0\ndependencies:\n  g2: ^1.0.0',
         );
@@ -356,28 +452,9 @@ void main() {
         expect(messages.join('\n'), contains('No files were changed'));
       });
 
-      test('no structural change leaves content as-is and logs', () async {
-        final d = Directory(join(dWorkspace.path, 'g3'));
-        createDirs(<Directory>[d]);
-        File(join(d.path, 'pubspec.yaml')).writeAsStringSync(
-          'name: g3\nversion: 1.0.0\ndependencies:\n  a: ^1.0.0',
-        );
-        messages.clear();
-        await runner.run(<String>[
-          'set-ref-version',
-          '--input',
-          d.path,
-          '--ref',
-          'a',
-          '--version',
-          '^1.0.0',
-        ]);
-        expect(messages.join('\n'), contains('No files were changed'));
-      });
-
       test('replace scalar with scalar in package.json', () async {
         final d = Directory(join(dWorkspace.path, 'ts_scalar'));
-        createDirs(<Directory>[d]);
+        await createDirs(<Directory>[d]);
         File(join(d.path, 'package.json')).writeAsStringSync(
           '{"name":"ts_scalar","dependencies":{"dep":"^1.0.0"}}',
         );
@@ -397,7 +474,7 @@ void main() {
 
       test('updates devDependency in package.json', () async {
         final d = Directory(join(dWorkspace.path, 'ts_dev'));
-        createDirs(<Directory>[d]);
+        await createDirs(<Directory>[d]);
         File(join(d.path, 'package.json')).writeAsStringSync(
           '{"name":"ts_dev","devDependencies":{"dep":"^1.0.0"}}',
         );
@@ -418,7 +495,7 @@ void main() {
       test('no change when value is equal in '
           'package.json logs and returns', () async {
         final d = Directory(join(dWorkspace.path, 'ts_equal'));
-        createDirs(<Directory>[d]);
+        await createDirs(<Directory>[d]);
         File(join(d.path, 'package.json')).writeAsStringSync(
           '{"name":"ts_equal","dependencies":{"dep":"^1.0.0"}}',
         );
@@ -436,6 +513,33 @@ void main() {
         expect(content, contains('"dep":"^1.0.0"'));
         expect(messages.join('\n'), contains('No files were changed'));
       });
+
+      test(
+        'throws package.json not found message when no manifest exists',
+        () async {
+          final d = Directory(join(dWorkspace.path, 'missing_manifest'));
+          await createDirs(<Directory>[d]);
+
+          await expectLater(
+            runner.run(<String>[
+              'set-ref-version',
+              '--input',
+              d.path,
+              '--ref',
+              'dep',
+              '--version',
+              '^1.0.0',
+            ]),
+            throwsA(
+              isA<Exception>().having(
+                (Object e) => e.toString(),
+                'message',
+                contains('pubspec.yaml not found'),
+              ),
+            ),
+          );
+        },
+      );
     });
   });
 }

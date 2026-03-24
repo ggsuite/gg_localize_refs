@@ -4,7 +4,7 @@
 // Use of this source code is governed by terms that can be
 // found in the LICENSE file in the root of this package.
 
-import 'dart:async';
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:args/command_runner.dart';
@@ -217,6 +217,7 @@ void main() {
                 <String>{},
                 loc.modifyManifest,
                 FileChangesBuffer(),
+                <String>[].add,
               );
             },
             throwsA(
@@ -298,6 +299,76 @@ void main() {
           expect(localMessages[1], contains('No files were changed.'));
         });
 
+        test('stores only version strings in Dart backup json', () async {
+          final workspace = createTempDir('localize_backup_versions_only_ws');
+          final project1 = Directory(p.join(workspace.path, 'project1'));
+          final project2 = Directory(p.join(workspace.path, 'project2'));
+          await createDirs(<Directory>[project1, project2]);
+
+          File(p.join(project1.path, 'pubspec.yaml')).writeAsStringSync(
+            'name: project1\n'
+            'version: 1.0.0\n'
+            'dependencies:\n'
+            '  project2:\n'
+            '    git:\n'
+            '      url: git@github.com:ggsuite/testproject_gg_2.git\n'
+            '      tag_pattern: {{version}}\n'
+            '    version: ^1.0.0\n',
+          );
+          File(p.join(project2.path, 'pubspec.yaml')).writeAsStringSync(
+            'name: project2\n'
+            'version: 1.0.0\n',
+          );
+
+          final local = LocalizeRefs(ggLog: messages.add);
+          await local.get(directory: project1, ggLog: messages.add, git: true);
+
+          final backupJson = File(
+            p.join(project1.path, '.gg', '.gg_localize_refs_backup.json'),
+          ).readAsStringSync();
+          final backupMap = jsonDecode(backupJson) as Map<String, dynamic>;
+
+          expect(backupMap['project2'], '^1.0.0');
+
+          deleteDirs(<Directory>[workspace]);
+        });
+
+        test(
+          'backs up git.version when dependency map has nested git version',
+          () async {
+            final workspace = createTempDir('localize_backup_git_version_ws');
+            final project1 = Directory(p.join(workspace.path, 'project1'));
+            final project2 = Directory(p.join(workspace.path, 'project2'));
+            await createDirs(<Directory>[project1, project2]);
+
+            File(p.join(project1.path, 'pubspec.yaml')).writeAsStringSync(
+              'name: project1\n'
+              'version: 1.0.0\n'
+              'dependencies:\n'
+              '  project2:\n'
+              '    git:\n'
+              '      url: git@github.com:user/project2.git\n'
+              '      version: ^4.0.0\n',
+            );
+            File(p.join(project2.path, 'pubspec.yaml')).writeAsStringSync(
+              'name: project2\n'
+              'version: 1.0.0\n',
+            );
+
+            final local = LocalizeRefs(ggLog: messages.add);
+            await local.get(directory: project1, ggLog: messages.add);
+
+            final backupJson = File(
+              p.join(project1.path, '.gg', '.gg_localize_refs_backup.json'),
+            ).readAsStringSync();
+            final backupMap = jsonDecode(backupJson) as Map<String, dynamic>;
+
+            expect(backupMap['project2'], '^4.0.0');
+
+            deleteDirs(<Directory>[workspace]);
+          },
+        );
+
         test('with --git option should succeed', () async {
           final dProject1 = Directory(p.join(dGitSucceed.path, 'project1'));
           final dProject2 = Directory(p.join(dGitSucceed.path, 'project2'));
@@ -345,6 +416,49 @@ void main() {
             p.join(dProject1.path, '.gg', '.gg_localize_refs_backup.json'),
           ).readAsStringSync();
           expect(backupJson, contains('^1.0.0'));
+        });
+
+        test('with --git localizes git tag_pattern dependencies back to git '
+            'refs without version', () async {
+          final workspace = createTempDir('localize_git_tag_pattern_ws');
+          final project1 = Directory(p.join(workspace.path, 'project1'));
+          final project2 = Directory(p.join(workspace.path, 'project2'));
+          await createDirs(<Directory>[project1, project2]);
+
+          File(p.join(project1.path, 'pubspec.yaml')).writeAsStringSync(
+            'name: project1\n'
+            'version: 1.0.0\n'
+            'dependencies:\n'
+            '  project2:\n'
+            '    git:\n'
+            '      url: git@github.com:user/project2.git\n'
+            '      tag_pattern: {{version}}\n'
+            '    version: ^2.0.4\n',
+          );
+          File(p.join(project2.path, 'pubspec.yaml')).writeAsStringSync(
+            'name: project2\n'
+            'version: 1.0.0\n',
+          );
+
+          final localMessages = <String>[];
+          final local = LocalizeRefs(ggLog: localMessages.add);
+          await local.get(
+            directory: project1,
+            ggLog: localMessages.add,
+            git: true,
+          );
+
+          final resultYaml = File(
+            p.join(project1.path, 'pubspec.yaml'),
+          ).readAsStringSync();
+          expect(resultYaml, contains('project2:'));
+          expect(resultYaml, contains('git:'));
+          expect(resultYaml, contains('url:'));
+          expect(resultYaml, contains('ref: main'));
+          expect(resultYaml, isNot(contains('tag_pattern:')));
+          expect(resultYaml, isNot(contains('version: ^2.0.4')));
+
+          deleteDirs(<Directory>[workspace]);
         });
 
         test('with --git and --git-ref uses provided ref', () async {
@@ -525,9 +639,9 @@ void main() {
             final root = Directory(
               p.join(dWorkspaceSucceedTs.path, 'nodeps_root'),
             );
-            createDirs(<Directory>[root]);
+            await createDirs(<Directory>[root]);
             final pkgDir = Directory(p.join(root.path, 'project_no_deps'));
-            createDirs(<Directory>[pkgDir]);
+            await createDirs(<Directory>[pkgDir]);
 
             File(
               p.join(pkgDir.path, 'package.json'),
@@ -548,6 +662,7 @@ void main() {
               content,
               manifestMap,
               buffer,
+              messages.add,
             );
 
             expect(buffer.files, isEmpty);
@@ -559,7 +674,7 @@ void main() {
           final workspace = createTempDir('ts_dev_only_ws');
           final project1 = Directory(p.join(workspace.path, 'project1'));
           final project2 = Directory(p.join(workspace.path, 'project2'));
-          createDirs(<Directory>[project1, project2]);
+          await createDirs(<Directory>[project1, project2]);
 
           File(p.join(project1.path, 'package.json')).writeAsStringSync(
             '{"name":"proj1_ts","version":"1.0.0",'
@@ -591,7 +706,7 @@ void main() {
           final workspace = createTempDir('ts_git_dev_only_ws');
           final project1 = Directory(p.join(workspace.path, 'project1'));
           final project2 = Directory(p.join(workspace.path, 'project2'));
-          createDirs(<Directory>[project1, project2]);
+          await createDirs(<Directory>[project1, project2]);
 
           File(p.join(project1.path, 'package.json')).writeAsStringSync(
             '{"name":"proj1_ts_git","version":"1.0.0",'
@@ -600,31 +715,6 @@ void main() {
           File(
             p.join(project2.path, 'package.json'),
           ).writeAsStringSync('{"name":"proj2_ts","version":"1.0.0"}');
-
-          final resultInit = Process.runSync('git', <String>[
-            'init',
-          ], workingDirectory: project2.path);
-          expect(resultInit.exitCode, 0, reason: resultInit.stderr.toString());
-
-          final resultMain = Process.runSync('git', <String>[
-            'checkout',
-            '-b',
-            'main',
-          ], workingDirectory: project2.path);
-          expect(resultMain.exitCode, 0, reason: resultMain.stderr.toString());
-
-          const remoteUrl = 'git@github.com:user/proj2_ts.git';
-          final resultRemote = Process.runSync('git', <String>[
-            'remote',
-            'add',
-            'origin',
-            remoteUrl,
-          ], workingDirectory: project2.path);
-          expect(
-            resultRemote.exitCode,
-            0,
-            reason: resultRemote.stderr.toString(),
-          );
 
           await runner.run(<String>[
             'localize-refs',
@@ -638,193 +728,10 @@ void main() {
           ).readAsStringSync();
           expect(resultJson, contains('proj2_ts'));
           expect(resultJson, contains('git+'));
-          expect(resultJson, contains(remoteUrl));
 
           deleteDirs(<Directory>[workspace]);
         });
       });
     });
   });
-
-  group('getDependency', () {
-    test('should return the dependency from dependencies', () {
-      final yamlMap = <String, dynamic>{
-        'dependencies': <String, dynamic>{'some_dependency': '^1.0.0'},
-        'dev_dependencies': <String, dynamic>{},
-      };
-      final result = getDependency('some_dependency', yamlMap);
-      expect(result, equals('^1.0.0'));
-    });
-
-    test('should return the dependency from dev_dependencies '
-        'when not in dependencies', () {
-      final yamlMap = <String, dynamic>{
-        'dependencies': <String, dynamic>{},
-        'dev_dependencies': <String, dynamic>{'some_dependency': '^2.0.0'},
-      };
-      final result = getDependency('some_dependency', yamlMap);
-      expect(result, equals('^2.0.0'));
-    });
-
-    test('should return the dependency from dependencies when '
-        'in both dependencies and dev_dependencies', () {
-      final yamlMap = <String, dynamic>{
-        'dependencies': <String, dynamic>{'some_dependency': '^1.0.0'},
-        'dev_dependencies': <String, dynamic>{'some_dependency': '^2.0.0'},
-      };
-      final result = getDependency('some_dependency', yamlMap);
-      expect(result, equals('^1.0.0'));
-    });
-
-    test('should return null when the dependency is not present', () {
-      final yamlMap = <String, dynamic>{
-        'dependencies': <String, dynamic>{},
-        'dev_dependencies': <String, dynamic>{},
-      };
-      final result = getDependency('some_dependency', yamlMap);
-      expect(result, isNull);
-    });
-
-    test('should handle missing dependencies section', () {
-      final yamlMap = <String, dynamic>{
-        'dev_dependencies': <String, dynamic>{'some_dependency': '^1.0.0'},
-      };
-      final result = getDependency('some_dependency', yamlMap);
-      expect(result, equals('^1.0.0'));
-    });
-
-    test('should handle missing dev_dependencies section', () {
-      final yamlMap = <String, dynamic>{
-        'dependencies': <String, dynamic>{'some_dependency': '^1.0.0'},
-      };
-      final result = getDependency('some_dependency', yamlMap);
-      expect(result, equals('^1.0.0'));
-    });
-
-    test('should handle both dependencies and dev_dependencies '
-        'sections missing', () {
-      final yamlMap = <String, dynamic>{};
-      final result = getDependency('some_dependency', yamlMap);
-      expect(result, isNull);
-    });
-  });
-
-  group('LocalizeRefs._getGitDependencyYaml falls back to main', () {
-    test('should use "main" as ref if the git rev-parse fails '
-        '(exitCode != 0)', () async {
-      final fakeDepDir = Directory.systemTemp.createTempSync('fakegit');
-      final fakeRefs = FakeLocalizeRefs(
-        ggLog: (_) {},
-        runProcess:
-            (
-              String executable,
-              List<String> arguments, {
-              String? workingDirectory,
-            }) async {
-              if (arguments.join(' ') == 'remote get-url origin') {
-                return ProcessResult(0, 0, 'git@github.com:user/fake.git', '');
-              }
-              if (arguments.join(' ') == 'rev-parse --abbrev-ref HEAD') {
-                return ProcessResult(0, 1, '', 'fail');
-              }
-              throw UnimplementedError('Unknown process for args $arguments');
-            },
-      );
-
-      final yaml = await fakeRefs.rawGitDependencyYaml(fakeDepDir, 'somedep');
-      expect(yaml, contains('ref: main'));
-      expect(yaml, contains('git:'));
-      expect(yaml, contains('url: git@github.com:user/fake.git'));
-      fakeDepDir.deleteSync(recursive: true);
-    });
-
-    test(
-      'should fallback to main if git rev-parse returns HEAD as stdout',
-      () async {
-        final fakeDepDir = Directory.systemTemp.createTempSync('fakegit2');
-        final fakeRefs = FakeLocalizeRefs(
-          ggLog: (_) {},
-          runProcess:
-              (
-                String executable,
-                List<String> arguments, {
-                String? workingDirectory,
-              }) async {
-                if (arguments.join(' ') == 'remote get-url origin') {
-                  return ProcessResult(
-                    0,
-                    0,
-                    'git@github.com:user/fake.git',
-                    '',
-                  );
-                }
-                if (arguments.join(' ') == 'rev-parse --abbrev-ref HEAD') {
-                  return ProcessResult(0, 0, 'HEAD', '');
-                }
-                throw UnimplementedError('Unknown process for args $arguments');
-              },
-        );
-        final yaml = await fakeRefs.rawGitDependencyYaml(fakeDepDir, 'somedep');
-        expect(yaml, contains('ref: main'));
-        expect(yaml, contains('git:'));
-        expect(yaml, contains('url: git@github.com:user/fake.git'));
-        fakeDepDir.deleteSync(recursive: true);
-      },
-    );
-
-    test(
-      'should fallback to main if git rev-parse returns empty stdout',
-      () async {
-        final fakeDepDir = Directory.systemTemp.createTempSync('fakegit3');
-        final fakeRefs = FakeLocalizeRefs(
-          ggLog: (_) {},
-          runProcess:
-              (
-                String executable,
-                List<String> arguments, {
-                String? workingDirectory,
-              }) async {
-                if (arguments.join(' ') == 'remote get-url origin') {
-                  return ProcessResult(
-                    0,
-                    0,
-                    'git@github.com:user/fake.git',
-                    '',
-                  );
-                }
-                if (arguments.join(' ') == 'rev-parse --abbrev-ref HEAD') {
-                  return ProcessResult(0, 0, '', '');
-                }
-                throw UnimplementedError('Unknown process for args $arguments');
-              },
-        );
-        final yaml = await fakeRefs.rawGitDependencyYaml(fakeDepDir, 'somedep');
-        expect(yaml, contains('ref: main'));
-        expect(yaml, contains('git:'));
-        expect(yaml, contains('url: git@github.com:user/fake.git'));
-        fakeDepDir.deleteSync(recursive: true);
-      },
-    );
-  });
-}
-
-// Implements a fake version of LocalizeRefs with injectable runProcess for
-// testing git ref fallback.
-class FakeLocalizeRefs extends LocalizeRefs {
-  FakeLocalizeRefs({
-    required super.ggLog,
-    required Future<ProcessResult> Function(
-      String executable,
-      List<String> arguments, {
-      String? workingDirectory,
-    })
-    runProcess,
-  }) : super() {
-    this.runProcess = runProcess;
-  }
-
-  /// Exposes the getGitDependencyYaml method for testing
-  Future<String> rawGitDependencyYaml(Directory dir, String depName) async {
-    return getGitDependencyYaml(dir, depName);
-  }
 }

@@ -1,4 +1,11 @@
+// @license
+// Copyright (c) 2025 Göran Hegenberg. All Rights Reserved.
+//
+// Use of this source code is governed by terms that can be
+// found in the LICENSE file in the root of this package.
+
 import 'dart:io';
+
 import 'package:args/command_runner.dart';
 import 'package:gg_capture_print/gg_capture_print.dart';
 import 'package:gg_localize_refs/src/backend/file_changes_buffer.dart';
@@ -6,6 +13,7 @@ import 'package:gg_localize_refs/src/backend/languages/dart_language.dart';
 import 'package:gg_localize_refs/src/backend/languages/project_language.dart';
 import 'package:gg_localize_refs/src/backend/languages/typescript_language.dart';
 import 'package:gg_localize_refs/src/backend/process_dependencies.dart';
+import 'package:gg_localize_refs/src/backend/utils.dart';
 import 'package:gg_localize_refs/src/commands/unlocalize_refs.dart';
 import 'package:path/path.dart';
 import 'package:test/test.dart';
@@ -212,6 +220,7 @@ void main() {
                 <String>{},
                 unlocal.modifyManifest,
                 FileChangesBuffer(),
+                localMessages.add,
               );
             },
             throwsA(
@@ -295,10 +304,150 @@ void main() {
           );
         });
 
+        test(
+          'uses git tag_pattern dependency when package was not published',
+          () async {
+            final workspace = createTempDir('unlocalize_unpublished_git_ws');
+            final project1 = Directory(join(workspace.path, 'project1'));
+            final project2 = Directory(join(workspace.path, 'project2'));
+            await createDirs(<Directory>[project1, project2]);
+
+            File(join(project1.path, 'pubspec.yaml')).writeAsStringSync(
+              'name: project1\n'
+              'version: 1.0.0\n'
+              'dependencies:\n'
+              '  project2:\n'
+              '    path: ../project2\n',
+            );
+            File(join(project2.path, 'pubspec.yaml')).writeAsStringSync(
+              'name: project2\n'
+              'version: 1.0.0\n'
+              'publish_to: none\n',
+            );
+            File(join(project1.path, '.gg', '.gg_localize_refs_backup.json'))
+              ..createSync(recursive: true)
+              ..writeAsStringSync('{"project2":"^2.0.4"}');
+
+            Process.runSync('git', <String>[
+              'init',
+            ], workingDirectory: project2.path);
+            Process.runSync('git', <String>[
+              'remote',
+              'add',
+              'origin',
+              'git@github.com:user/project2.git',
+            ], workingDirectory: project2.path);
+
+            final localMessages = <String>[];
+            final unlocal = UnlocalizeRefs(ggLog: localMessages.add);
+            await unlocal.get(directory: project1, ggLog: localMessages.add);
+
+            final resultYaml = File(
+              join(project1.path, 'pubspec.yaml'),
+            ).readAsStringSync();
+            expect(resultYaml, contains('git:'));
+            expect(resultYaml, contains('url:'));
+            expect(resultYaml, contains('tag_pattern: {{version}}'));
+            expect(resultYaml, contains('version: ^2.0.4'));
+            expect(resultYaml, isNot(contains('ref:')));
+
+            deleteDirs(<Directory>[workspace]);
+          },
+        );
+
+        test(
+          'does not treat tag_pattern git dependency as localized',
+          () async {
+            final workspace = createTempDir('unlocalize_tag_pattern_noop_ws');
+            final project1 = Directory(join(workspace.path, 'project1'));
+            final project2 = Directory(join(workspace.path, 'project2'));
+            await createDirs(<Directory>[project1, project2]);
+
+            File(join(project1.path, 'pubspec.yaml')).writeAsStringSync(
+              'name: project1\n'
+              'version: 1.0.0\n'
+              'dependencies:\n'
+              '  project2:\n'
+              '    git:\n'
+              '      url: git@github.com:user/project2.git\n'
+              '      tag_pattern: {{version}}\n'
+              '      version: ^2.0.4\n',
+            );
+            File(join(project2.path, 'pubspec.yaml')).writeAsStringSync(
+              'name: project2\n'
+              'version: 1.0.0\n',
+            );
+            File(join(project1.path, '.gg', '.gg_localize_refs_backup.json'))
+              ..createSync(recursive: true)
+              ..writeAsStringSync('{"project2":"^2.0.4"}');
+
+            final localMessages = <String>[];
+            final unlocal = UnlocalizeRefs(ggLog: localMessages.add);
+            await unlocal.get(directory: project1, ggLog: localMessages.add);
+
+            expect(localMessages[0], contains('Running unlocalize-refs in'));
+            expect(localMessages[1], contains('No files were changed'));
+
+            deleteDirs(<Directory>[workspace]);
+          },
+        );
+
+        test(
+          'uses saved dependency map version when backup entry is a map',
+          () async {
+            final workspace = createTempDir('unlocalize_map_backup_version_ws');
+            final project1 = Directory(join(workspace.path, 'project1'));
+            final project2 = Directory(join(workspace.path, 'project2'));
+            await createDirs(<Directory>[project1, project2]);
+
+            File(join(project1.path, 'pubspec.yaml')).writeAsStringSync(
+              'name: project1\n'
+              'version: 1.0.0\n'
+              'dependencies:\n'
+              '  project2:\n'
+              '    path: ../project2\n',
+            );
+            File(join(project2.path, 'pubspec.yaml')).writeAsStringSync(
+              'name: project2\n'
+              'version: 1.0.0\n'
+              'publish_to: none\n',
+            );
+            File(join(project1.path, '.gg', '.gg_localize_refs_backup.json'))
+              ..createSync(recursive: true)
+              ..writeAsStringSync('{"project2":{"version":"^5.0.0"}}');
+
+            Process.runSync('git', <String>[
+              'init',
+            ], workingDirectory: project2.path);
+            Process.runSync('git', <String>[
+              'remote',
+              'add',
+              'origin',
+              'git@github.com:user/project2.git',
+            ], workingDirectory: project2.path);
+
+            final localMessages = <String>[];
+            final unlocal = UnlocalizeRefs(ggLog: localMessages.add);
+            await unlocal.get(directory: project1, ggLog: localMessages.add);
+
+            final resultYaml = File(
+              join(project1.path, 'pubspec.yaml'),
+            ).readAsStringSync();
+            expect(resultYaml, contains('version: ^5.0.0'));
+
+            deleteDirs(<Directory>[workspace]);
+          },
+        );
+
         test('TypeScript: when package.json is correct (path)', () async {
           final dProject1 = Directory(
             join(dWorkspaceSucceedTs.path, 'project1'),
           );
+          await initGit(dProject1);
+          final dProject2 = Directory(
+            join(dWorkspaceSucceedTs.path, 'project2'),
+          );
+          await initGit(dProject2);
 
           final localMessages = <String>[];
           final unlocal = UnlocalizeRefs(ggLog: localMessages.add);
@@ -310,7 +459,7 @@ void main() {
           final resultJson = File(
             join(dProject1.path, 'package.json'),
           ).readAsStringSync();
-          expect(resultJson, contains('"test2_ts":"^2.0.4"'));
+          expect(resultJson, contains('"test2_ts":"git+'));
         });
 
         test('TypeScript: when package.json '
@@ -318,6 +467,11 @@ void main() {
           final dProject1 = Directory(
             join(dWorkspaceSucceedGitTs.path, 'project1'),
           );
+          await initGit(dProject1);
+          final dProject2 = Directory(
+            join(dWorkspaceSucceedGitTs.path, 'project2'),
+          );
+          await initGit(dProject2);
 
           final localMessages = <String>[];
           final unlocal = UnlocalizeRefs(ggLog: localMessages.add);
@@ -369,9 +523,9 @@ void main() {
             final root = Directory(
               join(dWorkspaceSucceedTs.path, 'nodeps_root'),
             );
-            createDirs(<Directory>[root]);
+            await createDirs(<Directory>[root]);
             final pkgDir = Directory(join(root.path, 'project_no_deps'));
-            createDirs(<Directory>[pkgDir]);
+            await createDirs(<Directory>[pkgDir]);
 
             File(
               join(pkgDir.path, 'package.json'),
@@ -392,6 +546,7 @@ void main() {
               content,
               manifestMap,
               buffer,
+              messages.add,
             );
 
             expect(buffer.files, isEmpty);
@@ -403,7 +558,7 @@ void main() {
           final workspace = createTempDir('unlocalize_ts_dev_only_ws');
           final project1 = Directory(join(workspace.path, 'project1'));
           final project2 = Directory(join(workspace.path, 'project2'));
-          createDirs(<Directory>[project1, project2]);
+          await createDirs(<Directory>[project1, project2]);
 
           File(join(project1.path, 'package.json')).writeAsStringSync(
             '{"name":"proj1_ts","version":"1.0.0",'
@@ -423,7 +578,7 @@ void main() {
           final resultJson = File(
             join(project1.path, 'package.json'),
           ).readAsStringSync();
-          expect(resultJson, contains('"proj2_ts":"^2.0.0"'));
+          expect(resultJson, contains('"proj2_ts":"git+'));
           expect(resultJson, isNot(contains('file:')));
 
           deleteDirs(<Directory>[workspace]);
@@ -434,7 +589,7 @@ void main() {
           final workspace = createTempDir('unlocalize_ts_dev_git_ws');
           final project1 = Directory(join(workspace.path, 'project1'));
           final project2 = Directory(join(workspace.path, 'project2'));
-          createDirs(<Directory>[project1, project2]);
+          await createDirs(<Directory>[project1, project2]);
 
           File(join(project1.path, 'package.json')).writeAsStringSync(
             '{"name":"proj1_ts_git","version":"1.0.0",'
@@ -455,11 +610,52 @@ void main() {
           final resultJson = File(
             join(project1.path, 'package.json'),
           ).readAsStringSync();
-          expect(resultJson, contains('"proj2_ts":"^2.0.0"'));
-          expect(resultJson, isNot(contains('git+')));
+          expect(resultJson, contains('"proj2_ts":"git+'));
 
           deleteDirs(<Directory>[workspace]);
         });
+
+        test(
+          'TypeScript: falls back to git url when package was not published',
+          () async {
+            final workspace = createTempDir('unlocalize_ts_unpublished_git_ws');
+            final project1 = Directory(join(workspace.path, 'project1'));
+            final project2 = Directory(join(workspace.path, 'project2'));
+            await createDirs(<Directory>[project1, project2]);
+
+            File(join(project1.path, 'package.json')).writeAsStringSync(
+              '{"name":"proj1_ts","version":"1.0.0",'
+              '"dependencies":{"proj2_ts":"file:../project2"}}',
+            );
+            File(
+              join(project2.path, 'package.json'),
+            ).writeAsStringSync('{"name":"proj2_ts","version":"1.0.0"}');
+            File(
+              join(project1.path, '.gg_localize_refs_backup.json'),
+            ).writeAsStringSync('{"proj2_ts":"^2.0.0"}');
+
+            Process.runSync('git', <String>[
+              'init',
+            ], workingDirectory: project2.path);
+            Process.runSync('git', <String>[
+              'remote',
+              'add',
+              'origin',
+              'git@github.com:user/proj2_ts.git',
+            ], workingDirectory: project2.path);
+
+            final localMessages = <String>[];
+            final unlocal = UnlocalizeRefs(ggLog: localMessages.add);
+            await unlocal.get(directory: project1, ggLog: localMessages.add);
+
+            final resultJson = File(
+              join(project1.path, 'package.json'),
+            ).readAsStringSync();
+            expect(resultJson, contains('"proj2_ts":"git+'));
+
+            deleteDirs(<Directory>[workspace]);
+          },
+        );
       });
     });
   });
@@ -469,7 +665,7 @@ void main() {
       const nonExistentFilePath = 'non_existent_file.json';
 
       expect(
-        () => readDependenciesFromJson(nonExistentFilePath),
+        () => Utils.readDependenciesFromJson(nonExistentFilePath),
         throwsA(
           isA<Exception>().having(
             (Object e) => e.toString(),
