@@ -17,6 +17,7 @@
 - Add test for updating .gitignore with missing .gg entries
 - Add tests for devDependencies handling in TS localize/unlocalize
 - Add tests for dependency and manifest methods in language tests
+- Add canCheckout to .gg.json; rename example and update print msg
 
 ### Changed
 

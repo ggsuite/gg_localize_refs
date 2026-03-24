@@ -6,5 +6,5 @@
 // found in the LICENSE file in the root of this package.
 
 Future<void> main() async {
-  print('Look into tests, to see ggToLocal in action.');
+  print('Look into tests, to see gg_localize_refs in action.');
 }
