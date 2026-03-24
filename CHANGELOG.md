@@ -31,3 +31,7 @@
 ### Fixed
 
 - Fix tests on windows
+
+### Removed
+
+- Update gg\_publish to ^^3.2.0 and remove publish\_to field
