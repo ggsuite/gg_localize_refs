@@ -1,5 +1,11 @@
 # Changelog
 
+## [Unreleased]
+
+### Changed
+
+- kidney: changed references to path
+
 ## [1.0.0] - 2026-03-24
 
 ### Added
@@ -39,4 +45,5 @@
 
 - Update gg\_publish to ^^3.2.0 and remove publish\_to field
 
+[Unreleased]: https://github.com/ggsuite/gg_localize_refs/compare/1.0.0...HEAD
 [1.0.0]: https://github.com/ggsuite/gg_localize_refs/tag/%tag
