@@ -167,20 +167,10 @@ class ChangeRefsToGitFeatureBranch extends DirCommand<dynamic> {
     final originalPubspec = Utils.dartBackupYamlFile(projectDir);
     await _writeFileCopy(source: pubspec, destination: originalPubspec);
 
-    final replacedDependencies = <String, dynamic>{};
-    for (final dependency in node.dependencies.entries) {
-      final reference = references[dependency.key];
-      if (reference == null) {
-        continue;
-      }
-      final oldDependencyYaml = yamlToString(reference.value);
-
-      if (_shouldBackupOriginalGitDependency(oldDependencyYaml)) {
-        replacedDependencies[dependency.key] = _backupDependencyValue(
-          reference.value,
-        );
-      }
-    }
+    final replacedDependencies = await _buildUpdatedDartBackupDependencies(
+      node: node,
+      references: references,
+    );
 
     final publishBackup = backupPublishTo(yamlMap as Map<dynamic, dynamic>);
     replacedDependencies.addAll(publishBackup);
@@ -283,6 +273,53 @@ class ChangeRefsToGitFeatureBranch extends DirCommand<dynamic> {
     fileChangesBuffer.add(manifestFile, updatedContent);
   }
 
+  /// Builds the Dart backup map while preserving existing version entries.
+  Future<Map<String, dynamic>> _buildUpdatedDartBackupDependencies({
+    required ProjectNode node,
+    required Map<String, DependencyReference> references,
+  }) async {
+    final backupFile = Utils.dartBackupFile(node.directory);
+    final existingBackup = backupFile.existsSync()
+        ? Utils.readDependenciesFromJson(backupFile.path)
+        : <String, dynamic>{};
+
+    final updatedBackup = <String, dynamic>{};
+
+    for (final entry in existingBackup.entries) {
+      if (entry.key == 'publish_to_original') {
+        continue;
+      }
+
+      final normalized = _normalizeBackupVersionValue(entry.value);
+      if (normalized != null) {
+        updatedBackup[entry.key] = normalized;
+      }
+    }
+
+    for (final dependency in node.dependencies.entries) {
+      final reference = references[dependency.key];
+      if (reference == null) {
+        continue;
+      }
+
+      final dependencyYaml = yamlToString(reference.value);
+      final shouldRefreshBackup = _shouldBackupOriginalGitDependency(
+        dependencyYaml,
+      );
+
+      if (!shouldRefreshBackup) {
+        continue;
+      }
+
+      final normalizedValue = _normalizeBackupVersionValue(reference.value);
+      if (normalizedValue != null) {
+        updatedBackup[dependency.key] = normalizedValue;
+      }
+    }
+
+    return updatedBackup;
+  }
+
   Future<void> _writeTypeScriptBackup(
     Directory projectDirectory,
     Map<String, dynamic> replacedDependencies,
@@ -291,28 +328,41 @@ class ChangeRefsToGitFeatureBranch extends DirCommand<dynamic> {
     await backupFile.writeAsString(jsonEncode(replacedDependencies));
   }
 
-  /// Returns the compact backup value for a dependency.
-  dynamic _backupDependencyValue(dynamic dependency) {
+  /// Returns the normalized backup value or null when no version exists.
+  dynamic _normalizeBackupVersionValue(dynamic dependency) {
     if (dependency is String) {
-      return dependency;
+      final trimmed = dependency.trim();
+      if (trimmed.isEmpty) {
+        return null;
+      }
+      if (trimmed.startsWith('path:') || trimmed.startsWith('git:')) {
+        return null;
+      }
+      return trimmed;
     }
 
     if (dependency is Map) {
       final version = dependency['version'];
       if (version != null) {
-        return version.toString();
+        final trimmed = version.toString().trim();
+        if (trimmed.isNotEmpty) {
+          return trimmed;
+        }
       }
 
       final git = dependency['git'];
       if (git is Map) {
         final gitVersion = git['version'];
         if (gitVersion != null) {
-          return gitVersion.toString();
+          final trimmed = gitVersion.toString().trim();
+          if (trimmed.isNotEmpty) {
+            return trimmed;
+          }
         }
       }
     }
 
-    return dependency;
+    return null;
   }
 
   /// Returns whether [dependencyYaml] should be converted to a plain git ref.

@@ -4,6 +4,7 @@
 // Use of this source code is governed by terms that can be
 // found in the LICENSE file in the root of this package.
 
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:args/command_runner.dart';
@@ -394,6 +395,159 @@ void main() {
               contains('Running change-refs-to-git-feature-branch in'),
             );
             expect(localMessages[1], contains('Localize refs of test1'));
+          },
+        );
+
+        test(
+          'keeps existing backup version when dependency was a path entry',
+          () async {
+            final workspace = createTempDir('git_feature_keep_path_backup_ws');
+            final project1 = Directory(p.join(workspace.path, 'project1'));
+            final project2 = Directory(p.join(workspace.path, 'project2'));
+            await createDirs(<Directory>[project1, project2]);
+
+            File(p.join(project1.path, 'pubspec.yaml')).writeAsStringSync(
+              'name: project1\n'
+              'version: 1.0.0\n'
+              'dependencies:\n'
+              '  project2:\n'
+              '    path: ../project2\n',
+            );
+            File(p.join(project2.path, 'pubspec.yaml')).writeAsStringSync(
+              'name: project2\n'
+              'version: 1.0.0\n',
+            );
+            File(p.join(project1.path, '.gg', '.gg_localize_refs_backup.json'))
+              ..createSync(recursive: true)
+              ..writeAsStringSync('{"project2":"^7.0.0"}');
+
+            Process.runSync('git', <String>[
+              'init',
+            ], workingDirectory: project2.path);
+            Process.runSync('git', <String>[
+              'remote',
+              'add',
+              'origin',
+              'git@github.com:user/project2.git',
+            ], workingDirectory: project2.path);
+
+            final local = ChangeRefsToGitFeatureBranch(ggLog: messages.add);
+            await local.get(
+              directory: project1,
+              ggLog: messages.add,
+              gitRef: 'feature/path',
+            );
+
+            final backupJson = File(
+              p.join(project1.path, '.gg', '.gg_localize_refs_backup.json'),
+            ).readAsStringSync();
+            final backupMap = jsonDecode(backupJson) as Map<String, dynamic>;
+
+            expect(backupMap['project2'], '^7.0.0');
+
+            deleteDirs(<Directory>[workspace]);
+          },
+        );
+
+        test(
+          'keeps existing backup version when dependency was plain git ref',
+          () async {
+            final workspace = createTempDir('git_feature_keep_git_backup_ws');
+            final project1 = Directory(p.join(workspace.path, 'project1'));
+            final project2 = Directory(p.join(workspace.path, 'project2'));
+            await createDirs(<Directory>[project1, project2]);
+
+            File(p.join(project1.path, 'pubspec.yaml')).writeAsStringSync(
+              'name: project1\n'
+              'version: 1.0.0\n'
+              'dependencies:\n'
+              '  project2:\n'
+              '    git:\n'
+              '      url: git@github.com:user/project2.git\n'
+              '      ref: old-feature\n',
+            );
+            File(p.join(project2.path, 'pubspec.yaml')).writeAsStringSync(
+              'name: project2\n'
+              'version: 1.0.0\n',
+            );
+            File(p.join(project1.path, '.gg', '.gg_localize_refs_backup.json'))
+              ..createSync(recursive: true)
+              ..writeAsStringSync('{"project2":"^8.0.0"}');
+
+            Process.runSync('git', <String>[
+              'init',
+            ], workingDirectory: project2.path);
+            Process.runSync('git', <String>[
+              'remote',
+              'add',
+              'origin',
+              'git@github.com:user/project2.git',
+            ], workingDirectory: project2.path);
+
+            final local = ChangeRefsToGitFeatureBranch(ggLog: messages.add);
+            await local.get(
+              directory: project1,
+              ggLog: messages.add,
+              gitRef: 'feature/new',
+            );
+
+            final backupJson = File(
+              p.join(project1.path, '.gg', '.gg_localize_refs_backup.json'),
+            ).readAsStringSync();
+            final backupMap = jsonDecode(backupJson) as Map<String, dynamic>;
+
+            expect(backupMap['project2'], '^8.0.0');
+
+            deleteDirs(<Directory>[workspace]);
+          },
+        );
+
+        test(
+          'stores only version values in backup after converting to git refs',
+          () async {
+            final workspace = createTempDir('git_feature_backup_only_versions');
+            final project1 = Directory(p.join(workspace.path, 'project1'));
+            final project2 = Directory(p.join(workspace.path, 'project2'));
+            await createDirs(<Directory>[project1, project2]);
+
+            File(p.join(project1.path, 'pubspec.yaml')).writeAsStringSync(
+              'name: project1\n'
+              'version: 1.0.0\n'
+              'dependencies:\n'
+              '  project2: ^3.1.0\n',
+            );
+            File(p.join(project2.path, 'pubspec.yaml')).writeAsStringSync(
+              'name: project2\n'
+              'version: 1.0.0\n',
+            );
+
+            Process.runSync('git', <String>[
+              'init',
+            ], workingDirectory: project2.path);
+            Process.runSync('git', <String>[
+              'remote',
+              'add',
+              'origin',
+              'git@github.com:user/project2.git',
+            ], workingDirectory: project2.path);
+
+            final local = ChangeRefsToGitFeatureBranch(ggLog: messages.add);
+            await local.get(
+              directory: project1,
+              ggLog: messages.add,
+              gitRef: 'feature/backup',
+            );
+
+            final backupJson = File(
+              p.join(project1.path, '.gg', '.gg_localize_refs_backup.json'),
+            ).readAsStringSync();
+            final backupMap = jsonDecode(backupJson) as Map<String, dynamic>;
+
+            expect(backupMap['project2'], '^3.1.0');
+            expect(backupJson, isNot(contains('path')));
+            expect(backupJson, isNot(contains('git')));
+
+            deleteDirs(<Directory>[workspace]);
           },
         );
 
