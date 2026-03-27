@@ -17,61 +17,71 @@ import 'package:gg_localize_refs/src/backend/publish_to_utils.dart';
 import 'package:gg_localize_refs/src/backend/utils.dart';
 import 'package:gg_localize_refs/src/backend/yaml_to_string.dart';
 import 'package:gg_log/gg_log.dart';
-import 'package:path/path.dart' as p;
 
-/// Command for localizing references to local path dependencies.
-class ChangeRefsToLocal extends DirCommand<dynamic> {
-  /// Constructor.
-  ChangeRefsToLocal({required super.ggLog})
+/// Command that changes workspace dependencies to git references.
+class ChangeRefsToGitFeatureBranch extends DirCommand<dynamic> {
+  /// Creates the command.
+  ChangeRefsToGitFeatureBranch({required super.ggLog})
     : super(
-        name: 'change-refs-to-local',
-        description: 'Changes dependencies to local dependencies.',
-      );
+        name: 'change-refs-to-git-feature-branch',
+        description: 'Changes dependencies to git dependencies.',
+      ) {
+    argParser.addOption(
+      'git-ref',
+      help: 'Git ref (branch, tag, or commit) to use for git dependencies.',
+    );
+    runProcess =
+        (
+          String executable,
+          List<String> arguments, {
+          String? workingDirectory,
+        }) {
+          return Process.run(
+            executable,
+            arguments,
+            workingDirectory: workingDirectory,
+          );
+        };
+  }
+
+  /// The function used to run processes.
+  late Future<ProcessResult> Function(
+    String executable,
+    List<String> arguments, {
+    String? workingDirectory,
+  })
+  runProcess;
+
+  /// The git ref to use for all converted dependencies.
+  String? gitRefOverride;
 
   /// Ensures the backup directory (.gg) exists under [projectDir].
   Directory _ensureBackupDir(Directory projectDir) {
     final backupDir = Utils.dartBackupDir(projectDir);
-    final didExist = backupDir.existsSync();
-    if (!didExist) {
+    if (!backupDir.existsSync()) {
       backupDir.createSync(recursive: true);
     }
     return backupDir;
   }
 
-  /// Ensures that `.gitignore` contains entries for `.gg` and `!.gg/.gg.json`.
-  void _ensureGitignoreHasGgEntries(Directory projectDir) {
-    final gitignore = File(p.join(projectDir.path, '.gitignore'));
-    const ignoreDir = '.gg';
-    const keepConfig = '!.gg/.gg.json';
-
-    if (!gitignore.existsSync()) {
-      gitignore.writeAsStringSync('$ignoreDir\n$keepConfig\n');
-      return;
-    }
-
-    final raw = gitignore.readAsStringSync();
-    final normalized = raw.replaceAll('\r\n', '\n').replaceAll('\r', '\n');
-    final content = normalized.endsWith('\n')
-        ? normalized.substring(0, normalized.length - 1)
-        : normalized;
-    final lines = content.isEmpty ? <String>[] : content.split('\n');
-
-    final hasIgnoreDir = lines.any((line) => line.trim() == ignoreDir);
-    final hasKeepConfig = lines.any((line) => line.trim() == keepConfig);
-
-    if (!hasIgnoreDir) {
-      lines.add(ignoreDir);
-    }
-    if (!hasKeepConfig) {
-      lines.add(keepConfig);
-    }
-
-    gitignore.writeAsStringSync('${lines.join('\n')}\n');
-  }
-
   @override
-  Future<void> get({required Directory directory, required GgLog ggLog}) async {
-    ggLog('Running change-refs-to-local in ${directory.path}');
+  Future<void> get({
+    required Directory directory,
+    required GgLog ggLog,
+    String? gitRef,
+  }) async {
+    ggLog('Running change-refs-to-git-feature-branch in ${directory.path}');
+    gitRefOverride = gitRef ?? (argResults?['git-ref'] as String?);
+
+    if (gitRefOverride == null || gitRefOverride!.trim().isEmpty) {
+      throw Exception(
+        red(
+          'Please provide the git ref via --git-ref for '
+          'change-refs-to-git-feature-branch.',
+        ),
+      );
+    }
+
     final fileChangesBuffer = FileChangesBuffer();
 
     try {
@@ -134,22 +144,21 @@ class ChangeRefsToLocal extends DirCommand<dynamic> {
   ) async {
     final projectDir = node.directory;
     _ensureBackupDir(projectDir);
-    _ensureGitignoreHasGgEntries(projectDir);
     final references = node.language.listDependencyReferences(yamlMap);
 
-    var hasOnlineDependencies = false;
-
+    var hasNonGitDependencies = false;
     for (final dependency in node.dependencies.entries) {
       final reference = references[dependency.key];
       if (reference == null) {
         continue;
       }
-      if (!yamlToString(reference.value).startsWith('path:')) {
-        hasOnlineDependencies = true;
+      final dependencyYaml = yamlToString(reference.value);
+      if (_shouldConvertToGit(dependencyYaml)) {
+        hasNonGitDependencies = true;
       }
     }
 
-    if (!hasOnlineDependencies) {
+    if (!hasNonGitDependencies) {
       return;
     }
 
@@ -158,50 +167,51 @@ class ChangeRefsToLocal extends DirCommand<dynamic> {
     final originalPubspec = Utils.dartBackupYamlFile(projectDir);
     await _writeFileCopy(source: pubspec, destination: originalPubspec);
 
-    var newPubspecContent = pubspecContent;
-
     final replacedDependencies = <String, dynamic>{};
-
     for (final dependency in node.dependencies.entries) {
-      final dependencyName = dependency.key;
-      final dependencyPath = dependency.value.directory.path;
-      final relativeDepPath = p
-          .relative(dependencyPath, from: node.directory.path)
-          .replaceAll('\\', '/');
-      final reference = references[dependencyName];
+      final reference = references[dependency.key];
       if (reference == null) {
         continue;
       }
-
       final oldDependencyYaml = yamlToString(reference.value);
-      final oldDependencyYamlCompressed = oldDependencyYaml.replaceAll(
-        RegExp(r'[\n\r\t{}]'),
-        '',
-      );
 
-      if (!oldDependencyYamlCompressed.startsWith('path:')) {
-        replacedDependencies[dependencyName] = _backupDependencyValue(
+      if (_shouldBackupOriginalGitDependency(oldDependencyYaml)) {
+        replacedDependencies[dependency.key] = _backupDependencyValue(
           reference.value,
         );
       }
-
-      newPubspecContent = node.language.replaceDependencyInContent(
-        manifestContent: newPubspecContent,
-        reference: reference,
-        newValue: 'path: $relativeDepPath # $oldDependencyYamlCompressed',
-      );
     }
 
     final publishBackup = backupPublishTo(yamlMap as Map<dynamic, dynamic>);
     replacedDependencies.addAll(publishBackup);
-
-    newPubspecContent = addPublishToNone(newPubspecContent);
 
     await saveDependenciesAsJson(
       replacedDependencies,
       Utils.dartBackupFile(projectDir).path,
     );
 
+    var newPubspecContent = pubspecContent;
+    for (final dependency in node.dependencies.entries) {
+      final reference = references[dependency.key];
+      if (reference == null) {
+        continue;
+      }
+      final oldDependencyYaml = yamlToString(reference.value);
+
+      if (_shouldConvertToGit(oldDependencyYaml)) {
+        final newDependencyYaml = await getGitDependencyYaml(
+          dependency.value.directory,
+          dependency.key,
+        );
+        newPubspecContent = node.language.replaceDependencyInContent(
+          manifestContent: newPubspecContent,
+          reference: reference,
+          newValue: newDependencyYaml,
+        );
+      }
+    }
+
+    newPubspecContent = addPublishToNone(newPubspecContent);
     fileChangesBuffer.add(pubspec, newPubspecContent);
   }
 
@@ -215,7 +225,25 @@ class ChangeRefsToLocal extends DirCommand<dynamic> {
   ) async {
     final references = node.language.listDependencyReferences(manifestMap);
 
-    var hasOnlineDependencies = false;
+    var hasNonGitDependencies = false;
+    for (final dependency in node.dependencies.entries) {
+      final reference = references[dependency.key];
+      final value = reference?.value?.toString();
+      if (value == null) {
+        continue;
+      }
+      if (!value.trim().startsWith('git+')) {
+        hasNonGitDependencies = true;
+      }
+    }
+
+    if (!hasNonGitDependencies) {
+      return;
+    }
+
+    ggLog('Localize refs of ${node.name}');
+
+    final replacedDependencies = <String, dynamic>{};
 
     for (final dependency in node.dependencies.entries) {
       final reference = references[dependency.key];
@@ -223,49 +251,34 @@ class ChangeRefsToLocal extends DirCommand<dynamic> {
       if (value == null) {
         continue;
       }
-      if (!value.trim().startsWith('file:')) {
-        hasOnlineDependencies = true;
+      if (!value.trim().startsWith('git+')) {
+        replacedDependencies[dependency.key] = value;
       }
-    }
-
-    if (!hasOnlineDependencies) {
-      return;
-    }
-
-    ggLog('Localize refs of ${node.name}');
-
-    final replacedDependencies = <String, dynamic>{};
-    var updatedContent = manifestContent;
-
-    for (final dependency in node.dependencies.entries) {
-      final reference = references[dependency.key];
-      if (reference == null) {
-        continue;
-      }
-
-      final depDir = dependency.value.directory.path;
-      final relativePath = p
-          .relative(depDir, from: node.directory.path)
-          .replaceAll('\\', '/');
-
-      final oldValue = reference.value;
-      final oldString = oldValue.toString();
-      if (!oldString.trim().startsWith('file:')) {
-        replacedDependencies[dependency.key] = oldValue;
-      }
-
-      updatedContent = node.language.replaceDependencyInContent(
-        manifestContent: updatedContent,
-        reference: reference,
-        newValue: 'file:$relativePath',
-      );
-    }
-
-    if (replacedDependencies.isEmpty) {
-      return;
     }
 
     await _writeTypeScriptBackup(node.directory, replacedDependencies);
+
+    var updatedContent = manifestContent;
+    for (final dependency in node.dependencies.entries) {
+      final reference = references[dependency.key];
+      final value = reference?.value?.toString();
+      if (reference == null || value == null) {
+        continue;
+      }
+      if (value.trim().startsWith('git+')) {
+        continue;
+      }
+
+      final gitSpec = await getGitDependencySpecForTs(
+        dependency.value.directory,
+        dependency.key,
+      );
+      updatedContent = node.language.replaceDependencyInContent(
+        manifestContent: updatedContent,
+        reference: reference,
+        newValue: gitSpec,
+      );
+    }
 
     fileChangesBuffer.add(manifestFile, updatedContent);
   }
@@ -300,6 +313,60 @@ class ChangeRefsToLocal extends DirCommand<dynamic> {
     }
 
     return dependency;
+  }
+
+  /// Returns whether [dependencyYaml] should be converted to a plain git ref.
+  bool _shouldConvertToGit(String dependencyYaml) {
+    final trimmed = dependencyYaml.trimLeft();
+    if (!trimmed.startsWith('git:')) {
+      return true;
+    }
+
+    return trimmed.contains('tag_pattern:');
+  }
+
+  /// Returns whether the original dependency should be backed up.
+  bool _shouldBackupOriginalGitDependency(String dependencyYaml) {
+    final trimmed = dependencyYaml.trimLeft();
+    if (!trimmed.startsWith('git:')) {
+      return true;
+    }
+
+    return trimmed.contains('tag_pattern:');
+  }
+
+  /// Get a dependency Yaml for a git repo.
+  Future<String> getGitDependencyYaml(Directory depDir, String depName) async {
+    final gitInfo = await _resolveGitUrlAndRef(depDir, depName);
+    final url = gitInfo.$1;
+    final ref = gitInfo.$2;
+
+    final gitMap = <String, dynamic>{
+      'git': <String, dynamic>{'url': url, 'ref': ref},
+    };
+
+    return yamlToString(gitMap);
+  }
+
+  /// Returns a git spec string usable in package.json for TypeScript.
+  Future<String> getGitDependencySpecForTs(
+    Directory depDir,
+    String depName,
+  ) async {
+    final gitInfo = await _resolveGitUrlAndRef(depDir, depName);
+    final url = gitInfo.$1;
+    final ref = gitInfo.$2;
+
+    return 'git+$url#$ref';
+  }
+
+  Future<(String, String)> _resolveGitUrlAndRef(
+    Directory depDir,
+    String depName,
+  ) async {
+    final url = await Utils.getGitRemoteUrl(depDir, depName);
+    final ref = gitRefOverride!.trim();
+    return (url, ref);
   }
 
   /// Helper method to copy a file.

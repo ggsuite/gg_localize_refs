@@ -1,5 +1,5 @@
 // @license
-// Copyright (c) 2019 - 2024 Dr. Gabriel Gatzsche. All Rights Reserved.
+// Copyright (c) 2025 Göran Hegenberg. All Rights Reserved.
 //
 // Use of this source code is governed by terms that can be
 // found in the LICENSE file in the root of this package.
@@ -30,13 +30,9 @@ void main() {
   Directory dNodeNotFound = Directory('');
   Directory dWorkspaceSucceed = Directory('');
   Directory dWorkspaceAlreadyLocalized = Directory('');
-  Directory dGitSucceed = Directory('');
-  Directory dGitNoRepo = Directory('');
 
   Directory dWorkspaceSucceedTs = Directory('');
   Directory dWorkspaceAlreadyLocalizedTs = Directory('');
-  Directory dGitSucceedTs = Directory('');
-  Directory dGitNoRepoTs = Directory('');
 
   setUp(() async {
     messages.clear();
@@ -50,13 +46,9 @@ void main() {
     dNodeNotFound = createTempDir('node_not_found', 'project1');
     dWorkspaceSucceed = createTempDir('succeed');
     dWorkspaceAlreadyLocalized = createTempDir('already_localized');
-    dGitSucceed = createTempDir('git_succeed');
-    dGitNoRepo = createTempDir('git_no_repo');
 
     dWorkspaceSucceedTs = createTempDir('ts_succeed');
     dWorkspaceAlreadyLocalizedTs = createTempDir('ts_already_localized');
-    dGitSucceedTs = createTempDir('ts_git_succeed');
-    dGitNoRepoTs = createTempDir('ts_git_no_repo');
 
     copyDirectory(
       Directory(p.join('test', 'sample_folder', 'localize_refs', 'succeed')),
@@ -67,18 +59,6 @@ void main() {
         p.join('test', 'sample_folder', 'localize_refs', 'already_localized'),
       ),
       dWorkspaceAlreadyLocalized,
-    );
-    copyDirectory(
-      Directory(
-        p.join('test', 'sample_folder', 'localize_refs', 'git_succeed'),
-      ),
-      dGitSucceed,
-    );
-    copyDirectory(
-      Directory(
-        p.join('test', 'sample_folder', 'localize_refs', 'git_no_repo'),
-      ),
-      dGitNoRepo,
     );
 
     copyDirectory(
@@ -96,18 +76,6 @@ void main() {
       ),
       dWorkspaceAlreadyLocalizedTs,
     );
-    copyDirectory(
-      Directory(
-        p.join('test', 'sample_folder_ts', 'localize_refs', 'git_succeed'),
-      ),
-      dGitSucceedTs,
-    );
-    copyDirectory(
-      Directory(
-        p.join('test', 'sample_folder_ts', 'localize_refs', 'git_no_repo'),
-      ),
-      dGitNoRepoTs,
-    );
   });
 
   tearDown(() {
@@ -118,18 +86,13 @@ void main() {
       dNodeNotFound,
       dWorkspaceAlreadyLocalized,
       dWorkspaceSucceed,
-      dGitSucceed,
-      dGitNoRepo,
       dWorkspaceSucceedTs,
       dWorkspaceAlreadyLocalizedTs,
-      dGitSucceedTs,
-      dGitNoRepoTs,
     ]);
   });
 
   group('Local Command', () {
     group('run()', () {
-      // .....................................................................
       group('should print a usage description', () {
         test('when called args=[--help]', () async {
           capturePrint(
@@ -143,19 +106,12 @@ void main() {
           );
           expect(
             messages.join('\n'),
-            contains('Use git references instead of local paths.'),
+            isNot(contains('Use git references instead of local paths.')),
           );
-          expect(
-            messages.join('\n'),
-            contains(
-              'Git ref (branch, tag, or commit) '
-              'to use when localizing with --git.',
-            ),
-          );
+          expect(messages.join('\n'), isNot(contains('--git-ref')));
         });
       });
 
-      // .....................................................................
       group('should throw', () {
         test('when project root was not found', () async {
           await expectLater(
@@ -237,8 +193,6 @@ void main() {
         });
       });
 
-      // .....................................................................
-
       group('should succeed', () {
         test('when pubspec is correct', () async {
           final dProject1 = Directory(
@@ -256,8 +210,9 @@ void main() {
             p.join(dProject1.path, 'pubspec.yaml'),
           ).readAsStringSync();
           expect(resultYaml, contains('publish_to: none'));
+          expect(resultYaml, contains('path: ../project2'));
+          expect(resultYaml, isNot(contains('git:')));
 
-          // Check that .gitignore has been updated for .gg
           final gitignoreFile = File(p.join(dProject1.path, '.gitignore'));
           expect(gitignoreFile.existsSync(), isTrue);
           final gitignoreContent = gitignoreFile.readAsStringSync();
@@ -270,7 +225,6 @@ void main() {
             p.join(dWorkspaceSucceed.path, 'project1'),
           );
 
-          // Create an existing .gitignore without the required .gg entries.
           final gitignoreFile = File(p.join(dProject1.path, '.gitignore'));
           gitignoreFile.writeAsStringSync('build/\n');
 
@@ -279,7 +233,6 @@ void main() {
 
           await local.get(directory: dProject1, ggLog: localMessages.add);
 
-          // Existing content should be preserved and required entries added.
           final gitignoreContent = gitignoreFile.readAsStringSync();
           expect(gitignoreContent, contains('build/'));
           expect(gitignoreContent, contains('.gg'));
@@ -321,7 +274,7 @@ void main() {
           );
 
           final local = ChangeRefsToLocal(ggLog: messages.add);
-          await local.get(directory: project1, ggLog: messages.add, git: true);
+          await local.get(directory: project1, ggLog: messages.add);
 
           final backupJson = File(
             p.join(project1.path, '.gg', '.gg_localize_refs_backup.json'),
@@ -369,168 +322,6 @@ void main() {
           },
         );
 
-        test('with --git option should succeed', () async {
-          final dProject1 = Directory(p.join(dGitSucceed.path, 'project1'));
-          final dProject2 = Directory(p.join(dGitSucceed.path, 'project2'));
-
-          final resultInit = Process.runSync('git', <String>[
-            'init',
-          ], workingDirectory: dProject2.path);
-          expect(resultInit.exitCode, 0, reason: resultInit.stderr.toString());
-          final resultMain = Process.runSync('git', <String>[
-            'checkout',
-            '-b',
-            'main',
-          ], workingDirectory: dProject2.path);
-          expect(resultMain.exitCode, 0, reason: resultMain.stderr.toString());
-          const remoteUrl = 'git@github.com:user/test2.git';
-          final resultRemote = Process.runSync('git', <String>[
-            'remote',
-            'add',
-            'origin',
-            remoteUrl,
-          ], workingDirectory: dProject2.path);
-          expect(
-            resultRemote.exitCode,
-            0,
-            reason: resultRemote.stderr.toString(),
-          );
-
-          await runner.run(<String>[
-            'change-refs-to-local',
-            '--git',
-            '--input',
-            dProject1.path,
-          ]);
-
-          final resultYaml = File(
-            p.join(dProject1.path, 'pubspec.yaml'),
-          ).readAsStringSync();
-          expect(resultYaml, contains('test2:'));
-          expect(resultYaml, contains('git:'));
-          expect(resultYaml, contains('url: $remoteUrl'));
-          expect(resultYaml, contains('ref: main'));
-          expect(resultYaml, contains('publish_to: none'));
-
-          final backupJson = File(
-            p.join(dProject1.path, '.gg', '.gg_localize_refs_backup.json'),
-          ).readAsStringSync();
-          expect(backupJson, contains('^1.0.0'));
-        });
-
-        test('with --git localizes git tag_pattern dependencies back to git '
-            'refs without version', () async {
-          final workspace = createTempDir('localize_git_tag_pattern_ws');
-          final project1 = Directory(p.join(workspace.path, 'project1'));
-          final project2 = Directory(p.join(workspace.path, 'project2'));
-          await createDirs(<Directory>[project1, project2]);
-
-          File(p.join(project1.path, 'pubspec.yaml')).writeAsStringSync(
-            'name: project1\n'
-            'version: 1.0.0\n'
-            'dependencies:\n'
-            '  project2:\n'
-            '    git:\n'
-            '      url: git@github.com:user/project2.git\n'
-            '      tag_pattern: {{version}}\n'
-            '    version: ^2.0.4\n',
-          );
-          File(p.join(project2.path, 'pubspec.yaml')).writeAsStringSync(
-            'name: project2\n'
-            'version: 1.0.0\n',
-          );
-
-          final localMessages = <String>[];
-          final local = ChangeRefsToLocal(ggLog: localMessages.add);
-          await local.get(
-            directory: project1,
-            ggLog: localMessages.add,
-            git: true,
-          );
-
-          final resultYaml = File(
-            p.join(project1.path, 'pubspec.yaml'),
-          ).readAsStringSync();
-          expect(resultYaml, contains('project2:'));
-          expect(resultYaml, contains('git:'));
-          expect(resultYaml, contains('url:'));
-          expect(resultYaml, contains('ref: main'));
-          expect(resultYaml, isNot(contains('tag_pattern:')));
-          expect(resultYaml, isNot(contains('version: ^2.0.4')));
-
-          deleteDirs(<Directory>[workspace]);
-        });
-
-        test('with --git and --git-ref uses provided ref', () async {
-          final dProject1 = Directory(p.join(dGitSucceed.path, 'project1'));
-          final dProject2 = Directory(p.join(dGitSucceed.path, 'project2'));
-
-          final resultInit = Process.runSync('git', <String>[
-            'init',
-          ], workingDirectory: dProject2.path);
-          expect(resultInit.exitCode, 0, reason: resultInit.stderr.toString());
-          final resultBranch = Process.runSync('git', <String>[
-            'checkout',
-            '-b',
-            'develop',
-          ], workingDirectory: dProject2.path);
-          expect(
-            resultBranch.exitCode,
-            0,
-            reason: resultBranch.stderr.toString(),
-          );
-          const remoteUrl = 'git@github.com:user/test2.git';
-          final resultRemote = Process.runSync('git', <String>[
-            'remote',
-            'add',
-            'origin',
-            remoteUrl,
-          ], workingDirectory: dProject2.path);
-          expect(
-            resultRemote.exitCode,
-            0,
-            reason: resultRemote.stderr.toString(),
-          );
-
-          const customRef = 'feature123';
-
-          await runner.run(<String>[
-            'change-refs-to-local',
-            '--git',
-            '--git-ref',
-            customRef,
-            '--input',
-            dProject1.path,
-          ]);
-
-          final resultYaml = File(
-            p.join(dProject1.path, 'pubspec.yaml'),
-          ).readAsStringSync();
-          expect(resultYaml, contains('test2:'));
-          expect(resultYaml, contains('git:'));
-          expect(resultYaml, contains('url: $remoteUrl'));
-          expect(resultYaml, contains('ref: $customRef'));
-          expect(resultYaml, isNot(contains('ref: main')));
-        });
-
-        test('with --git should throw if repo has no git', () async {
-          final dProject1 = Directory(p.join(dGitNoRepo.path, 'project1'));
-
-          await runner
-              .run(<String>[
-                'change-refs-to-local',
-                '--git',
-                '--input',
-                dProject1.path,
-              ])
-              .catchError((Object e) {
-                expect(
-                  e.toString(),
-                  contains('Cannot get git remote url for dependency test2'),
-                );
-              });
-        });
-
         test('TypeScript: when package.json is correct (path mode)', () async {
           final dProject1 = Directory(
             p.join(dWorkspaceSucceedTs.path, 'project1'),
@@ -566,72 +357,6 @@ void main() {
           expect(localMessages[0], contains('Running change-refs-to-local in'));
           expect(localMessages[1], contains('No files were changed.'));
         });
-
-        test('TypeScript: with --git option should succeed', () async {
-          final dProject1 = Directory(p.join(dGitSucceedTs.path, 'project1'));
-          final dProject2 = Directory(p.join(dGitSucceedTs.path, 'project2'));
-
-          final resultInit = Process.runSync('git', <String>[
-            'init',
-          ], workingDirectory: dProject2.path);
-          expect(resultInit.exitCode, 0, reason: resultInit.stderr.toString());
-          final resultMain = Process.runSync('git', <String>[
-            'checkout',
-            '-b',
-            'main',
-          ], workingDirectory: dProject2.path);
-          expect(resultMain.exitCode, 0, reason: resultMain.stderr.toString());
-          const remoteUrl = 'git@github.com:user/test2_ts.git';
-          final resultRemote = Process.runSync('git', <String>[
-            'remote',
-            'add',
-            'origin',
-            remoteUrl,
-          ], workingDirectory: dProject2.path);
-          expect(
-            resultRemote.exitCode,
-            0,
-            reason: resultRemote.stderr.toString(),
-          );
-
-          await runner.run(<String>[
-            'change-refs-to-local',
-            '--git',
-            '--input',
-            dProject1.path,
-          ]);
-
-          final resultJson = File(
-            p.join(dProject1.path, 'package.json'),
-          ).readAsStringSync();
-          expect(resultJson, contains('test2_ts'));
-          expect(resultJson, contains('git+'));
-          expect(resultJson, contains(remoteUrl));
-          expect(resultJson, contains('#main'));
-        });
-
-        test(
-          'TypeScript: with --git should throw if repo has no git',
-          () async {
-            final dProject1 = Directory(p.join(dGitNoRepoTs.path, 'project1'));
-
-            await runner
-                .run(<String>[
-                  'change-refs-to-local',
-                  '--git',
-                  '--input',
-                  dProject1.path,
-                ])
-                .catchError((Object e) {
-                  expect(
-                    e.toString(),
-                    contains(
-                      'Cannot get git remote url for dependency test2_ts',
-                    ),
-                  );
-                });
-          },
-        );
 
         test(
           'TypeScript: handles package.json without dependency sections',
@@ -697,37 +422,6 @@ void main() {
             p.join(project1.path, '.gg_localize_refs_backup.json'),
           ).readAsStringSync();
           expect(backupJson, contains('^1.0.0'));
-
-          deleteDirs(<Directory>[workspace]);
-        });
-
-        test('TypeScript: with --git localizes devDependencies when '
-            'dependencies are missing', () async {
-          final workspace = createTempDir('ts_git_dev_only_ws');
-          final project1 = Directory(p.join(workspace.path, 'project1'));
-          final project2 = Directory(p.join(workspace.path, 'project2'));
-          await createDirs(<Directory>[project1, project2]);
-
-          File(p.join(project1.path, 'package.json')).writeAsStringSync(
-            '{"name":"proj1_ts_git","version":"1.0.0",'
-            '"devDependencies":{"proj2_ts":"^1.0.0"}}',
-          );
-          File(
-            p.join(project2.path, 'package.json'),
-          ).writeAsStringSync('{"name":"proj2_ts","version":"1.0.0"}');
-
-          await runner.run(<String>[
-            'change-refs-to-local',
-            '--git',
-            '--input',
-            project1.path,
-          ]);
-
-          final resultJson = File(
-            p.join(project1.path, 'package.json'),
-          ).readAsStringSync();
-          expect(resultJson, contains('proj2_ts'));
-          expect(resultJson, contains('git+'));
 
           deleteDirs(<Directory>[workspace]);
         });
