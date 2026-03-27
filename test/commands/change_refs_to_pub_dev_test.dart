@@ -14,7 +14,7 @@ import 'package:gg_localize_refs/src/backend/languages/project_language.dart';
 import 'package:gg_localize_refs/src/backend/languages/typescript_language.dart';
 import 'package:gg_localize_refs/src/backend/process_dependencies.dart';
 import 'package:gg_localize_refs/src/backend/utils.dart';
-import 'package:gg_localize_refs/src/commands/unlocalize_refs.dart';
+import 'package:gg_localize_refs/src/commands/change_refs_to_pub_dev.dart';
 import 'package:path/path.dart';
 import 'package:test/test.dart';
 
@@ -44,7 +44,7 @@ void main() {
       'unlocalize',
       'Description of unlocalize command.',
     );
-    final myCommand = UnlocalizeRefs(ggLog: messages.add);
+    final myCommand = ChangeRefsToPubDev(ggLog: messages.add);
     runner.addCommand(myCommand);
 
     dNoProjectRootError = createTempDir(
@@ -148,7 +148,8 @@ void main() {
         test('when called args=[--help]', () async {
           capturePrint(
             ggLog: messages.add,
-            code: () => runner.run(<String>['unlocalize-refs', '--help']),
+            code: () =>
+                runner.run(<String>['change-refs-to-pub-dev', '--help']),
           );
 
           expect(
@@ -163,7 +164,7 @@ void main() {
         test('when project root was not found', () async {
           await expectLater(
             runner.run(<String>[
-              'unlocalize-refs',
+              'change-refs-to-pub-dev',
               '--input',
               dNoProjectRootError.path,
             ]),
@@ -185,7 +186,7 @@ void main() {
 
             await expectLater(
               runner.run(<String>[
-                'unlocalize-refs',
+                'change-refs-to-pub-dev',
                 '--input',
                 dParseError.path,
               ]),
@@ -208,7 +209,7 @@ void main() {
             'dependencies: {}',
           );
 
-          final unlocal = UnlocalizeRefs(ggLog: localMessages.add);
+          final unlocal = ChangeRefsToPubDev(ggLog: localMessages.add);
 
           await expectLater(
             () async {
@@ -247,10 +248,13 @@ void main() {
           final dProject1 = Directory(join(dWorkspaceSucceed.path, 'project1'));
 
           final localMessages = <String>[];
-          final unlocal = UnlocalizeRefs(ggLog: localMessages.add);
+          final unlocal = ChangeRefsToPubDev(ggLog: localMessages.add);
           await unlocal.get(directory: dProject1, ggLog: localMessages.add);
 
-          expect(localMessages[0], contains('Running unlocalize-refs in'));
+          expect(
+            localMessages[0],
+            contains('Running change-refs-to-pub-dev in'),
+          );
           expect(localMessages[1], contains('Unlocalize refs of test1'));
 
           final resultYaml = File(
@@ -265,10 +269,13 @@ void main() {
           );
 
           final localMessages = <String>[];
-          final unlocal = UnlocalizeRefs(ggLog: localMessages.add);
+          final unlocal = ChangeRefsToPubDev(ggLog: localMessages.add);
           await unlocal.get(directory: dProject1, ggLog: localMessages.add);
 
-          expect(localMessages[0], contains('Running unlocalize-refs in'));
+          expect(
+            localMessages[0],
+            contains('Running change-refs-to-pub-dev in'),
+          );
           expect(localMessages[1], contains('Unlocalize refs of test1'));
         });
 
@@ -278,10 +285,13 @@ void main() {
           );
 
           final localMessages = <String>[];
-          final local = UnlocalizeRefs(ggLog: localMessages.add);
+          final local = ChangeRefsToPubDev(ggLog: localMessages.add);
           await local.get(directory: dProject1, ggLog: localMessages.add);
 
-          expect(localMessages[0], contains('Running unlocalize-refs in'));
+          expect(
+            localMessages[0],
+            contains('Running change-refs-to-pub-dev in'),
+          );
           expect(localMessages[1], contains('No files were changed'));
         });
 
@@ -290,11 +300,14 @@ void main() {
 
           final dProject1 = Directory(join(dJsonNotFound.path, 'project1'));
 
-          final unlocal = UnlocalizeRefs(ggLog: localMessages.add);
+          final unlocal = ChangeRefsToPubDev(ggLog: localMessages.add);
 
           await unlocal.get(directory: dProject1, ggLog: localMessages.add);
 
-          expect(localMessages[0], contains('Running unlocalize-refs in'));
+          expect(
+            localMessages[0],
+            contains('Running change-refs-to-pub-dev in'),
+          );
           expect(localMessages[1], contains('Unlocalize refs of test1'));
           expect(
             localMessages[2],
@@ -339,7 +352,7 @@ void main() {
             ], workingDirectory: project2.path);
 
             final localMessages = <String>[];
-            final unlocal = UnlocalizeRefs(ggLog: localMessages.add);
+            final unlocal = ChangeRefsToPubDev(ggLog: localMessages.add);
             await unlocal.get(directory: project1, ggLog: localMessages.add);
 
             final resultYaml = File(
@@ -382,10 +395,13 @@ void main() {
               ..writeAsStringSync('{"project2":"^2.0.4"}');
 
             final localMessages = <String>[];
-            final unlocal = UnlocalizeRefs(ggLog: localMessages.add);
+            final unlocal = ChangeRefsToPubDev(ggLog: localMessages.add);
             await unlocal.get(directory: project1, ggLog: localMessages.add);
 
-            expect(localMessages[0], contains('Running unlocalize-refs in'));
+            expect(
+              localMessages[0],
+              contains('Running change-refs-to-pub-dev in'),
+            );
             expect(localMessages[1], contains('No files were changed'));
 
             deleteDirs(<Directory>[workspace]);
@@ -427,7 +443,7 @@ void main() {
             ], workingDirectory: project2.path);
 
             final localMessages = <String>[];
-            final unlocal = UnlocalizeRefs(ggLog: localMessages.add);
+            final unlocal = ChangeRefsToPubDev(ggLog: localMessages.add);
             await unlocal.get(directory: project1, ggLog: localMessages.add);
 
             final resultYaml = File(
@@ -450,10 +466,13 @@ void main() {
           await initGit(dProject2);
 
           final localMessages = <String>[];
-          final unlocal = UnlocalizeRefs(ggLog: localMessages.add);
+          final unlocal = ChangeRefsToPubDev(ggLog: localMessages.add);
           await unlocal.get(directory: dProject1, ggLog: localMessages.add);
 
-          expect(localMessages[0], contains('Running unlocalize-refs in'));
+          expect(
+            localMessages[0],
+            contains('Running change-refs-to-pub-dev in'),
+          );
           expect(localMessages[1], contains('Unlocalize refs of test1_ts'));
 
           final resultJson = File(
@@ -474,10 +493,13 @@ void main() {
           await initGit(dProject2);
 
           final localMessages = <String>[];
-          final unlocal = UnlocalizeRefs(ggLog: localMessages.add);
+          final unlocal = ChangeRefsToPubDev(ggLog: localMessages.add);
           await unlocal.get(directory: dProject1, ggLog: localMessages.add);
 
-          expect(localMessages[0], contains('Running unlocalize-refs in'));
+          expect(
+            localMessages[0],
+            contains('Running change-refs-to-pub-dev in'),
+          );
           expect(localMessages[1], contains('Unlocalize refs of test1_ts'));
         });
 
@@ -487,10 +509,13 @@ void main() {
           );
 
           final localMessages = <String>[];
-          final local = UnlocalizeRefs(ggLog: localMessages.add);
+          final local = ChangeRefsToPubDev(ggLog: localMessages.add);
           await local.get(directory: dProject1, ggLog: localMessages.add);
 
-          expect(localMessages[0], contains('Running unlocalize-refs in'));
+          expect(
+            localMessages[0],
+            contains('Running change-refs-to-pub-dev in'),
+          );
           expect(localMessages[1], contains('No files were changed'));
         });
 
@@ -501,11 +526,14 @@ void main() {
 
             final dProject1 = Directory(join(dJsonNotFoundTs.path, 'project1'));
 
-            final unlocal = UnlocalizeRefs(ggLog: localMessages.add);
+            final unlocal = ChangeRefsToPubDev(ggLog: localMessages.add);
 
             await unlocal.get(directory: dProject1, ggLog: localMessages.add);
 
-            expect(localMessages[0], contains('Running unlocalize-refs in'));
+            expect(
+              localMessages[0],
+              contains('Running change-refs-to-pub-dev in'),
+            );
             expect(localMessages[1], contains('Unlocalize refs of test1_ts'));
             expect(
               localMessages[2],
@@ -539,7 +567,7 @@ void main() {
                 language.parseManifestContent(content) as Map<String, dynamic>;
 
             final buffer = FileChangesBuffer();
-            final unlocal = UnlocalizeRefs(ggLog: messages.add);
+            final unlocal = ChangeRefsToPubDev(ggLog: messages.add);
             await unlocal.modifyManifest(
               node,
               manifestFile,
@@ -572,7 +600,7 @@ void main() {
           ).writeAsStringSync('{"proj2_ts":"^2.0.0"}');
 
           final localMessages = <String>[];
-          final unlocal = UnlocalizeRefs(ggLog: localMessages.add);
+          final unlocal = ChangeRefsToPubDev(ggLog: localMessages.add);
           await unlocal.get(directory: project1, ggLog: localMessages.add);
 
           final resultJson = File(
@@ -604,7 +632,7 @@ void main() {
           ).writeAsStringSync('{"proj2_ts":"^2.0.0"}');
 
           final localMessages = <String>[];
-          final unlocal = UnlocalizeRefs(ggLog: localMessages.add);
+          final unlocal = ChangeRefsToPubDev(ggLog: localMessages.add);
           await unlocal.get(directory: project1, ggLog: localMessages.add);
 
           final resultJson = File(
@@ -645,7 +673,7 @@ void main() {
             ], workingDirectory: project2.path);
 
             final localMessages = <String>[];
-            final unlocal = UnlocalizeRefs(ggLog: localMessages.add);
+            final unlocal = ChangeRefsToPubDev(ggLog: localMessages.add);
             await unlocal.get(directory: project1, ggLog: localMessages.add);
 
             final resultJson = File(

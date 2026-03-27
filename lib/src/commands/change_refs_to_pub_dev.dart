@@ -11,9 +11,10 @@ import 'package:gg_args/gg_args.dart';
 import 'package:gg_console_colors/gg_console_colors.dart';
 import 'package:gg_localize_refs/src/backend/file_changes_buffer.dart';
 import 'package:gg_localize_refs/src/backend/languages/project_language.dart';
-import 'package:gg_localize_refs/src/backend/utils.dart';
+import 'package:gg_localize_refs/src/backend/manifest_command_support.dart';
 import 'package:gg_localize_refs/src/backend/process_dependencies.dart';
 import 'package:gg_localize_refs/src/backend/publish_to_utils.dart';
+import 'package:gg_localize_refs/src/backend/utils.dart';
 import 'package:gg_localize_refs/src/backend/yaml_to_string.dart';
 import 'package:gg_log/gg_log.dart';
 import 'package:gg_publish/gg_publish.dart';
@@ -21,26 +22,27 @@ import 'package:path/path.dart' as p;
 
 // #############################################################################
 /// Command that reverts localized references back to remote dependencies.
-class UnlocalizeRefs extends DirCommand<dynamic> {
+class ChangeRefsToPubDev extends DirCommand<dynamic> {
   /// Creates the command.
-  UnlocalizeRefs({required super.ggLog})
+  ChangeRefsToPubDev({required super.ggLog})
     : isOnPubDev = IsOnPubDev(ggLog: ggLog),
       super(
-        name: 'unlocalize-refs',
+        name: 'change-refs-to-pub-dev',
         description: 'Changes dependencies to remote dependencies.',
       );
 
   /// Service used to check whether a dependency was published before.
   final IsOnPubDev isOnPubDev;
 
+  final ManifestCommandSupport _support = const ManifestCommandSupport();
+
   // ...........................................................................
   @override
   Future<void> get({required Directory directory, required GgLog ggLog}) async {
-    ggLog('Running unlocalize-refs in ${directory.path}');
+    ggLog('Running change-refs-to-pub-dev in ${directory.path}');
 
     final fileChangesBuffer = FileChangesBuffer();
 
-    //try {
     await processProject(
       directory: directory,
       modifyFunction: modifyManifest,
@@ -54,9 +56,6 @@ class UnlocalizeRefs extends DirCommand<dynamic> {
     }
 
     await fileChangesBuffer.apply();
-    //} catch (e) {
-    //  throw Exception(red('An error occurred: $e. No files were changed.'));
-    //}
   }
 
   // ...........................................................................
@@ -71,35 +70,35 @@ class UnlocalizeRefs extends DirCommand<dynamic> {
   ) async {
     if (node.language.id == ProjectLanguageId.dart) {
       await _unlocalizeDart(
-        node,
-        manifestFile,
-        manifestContent,
-        manifestMap,
-        fileChangesBuffer,
-        ggLog,
+        node: node,
+        pubspec: manifestFile,
+        pubspecContent: manifestContent,
+        yamlMap: manifestMap,
+        fileChangesBuffer: fileChangesBuffer,
+        ggLog: ggLog,
       );
       return;
     }
 
     await _unlocalizeTypeScript(
-      node,
-      manifestFile,
-      manifestContent,
-      manifestMap,
-      fileChangesBuffer,
-      ggLog,
+      node: node,
+      manifestFile: manifestFile,
+      manifestContent: manifestContent,
+      manifestMap: manifestMap,
+      fileChangesBuffer: fileChangesBuffer,
+      ggLog: ggLog,
     );
   }
 
-  Future<void> _unlocalizeDart(
-    ProjectNode node,
-    File pubspec,
-    String pubspecContent,
-    dynamic yamlMap,
-    FileChangesBuffer fileChangesBuffer,
-    GgLog ggLog,
-  ) async {
-    final references = node.language.listDependencyReferences(yamlMap);
+  Future<void> _unlocalizeDart({
+    required ProjectNode node,
+    required File pubspec,
+    required String pubspecContent,
+    required dynamic yamlMap,
+    required FileChangesBuffer fileChangesBuffer,
+    required GgLog ggLog,
+  }) async {
+    final references = _support.referencesFor(node, yamlMap);
 
     if (!_hasLocalizedDependencies(node: node, references: references)) {
       return;
@@ -108,7 +107,6 @@ class UnlocalizeRefs extends DirCommand<dynamic> {
     ggLog('Unlocalize refs of ${node.name}');
 
     final backupFile = Utils.dartBackupFile(node.directory);
-
     if (!backupFile.existsSync()) {
       ggLog(
         yellow(
@@ -122,22 +120,16 @@ class UnlocalizeRefs extends DirCommand<dynamic> {
     }
 
     final savedDependencies = Utils.readDependenciesFromJson(backupFile.path);
-
     var newPubspecContent = pubspecContent;
 
     for (final dependency in node.dependencies.entries) {
       final dependencyName = dependency.key;
       final reference = references[dependencyName];
-      if (reference == null) {
+      if (reference == null || !savedDependencies.containsKey(dependencyName)) {
         continue;
       }
 
       final oldDependencyYaml = yamlToString(reference.value);
-
-      if (!savedDependencies.containsKey(dependencyName)) {
-        continue;
-      }
-
       if (!_isLocalizedDartDependency(oldDependencyYaml)) {
         continue;
       }
@@ -155,19 +147,18 @@ class UnlocalizeRefs extends DirCommand<dynamic> {
     }
 
     newPubspecContent = restorePublishTo(newPubspecContent, savedDependencies);
-
     fileChangesBuffer.add(pubspec, newPubspecContent);
   }
 
-  Future<void> _unlocalizeTypeScript(
-    ProjectNode node,
-    File manifestFile,
-    String manifestContent,
-    dynamic manifestMap,
-    FileChangesBuffer fileChangesBuffer,
-    GgLog ggLog,
-  ) async {
-    final references = node.language.listDependencyReferences(manifestMap);
+  Future<void> _unlocalizeTypeScript({
+    required ProjectNode node,
+    required File manifestFile,
+    required String manifestContent,
+    required dynamic manifestMap,
+    required FileChangesBuffer fileChangesBuffer,
+    required GgLog ggLog,
+  }) async {
+    final references = _support.referencesFor(node, manifestMap);
 
     if (!_hasLocalizedDependencies(node: node, references: references)) {
       return;
@@ -176,7 +167,6 @@ class UnlocalizeRefs extends DirCommand<dynamic> {
     ggLog('Unlocalize refs of ${node.name}');
 
     final backupFile = Utils.typeScriptBackupFile(node.directory);
-
     if (!backupFile.existsSync()) {
       ggLog(
         yellow(
