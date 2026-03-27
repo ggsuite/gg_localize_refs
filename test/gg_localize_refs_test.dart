@@ -49,12 +49,15 @@ void main() {
           ggLog: messages.add,
           code: () async => await runner.run([
             'ggToLocal',
-            'localize-refs',
+            'change-refs-to-local',
             '--input',
             tempDir.path,
           ]),
         );
-        expect(messages, contains('Running localize-refs in ${tempDir.path}'));
+        expect(
+          messages,
+          contains('Running change-refs-to-local in ${tempDir.path}'),
+        );
       });
 
       // .......................................................................

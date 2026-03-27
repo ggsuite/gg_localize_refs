@@ -21,12 +21,12 @@ import 'package:path/path.dart' as p;
 
 // #############################################################################
 /// Command that reverts localized references back to remote dependencies.
-class UnlocalizeRefs extends DirCommand<dynamic> {
+class ChangeRefsToPubDev extends DirCommand<dynamic> {
   /// Creates the command.
-  UnlocalizeRefs({required super.ggLog})
+  ChangeRefsToPubDev({required super.ggLog})
     : isOnPubDev = IsOnPubDev(ggLog: ggLog),
       super(
-        name: 'unlocalize-refs',
+        name: 'change-refs-to-pub-dev',
         description: 'Changes dependencies to remote dependencies.',
       );
 
@@ -36,7 +36,7 @@ class UnlocalizeRefs extends DirCommand<dynamic> {
   // ...........................................................................
   @override
   Future<void> get({required Directory directory, required GgLog ggLog}) async {
-    ggLog('Running unlocalize-refs in ${directory.path}');
+    ggLog('Running change-refs-to-pub-dev in ${directory.path}');
 
     final fileChangesBuffer = FileChangesBuffer();
 

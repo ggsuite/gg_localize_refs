@@ -5,6 +5,7 @@
 ### Changed
 
 - kidney: changed references to path
+- rename localize-refs and unlocalize-refs
 
 ## [1.0.0] - 2026-03-24
 
@@ -19,7 +20,7 @@
 - add .idea to .gitignore
 - Add publish\_to: none when localizing
 - Add .gitattributes file
-- Add --git-ref option to localize-refs for custom git refs
+- Add --git-ref option to change-refs-to-local for custom git refs
 - Add test for updating .gitignore with missing .gg entries
 - Add tests for devDependencies handling in TS localize/unlocalize
 - Add tests for dependency and manifest methods in language tests

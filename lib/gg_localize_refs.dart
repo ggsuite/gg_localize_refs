@@ -7,8 +7,8 @@
 library;
 
 export 'src/gg_localize_refs.dart';
-export 'src/commands/localize_refs.dart';
-export 'src/commands/unlocalize_refs.dart';
+export 'src/commands/change_refs_to_local.dart';
+export 'src/commands/change_refs_to_pub_dev.dart';
 export 'src/commands/get_ref_version.dart';
 export 'src/commands/set_ref_version.dart';
 export 'src/commands/get_version.dart';

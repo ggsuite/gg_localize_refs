@@ -14,7 +14,7 @@ import 'package:gg_localize_refs/src/backend/languages/dart_language.dart';
 import 'package:gg_localize_refs/src/backend/languages/project_language.dart';
 import 'package:gg_localize_refs/src/backend/languages/typescript_language.dart';
 import 'package:gg_localize_refs/src/backend/process_dependencies.dart';
-import 'package:gg_localize_refs/src/commands/localize_refs.dart';
+import 'package:gg_localize_refs/src/commands/change_refs_to_local.dart';
 import 'package:path/path.dart' as p;
 import 'package:test/test.dart';
 
@@ -41,7 +41,7 @@ void main() {
   setUp(() async {
     messages.clear();
     runner = CommandRunner<void>('local', 'Description of local command.');
-    final myCommand = LocalizeRefs(ggLog: messages.add);
+    final myCommand = ChangeRefsToLocal(ggLog: messages.add);
     runner.addCommand(myCommand);
 
     dNoProjectRootError = createTempDir('no_project_root_error', 'project1');
@@ -134,7 +134,7 @@ void main() {
         test('when called args=[--help]', () async {
           capturePrint(
             ggLog: messages.add,
-            code: () => runner.run(<String>['localize-refs', '--help']),
+            code: () => runner.run(<String>['change-refs-to-local', '--help']),
           );
 
           expect(
@@ -160,7 +160,7 @@ void main() {
         test('when project root was not found', () async {
           await expectLater(
             runner.run(<String>[
-              'localize-refs',
+              'change-refs-to-local',
               '--input',
               dNoProjectRootError.path,
             ]),
@@ -182,7 +182,7 @@ void main() {
 
             await expectLater(
               runner.run(<String>[
-                'localize-refs',
+                'change-refs-to-local',
                 '--input',
                 dParseError.path,
               ]),
@@ -205,7 +205,7 @@ void main() {
             'dependencies:',
           );
 
-          final loc = LocalizeRefs(ggLog: localMessages.add);
+          final loc = ChangeRefsToLocal(ggLog: localMessages.add);
 
           await expectLater(
             () async {
@@ -246,10 +246,10 @@ void main() {
           );
 
           final localMessages = <String>[];
-          final local = LocalizeRefs(ggLog: localMessages.add);
+          final local = ChangeRefsToLocal(ggLog: localMessages.add);
           await local.get(directory: dProject1, ggLog: localMessages.add);
 
-          expect(localMessages[0], contains('Running localize-refs in'));
+          expect(localMessages[0], contains('Running change-refs-to-local in'));
           expect(localMessages[1], contains('Localize refs of test1'));
 
           final resultYaml = File(
@@ -275,7 +275,7 @@ void main() {
           gitignoreFile.writeAsStringSync('build/\n');
 
           final localMessages = <String>[];
-          final local = LocalizeRefs(ggLog: localMessages.add);
+          final local = ChangeRefsToLocal(ggLog: localMessages.add);
 
           await local.get(directory: dProject1, ggLog: localMessages.add);
 
@@ -292,10 +292,10 @@ void main() {
           );
 
           final localMessages = <String>[];
-          final local = LocalizeRefs(ggLog: localMessages.add);
+          final local = ChangeRefsToLocal(ggLog: localMessages.add);
           await local.get(directory: dProject1, ggLog: localMessages.add);
 
-          expect(localMessages[0], contains('Running localize-refs in'));
+          expect(localMessages[0], contains('Running change-refs-to-local in'));
           expect(localMessages[1], contains('No files were changed.'));
         });
 
@@ -320,7 +320,7 @@ void main() {
             'version: 1.0.0\n',
           );
 
-          final local = LocalizeRefs(ggLog: messages.add);
+          final local = ChangeRefsToLocal(ggLog: messages.add);
           await local.get(directory: project1, ggLog: messages.add, git: true);
 
           final backupJson = File(
@@ -355,7 +355,7 @@ void main() {
               'version: 1.0.0\n',
             );
 
-            final local = LocalizeRefs(ggLog: messages.add);
+            final local = ChangeRefsToLocal(ggLog: messages.add);
             await local.get(directory: project1, ggLog: messages.add);
 
             final backupJson = File(
@@ -397,7 +397,7 @@ void main() {
           );
 
           await runner.run(<String>[
-            'localize-refs',
+            'change-refs-to-local',
             '--git',
             '--input',
             dProject1.path,
@@ -441,7 +441,7 @@ void main() {
           );
 
           final localMessages = <String>[];
-          final local = LocalizeRefs(ggLog: localMessages.add);
+          final local = ChangeRefsToLocal(ggLog: localMessages.add);
           await local.get(
             directory: project1,
             ggLog: localMessages.add,
@@ -495,7 +495,7 @@ void main() {
           const customRef = 'feature123';
 
           await runner.run(<String>[
-            'localize-refs',
+            'change-refs-to-local',
             '--git',
             '--git-ref',
             customRef,
@@ -518,7 +518,7 @@ void main() {
 
           await runner
               .run(<String>[
-                'localize-refs',
+                'change-refs-to-local',
                 '--git',
                 '--input',
                 dProject1.path,
@@ -537,10 +537,10 @@ void main() {
           );
 
           final localMessages = <String>[];
-          final local = LocalizeRefs(ggLog: localMessages.add);
+          final local = ChangeRefsToLocal(ggLog: localMessages.add);
           await local.get(directory: dProject1, ggLog: localMessages.add);
 
-          expect(localMessages[0], contains('Running localize-refs in'));
+          expect(localMessages[0], contains('Running change-refs-to-local in'));
           expect(localMessages[1], contains('Localize refs of test1_ts'));
 
           final resultJson = File(
@@ -560,10 +560,10 @@ void main() {
           );
 
           final localMessages = <String>[];
-          final local = LocalizeRefs(ggLog: localMessages.add);
+          final local = ChangeRefsToLocal(ggLog: localMessages.add);
           await local.get(directory: dProject1, ggLog: localMessages.add);
 
-          expect(localMessages[0], contains('Running localize-refs in'));
+          expect(localMessages[0], contains('Running change-refs-to-local in'));
           expect(localMessages[1], contains('No files were changed.'));
         });
 
@@ -595,7 +595,7 @@ void main() {
           );
 
           await runner.run(<String>[
-            'localize-refs',
+            'change-refs-to-local',
             '--git',
             '--input',
             dProject1.path,
@@ -617,7 +617,7 @@ void main() {
 
             await runner
                 .run(<String>[
-                  'localize-refs',
+                  'change-refs-to-local',
                   '--git',
                   '--input',
                   dProject1.path,
@@ -655,7 +655,7 @@ void main() {
                 language.parseManifestContent(content) as Map<String, dynamic>;
 
             final buffer = FileChangesBuffer();
-            final local = LocalizeRefs(ggLog: messages.add);
+            final local = ChangeRefsToLocal(ggLog: messages.add);
             await local.modifyManifest(
               node,
               manifestFile,
@@ -685,7 +685,7 @@ void main() {
           ).writeAsStringSync('{"name":"proj2_ts","version":"1.0.0"}');
 
           final localMessages = <String>[];
-          final local = LocalizeRefs(ggLog: localMessages.add);
+          final local = ChangeRefsToLocal(ggLog: localMessages.add);
           await local.get(directory: project1, ggLog: localMessages.add);
 
           final resultJson = File(
@@ -717,7 +717,7 @@ void main() {
           ).writeAsStringSync('{"name":"proj2_ts","version":"1.0.0"}');
 
           await runner.run(<String>[
-            'localize-refs',
+            'change-refs-to-local',
             '--git',
             '--input',
             project1.path,

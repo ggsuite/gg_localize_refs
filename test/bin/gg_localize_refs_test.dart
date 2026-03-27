@@ -37,7 +37,7 @@ void main() {
         'dart',
         [
           './bin/gg_localize_refs.dart',
-          'localize-refs',
+          'change-refs-to-local',
           '--input',
           tempDir.path,
         ],
@@ -53,7 +53,7 @@ void main() {
         'dart',
         [
           './bin/gg_localize_refs.dart',
-          'localize-refs',
+          'change-refs-to-local',
           '--git',
           '--input',
           tempDirGit.path,
@@ -76,7 +76,7 @@ void main() {
         // and check if it prints "No project root found"
         final messages = <String>[];
         await run(
-          args: ['localize-refs', '--input', tempDir2.path],
+          args: ['change-refs-to-local', '--input', tempDir2.path],
           ggLog: messages.add,
         );
 
@@ -87,7 +87,7 @@ void main() {
       test('should also run with --git', () async {
         final messages = <String>[];
         await run(
-          args: ['localize-refs', '--git', '--input', tempDirGit.path],
+          args: ['change-refs-to-local', '--git', '--input', tempDirGit.path],
           ggLog: messages.add,
         );
         expect(messages, isNotEmpty);

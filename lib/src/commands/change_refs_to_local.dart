@@ -22,7 +22,7 @@ import 'package:path/path.dart' as p;
 
 // #############################################################################
 /// Command for localizing references
-class LocalizeRefs extends DirCommand<dynamic> {
+class ChangeRefsToLocal extends DirCommand<dynamic> {
   /// The function used to run processes (injected for testability)
   /// Defaults to [Process.run]
   late Future<ProcessResult> Function(
@@ -33,10 +33,10 @@ class LocalizeRefs extends DirCommand<dynamic> {
   runProcess;
 
   /// Constructor
-  LocalizeRefs({required super.ggLog})
+  ChangeRefsToLocal({required super.ggLog})
     : isOnPubDev = IsOnPubDev(ggLog: ggLog),
       super(
-        name: 'localize-refs',
+        name: 'change-refs-to-local',
         description: 'Changes dependencies to local dependencies.',
       ) {
     argParser
@@ -124,7 +124,7 @@ class LocalizeRefs extends DirCommand<dynamic> {
     bool? git,
     String? gitRef,
   }) async {
-    ggLog('Running localize-refs in ${directory.path}');
+    ggLog('Running change-refs-to-local in ${directory.path}');
     useGit = git ?? ((argResults?['git'] as bool?) ?? false);
     gitRefOverride = gitRef ?? (argResults?['git-ref'] as String?);
     final fileChangesBuffer = FileChangesBuffer();
