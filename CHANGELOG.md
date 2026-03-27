@@ -1,5 +1,17 @@
 # Changelog
 
+## [2.0.0] - 2026-03-27
+
+### Added
+
+- Add shouldBackupPublishTo and related tests for publish\_to backup
+
+### Changed
+
+- kidney: changed references to path
+- rename localize-refs and unlocalize-refs
+- kidney: changed references to git
+
 ## [1.0.0] - 2026-03-24
 
 ### Added
@@ -13,7 +25,7 @@
 - add .idea to .gitignore
 - Add publish\_to: none when localizing
 - Add .gitattributes file
-- Add --git-ref option to localize-refs for custom git refs
+- Add --git-ref option to change-refs-to-local for custom git refs
 - Add test for updating .gitignore with missing .gg entries
 - Add tests for devDependencies handling in TS localize/unlocalize
 - Add tests for dependency and manifest methods in language tests
@@ -39,4 +51,5 @@
 
 - Update gg\_publish to ^^3.2.0 and remove publish\_to field
 
+[2.0.0]: https://github.com/ggsuite/gg_localize_refs/compare/1.0.0...2.0.0
 [1.0.0]: https://github.com/ggsuite/gg_localize_refs/tag/%tag

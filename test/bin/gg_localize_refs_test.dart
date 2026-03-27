@@ -1,5 +1,5 @@
 // @license
-// Copyright (c) 2019 - 2024 Dr. Gabriel Gatzsche. All Rights Reserved.
+// Copyright (c) 2025 Göran Hegenberg. All Rights Reserved.
 //
 // Use of this source code is governed by terms that can be
 // found in the LICENSE file in the root of this package.
@@ -8,6 +8,7 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:test/test.dart';
+
 import '../../bin/gg_localize_refs.dart';
 import '../test_helpers.dart';
 
@@ -15,29 +16,24 @@ void main() {
   Directory tempDir = Directory('');
   Directory tempDir2 = Directory('');
   Directory tempDirGit = Directory('');
-  Directory tempGitProject = Directory('');
 
   setUp(() async {
     tempDir = createTempDir('executable_command_test');
     tempDir2 = createTempDir('executable_command_test2');
     tempDirGit = createTempDir('executable_command_git');
-    tempGitProject = createTempDir('executable_command_git_project');
   });
 
   tearDown(() {
-    deleteDirs([tempDir, tempDir2, tempDirGit, tempGitProject]);
+    deleteDirs([tempDir, tempDir2, tempDirGit]);
   });
 
   group('bin/gg_localize_refs.dart', () {
-    // #########################################################################
-
     test('should be executable', () async {
-      // Execute bin/gg_localize_refs.dart and check if it prints help
       final result = await Process.run(
         'dart',
         [
           './bin/gg_localize_refs.dart',
-          'localize-refs',
+          'change-refs-to-local',
           '--input',
           tempDir.path,
         ],
@@ -48,13 +44,14 @@ void main() {
       expect(result.stdout, contains('No project root found'));
     });
 
-    test('should be executable with --git', () async {
+    test('should be executable with git feature branch command', () async {
       final result = await Process.run(
         'dart',
         [
           './bin/gg_localize_refs.dart',
-          'localize-refs',
-          '--git',
+          'change-refs-to-git-feature-branch',
+          '--git-ref',
+          'feature/test',
           '--input',
           tempDirGit.path,
         ],
@@ -68,15 +65,12 @@ void main() {
     });
   });
 
-  // ###########################################################################
   group('run(args, log)', () {
     group('with args=[--param, value]', () {
       test('should print "value"', () async {
-        // Execute bin/gg_localize_refs.dart
-        // and check if it prints "No project root found"
         final messages = <String>[];
         await run(
-          args: ['localize-refs', '--input', tempDir2.path],
+          args: ['change-refs-to-local', '--input', tempDir2.path],
           ggLog: messages.add,
         );
 
@@ -84,10 +78,16 @@ void main() {
         expect(messages.last, contains('No project root found'));
       });
 
-      test('should also run with --git', () async {
+      test('should also run git feature branch command', () async {
         final messages = <String>[];
         await run(
-          args: ['localize-refs', '--git', '--input', tempDirGit.path],
+          args: [
+            'change-refs-to-git-feature-branch',
+            '--git-ref',
+            'feature/test',
+            '--input',
+            tempDirGit.path,
+          ],
           ggLog: messages.add,
         );
         expect(messages, isNotEmpty);

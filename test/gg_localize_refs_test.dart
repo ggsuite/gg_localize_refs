@@ -1,5 +1,5 @@
 // @license
-// Copyright (c) 2019 - 2024 Dr. Gabriel Gatzsche. All Rights Reserved.
+// Copyright (c) 2025 Göran Hegenberg. All Rights Reserved.
 //
 // Use of this source code is governed by terms that can be
 // found in the LICENSE file in the root of this package.
@@ -7,11 +7,11 @@
 import 'dart:io';
 
 import 'package:args/command_runner.dart';
+import 'package:gg_args/gg_args.dart';
 import 'package:gg_capture_print/gg_capture_print.dart';
 import 'package:gg_localize_refs/gg_localize_refs.dart';
-import 'package:test/test.dart';
-import 'package:gg_args/gg_args.dart';
 import 'package:path/path.dart';
+import 'package:test/test.dart';
 
 import 'test_helpers.dart';
 
@@ -31,7 +31,6 @@ void main() {
   });
 
   group('GgToLocal()', () {
-    // #########################################################################
     group('GgToLocal', () {
       final ggToLocal = GgToLocal(ggLog: messages.add);
 
@@ -49,15 +48,41 @@ void main() {
           ggLog: messages.add,
           code: () async => await runner.run([
             'ggToLocal',
-            'localize-refs',
+            'change-refs-to-local',
             '--input',
             tempDir.path,
           ]),
         );
-        expect(messages, contains('Running localize-refs in ${tempDir.path}'));
+        expect(
+          messages,
+          contains('Running change-refs-to-local in ${tempDir.path}'),
+        );
       });
 
-      // .......................................................................
+      test('should allow to run the git feature branch command', () async {
+        File(join(tempDir.path, 'pubspec.yaml')).writeAsStringSync(
+          'name: test_package\nversion: 1.0.0\ndependencies:',
+        );
+
+        await capturePrint(
+          ggLog: messages.add,
+          code: () async => await runner.run([
+            'ggToLocal',
+            'change-refs-to-git-feature-branch',
+            '--git-ref',
+            'feature/test',
+            '--input',
+            tempDir.path,
+          ]),
+        );
+        expect(
+          messages,
+          contains(
+            'Running change-refs-to-git-feature-branch in ${tempDir.path}',
+          ),
+        );
+      });
+
       test('should show all sub commands', () async {
         final (subCommands, errorMessage) = await missingSubCommands(
           directory: Directory('lib/src/commands'),
