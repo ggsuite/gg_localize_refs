@@ -102,7 +102,7 @@ void main() {
 
           expect(
             messages.last,
-            contains('Changes dependencies to local dependencies.'),
+            contains('Localize references to local path dependencies'),
           );
           expect(
             messages.join('\n'),
@@ -301,7 +301,8 @@ void main() {
               '  project2:\n'
               '    git:\n'
               '      url: git@github.com:user/project2.git\n'
-              '      version: ^4.0.0\n',
+              '      tag_pattern: {{version}}\n'
+              '    version: ^4.0.0\n',
             );
             File(p.join(project2.path, 'pubspec.yaml')).writeAsStringSync(
               'name: project2\n'

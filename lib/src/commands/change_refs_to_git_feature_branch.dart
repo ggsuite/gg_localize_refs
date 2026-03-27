@@ -5,13 +5,13 @@
 // found in the LICENSE file in the root of this package.
 
 import 'dart:async';
-import 'dart:convert';
 import 'dart:io';
 
 import 'package:gg_args/gg_args.dart';
 import 'package:gg_console_colors/gg_console_colors.dart';
 import 'package:gg_localize_refs/src/backend/file_changes_buffer.dart';
 import 'package:gg_localize_refs/src/backend/languages/project_language.dart';
+import 'package:gg_localize_refs/src/backend/manifest_command_support.dart';
 import 'package:gg_localize_refs/src/backend/process_dependencies.dart';
 import 'package:gg_localize_refs/src/backend/publish_to_utils.dart';
 import 'package:gg_localize_refs/src/backend/utils.dart';
@@ -44,6 +44,8 @@ class ChangeRefsToGitFeatureBranch extends DirCommand<dynamic> {
         };
   }
 
+  final ManifestCommandSupport _support = const ManifestCommandSupport();
+
   /// The function used to run processes.
   late Future<ProcessResult> Function(
     String executable,
@@ -54,15 +56,6 @@ class ChangeRefsToGitFeatureBranch extends DirCommand<dynamic> {
 
   /// The git ref to use for all converted dependencies.
   String? gitRefOverride;
-
-  /// Ensures the backup directory (.gg) exists under [projectDir].
-  Directory _ensureBackupDir(Directory projectDir) {
-    final backupDir = Utils.dartBackupDir(projectDir);
-    if (!backupDir.existsSync()) {
-      backupDir.createSync(recursive: true);
-    }
-    return backupDir;
-  }
 
   @override
   Future<void> get({
@@ -114,68 +107,59 @@ class ChangeRefsToGitFeatureBranch extends DirCommand<dynamic> {
   ) async {
     if (node.language.id == ProjectLanguageId.dart) {
       await _modifyDart(
-        node,
-        manifestFile,
-        manifestContent,
-        manifestMap,
-        fileChangesBuffer,
-        ggLog,
+        node: node,
+        pubspec: manifestFile,
+        pubspecContent: manifestContent,
+        yamlMap: manifestMap,
+        fileChangesBuffer: fileChangesBuffer,
+        ggLog: ggLog,
       );
       return;
     }
 
     await _modifyTypeScript(
-      node,
-      manifestFile,
-      manifestContent,
-      manifestMap as Map<String, dynamic>,
-      fileChangesBuffer,
-      ggLog,
+      node: node,
+      manifestFile: manifestFile,
+      manifestContent: manifestContent,
+      manifestMap: manifestMap as Map<String, dynamic>,
+      fileChangesBuffer: fileChangesBuffer,
+      ggLog: ggLog,
     );
   }
 
-  Future<void> _modifyDart(
-    ProjectNode node,
-    File pubspec,
-    String pubspecContent,
-    dynamic yamlMap,
-    FileChangesBuffer fileChangesBuffer,
-    GgLog ggLog,
-  ) async {
+  Future<void> _modifyDart({
+    required ProjectNode node,
+    required File pubspec,
+    required String pubspecContent,
+    required dynamic yamlMap,
+    required FileChangesBuffer fileChangesBuffer,
+    required GgLog ggLog,
+  }) async {
     final projectDir = node.directory;
-    _ensureBackupDir(projectDir);
-    final references = node.language.listDependencyReferences(yamlMap);
+    _support.ensureDartBackupDir(projectDir);
+    final references = _support.referencesFor(node, yamlMap);
 
-    var hasNonGitDependencies = false;
-    for (final dependency in node.dependencies.entries) {
-      final reference = references[dependency.key];
-      if (reference == null) {
-        continue;
-      }
-      final dependencyYaml = yamlToString(reference.value);
-      if (_shouldConvertToGit(dependencyYaml)) {
-        hasNonGitDependencies = true;
-      }
-    }
-
-    if (!hasNonGitDependencies) {
+    if (!_hasNonGitDartDependencies(node: node, references: references)) {
       return;
     }
 
     ggLog('Localize refs of ${node.name}');
 
-    final originalPubspec = Utils.dartBackupYamlFile(projectDir);
-    await _writeFileCopy(source: pubspec, destination: originalPubspec);
-
-    final replacedDependencies = await _buildUpdatedDartBackupDependencies(
-      node: node,
-      references: references,
+    await _support.writeFileCopy(
+      source: pubspec,
+      destination: Utils.dartBackupYamlFile(projectDir),
     );
 
-    final publishBackup = backupPublishTo(yamlMap as Map<dynamic, dynamic>);
-    replacedDependencies.addAll(publishBackup);
+    final replacedDependencies = _support.buildUpdatedDartBackupDependencies(
+      node: node,
+      references: references,
+      shouldRefreshBackup: _shouldBackupOriginalGitDependency,
+    );
+    replacedDependencies.addAll(
+      backupPublishTo(yamlMap as Map<dynamic, dynamic>),
+    );
 
-    await saveDependenciesAsJson(
+    await _support.saveDependenciesAsJson(
       replacedDependencies,
       Utils.dartBackupFile(projectDir).path,
     );
@@ -186,8 +170,8 @@ class ChangeRefsToGitFeatureBranch extends DirCommand<dynamic> {
       if (reference == null) {
         continue;
       }
-      final oldDependencyYaml = yamlToString(reference.value);
 
+      final oldDependencyYaml = yamlToString(reference.value);
       if (_shouldConvertToGit(oldDependencyYaml)) {
         final newDependencyYaml = await getGitDependencyYaml(
           dependency.value.directory,
@@ -205,36 +189,23 @@ class ChangeRefsToGitFeatureBranch extends DirCommand<dynamic> {
     fileChangesBuffer.add(pubspec, newPubspecContent);
   }
 
-  Future<void> _modifyTypeScript(
-    ProjectNode node,
-    File manifestFile,
-    String manifestContent,
-    Map<String, dynamic> manifestMap,
-    FileChangesBuffer fileChangesBuffer,
-    GgLog ggLog,
-  ) async {
-    final references = node.language.listDependencyReferences(manifestMap);
+  Future<void> _modifyTypeScript({
+    required ProjectNode node,
+    required File manifestFile,
+    required String manifestContent,
+    required Map<String, dynamic> manifestMap,
+    required FileChangesBuffer fileChangesBuffer,
+    required GgLog ggLog,
+  }) async {
+    final references = _support.referencesFor(node, manifestMap);
 
-    var hasNonGitDependencies = false;
-    for (final dependency in node.dependencies.entries) {
-      final reference = references[dependency.key];
-      final value = reference?.value?.toString();
-      if (value == null) {
-        continue;
-      }
-      if (!value.trim().startsWith('git+')) {
-        hasNonGitDependencies = true;
-      }
-    }
-
-    if (!hasNonGitDependencies) {
+    if (!_hasNonGitTypeScriptDependencies(node: node, references: references)) {
       return;
     }
 
     ggLog('Localize refs of ${node.name}');
 
     final replacedDependencies = <String, dynamic>{};
-
     for (final dependency in node.dependencies.entries) {
       final reference = references[dependency.key];
       final value = reference?.value?.toString();
@@ -246,7 +217,7 @@ class ChangeRefsToGitFeatureBranch extends DirCommand<dynamic> {
       }
     }
 
-    await _writeTypeScriptBackup(node.directory, replacedDependencies);
+    await _support.writeTypeScriptBackup(node.directory, replacedDependencies);
 
     var updatedContent = manifestContent;
     for (final dependency in node.dependencies.entries) {
@@ -273,96 +244,39 @@ class ChangeRefsToGitFeatureBranch extends DirCommand<dynamic> {
     fileChangesBuffer.add(manifestFile, updatedContent);
   }
 
-  /// Builds the Dart backup map while preserving existing version entries.
-  Future<Map<String, dynamic>> _buildUpdatedDartBackupDependencies({
+  /// Returns true when any Dart workspace dependency is not yet a plain git ref.
+  bool _hasNonGitDartDependencies({
     required ProjectNode node,
     required Map<String, DependencyReference> references,
-  }) async {
-    final backupFile = Utils.dartBackupFile(node.directory);
-    final existingBackup = backupFile.existsSync()
-        ? Utils.readDependenciesFromJson(backupFile.path)
-        : <String, dynamic>{};
-
-    final updatedBackup = <String, dynamic>{};
-
-    for (final entry in existingBackup.entries) {
-      if (entry.key == 'publish_to_original') {
-        continue;
-      }
-
-      final normalized = _normalizeBackupVersionValue(entry.value);
-      if (normalized != null) {
-        updatedBackup[entry.key] = normalized;
-      }
-    }
-
+  }) {
     for (final dependency in node.dependencies.entries) {
       final reference = references[dependency.key];
       if (reference == null) {
         continue;
       }
+      if (_shouldConvertToGit(yamlToString(reference.value))) {
+        return true;
+      }
+    }
+    return false;
+  }
 
-      final dependencyYaml = yamlToString(reference.value);
-      final shouldRefreshBackup = _shouldBackupOriginalGitDependency(
-        dependencyYaml,
-      );
-
-      if (!shouldRefreshBackup) {
+  /// Returns true when any TS workspace dependency is not yet a git spec.
+  bool _hasNonGitTypeScriptDependencies({
+    required ProjectNode node,
+    required Map<String, DependencyReference> references,
+  }) {
+    for (final dependency in node.dependencies.entries) {
+      final reference = references[dependency.key];
+      final value = reference?.value?.toString();
+      if (value == null) {
         continue;
       }
-
-      final normalizedValue = _normalizeBackupVersionValue(reference.value);
-      if (normalizedValue != null) {
-        updatedBackup[dependency.key] = normalizedValue;
+      if (!value.trim().startsWith('git+')) {
+        return true;
       }
     }
-
-    return updatedBackup;
-  }
-
-  Future<void> _writeTypeScriptBackup(
-    Directory projectDirectory,
-    Map<String, dynamic> replacedDependencies,
-  ) async {
-    final backupFile = Utils.typeScriptBackupFile(projectDirectory);
-    await backupFile.writeAsString(jsonEncode(replacedDependencies));
-  }
-
-  /// Returns the normalized backup value or null when no version exists.
-  dynamic _normalizeBackupVersionValue(dynamic dependency) {
-    if (dependency is String) {
-      final trimmed = dependency.trim();
-      if (trimmed.isEmpty) {
-        return null;
-      }
-      if (trimmed.startsWith('path:') || trimmed.startsWith('git:')) {
-        return null;
-      }
-      return trimmed;
-    }
-
-    if (dependency is Map) {
-      final version = dependency['version'];
-      if (version != null) {
-        final trimmed = version.toString().trim();
-        if (trimmed.isNotEmpty) {
-          return trimmed;
-        }
-      }
-
-      final git = dependency['git'];
-      if (git is Map) {
-        final gitVersion = git['version'];
-        if (gitVersion != null) {
-          final trimmed = gitVersion.toString().trim();
-          if (trimmed.isNotEmpty) {
-            return trimmed;
-          }
-        }
-      }
-    }
-
-    return null;
+    return false;
   }
 
   /// Returns whether [dependencyYaml] should be converted to a plain git ref.
@@ -417,23 +331,5 @@ class ChangeRefsToGitFeatureBranch extends DirCommand<dynamic> {
     final url = await Utils.getGitRemoteUrl(depDir, depName);
     final ref = gitRefOverride!.trim();
     return (url, ref);
-  }
-
-  /// Helper method to copy a file.
-  Future<void> _writeFileCopy({
-    required File source,
-    required File destination,
-  }) async {
-    await source.copy(destination.path);
-  }
-
-  /// Save the dependencies to a JSON file.
-  Future<void> saveDependenciesAsJson(
-    Map<String, dynamic> replacedDependencies,
-    String filePath,
-  ) async {
-    final jsonString = jsonEncode(replacedDependencies);
-    final file = File(filePath);
-    await file.writeAsString(jsonString);
   }
 }
