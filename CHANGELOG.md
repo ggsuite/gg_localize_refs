@@ -10,6 +10,7 @@
 
 - kidney: changed references to path
 - rename localize-refs and unlocalize-refs
+- kidney: changed references to git
 
 ## [1.0.0] - 2026-03-24
 
