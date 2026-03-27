@@ -322,6 +322,86 @@ void main() {
           },
         );
 
+        test(
+          'keeps existing backup version when dependency is already a path entry',
+          () async {
+            final workspace = createTempDir('localize_keep_path_backup_ws');
+            final project1 = Directory(p.join(workspace.path, 'project1'));
+            final project2 = Directory(p.join(workspace.path, 'project2'));
+            await createDirs(<Directory>[project1, project2]);
+
+            File(p.join(project1.path, 'pubspec.yaml')).writeAsStringSync(
+              'name: project1\n'
+              'version: 1.0.0\n'
+              'dependencies:\n'
+              '  project2:\n'
+              '    path: ../project2\n',
+            );
+            File(p.join(project2.path, 'pubspec.yaml')).writeAsStringSync(
+              'name: project2\n'
+              'version: 1.0.0\n',
+            );
+            File(p.join(project1.path, '.gg', '.gg_localize_refs_backup.json'))
+              ..createSync(recursive: true)
+              ..writeAsStringSync('{"project2":"^7.0.0"}');
+
+            final local = ChangeRefsToLocal(ggLog: messages.add);
+            await local.get(directory: project1, ggLog: messages.add);
+
+            final backupJson = File(
+              p.join(project1.path, '.gg', '.gg_localize_refs_backup.json'),
+            ).readAsStringSync();
+            final backupMap = jsonDecode(backupJson) as Map<String, dynamic>;
+
+            expect(backupMap['project2'], '^7.0.0');
+            expect(backupJson, isNot(contains('path')));
+            expect(backupJson, isNot(contains('git')));
+
+            deleteDirs(<Directory>[workspace]);
+          },
+        );
+
+        test(
+          'keeps existing backup version when dependency is plain git ref',
+          () async {
+            final workspace = createTempDir('localize_keep_git_backup_ws');
+            final project1 = Directory(p.join(workspace.path, 'project1'));
+            final project2 = Directory(p.join(workspace.path, 'project2'));
+            await createDirs(<Directory>[project1, project2]);
+
+            File(p.join(project1.path, 'pubspec.yaml')).writeAsStringSync(
+              'name: project1\n'
+              'version: 1.0.0\n'
+              'dependencies:\n'
+              '  project2:\n'
+              '    git:\n'
+              '      url: git@github.com:user/project2.git\n'
+              '      ref: main\n',
+            );
+            File(p.join(project2.path, 'pubspec.yaml')).writeAsStringSync(
+              'name: project2\n'
+              'version: 1.0.0\n',
+            );
+            File(p.join(project1.path, '.gg', '.gg_localize_refs_backup.json'))
+              ..createSync(recursive: true)
+              ..writeAsStringSync('{"project2":"^8.0.0"}');
+
+            final local = ChangeRefsToLocal(ggLog: messages.add);
+            await local.get(directory: project1, ggLog: messages.add);
+
+            final backupJson = File(
+              p.join(project1.path, '.gg', '.gg_localize_refs_backup.json'),
+            ).readAsStringSync();
+            final backupMap = jsonDecode(backupJson) as Map<String, dynamic>;
+
+            expect(backupMap['project2'], '^8.0.0');
+            expect(backupJson, isNot(contains('path')));
+            expect(backupJson, isNot(contains('git')));
+
+            deleteDirs(<Directory>[workspace]);
+          },
+        );
+
         test('TypeScript: when package.json is correct (path mode)', () async {
           final dProject1 = Directory(
             p.join(dWorkspaceSucceedTs.path, 'project1'),

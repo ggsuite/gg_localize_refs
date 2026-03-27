@@ -160,7 +160,10 @@ class ChangeRefsToLocal extends DirCommand<dynamic> {
 
     var newPubspecContent = pubspecContent;
 
-    final replacedDependencies = <String, dynamic>{};
+    final replacedDependencies = await _buildUpdatedDartBackupDependencies(
+      node: node,
+      references: references,
+    );
 
     for (final dependency in node.dependencies.entries) {
       final dependencyName = dependency.key;
@@ -178,12 +181,6 @@ class ChangeRefsToLocal extends DirCommand<dynamic> {
         RegExp(r'[\n\r\t{}]'),
         '',
       );
-
-      if (!oldDependencyYamlCompressed.startsWith('path:')) {
-        replacedDependencies[dependencyName] = _backupDependencyValue(
-          reference.value,
-        );
-      }
 
       newPubspecContent = node.language.replaceDependencyInContent(
         manifestContent: newPubspecContent,
@@ -270,6 +267,49 @@ class ChangeRefsToLocal extends DirCommand<dynamic> {
     fileChangesBuffer.add(manifestFile, updatedContent);
   }
 
+  /// Builds the Dart backup map while preserving existing version entries.
+  Future<Map<String, dynamic>> _buildUpdatedDartBackupDependencies({
+    required ProjectNode node,
+    required Map<String, DependencyReference> references,
+  }) async {
+    final backupFile = Utils.dartBackupFile(node.directory);
+    final existingBackup = backupFile.existsSync()
+        ? Utils.readDependenciesFromJson(backupFile.path)
+        : <String, dynamic>{};
+
+    final updatedBackup = <String, dynamic>{};
+
+    for (final entry in existingBackup.entries) {
+      if (entry.key == 'publish_to_original') {
+        continue;
+      }
+
+      final normalizedValue = _normalizeBackupVersionValue(entry.value);
+      if (normalizedValue != null) {
+        updatedBackup[entry.key] = normalizedValue;
+      }
+    }
+
+    for (final dependency in node.dependencies.entries) {
+      final reference = references[dependency.key];
+      if (reference == null) {
+        continue;
+      }
+
+      final dependencyYaml = yamlToString(reference.value);
+      if (!_shouldRefreshBackupValue(dependencyYaml)) {
+        continue;
+      }
+
+      final normalizedValue = _normalizeBackupVersionValue(reference.value);
+      if (normalizedValue != null) {
+        updatedBackup[dependency.key] = normalizedValue;
+      }
+    }
+
+    return updatedBackup;
+  }
+
   Future<void> _writeTypeScriptBackup(
     Directory projectDirectory,
     Map<String, dynamic> replacedDependencies,
@@ -278,28 +318,55 @@ class ChangeRefsToLocal extends DirCommand<dynamic> {
     await backupFile.writeAsString(jsonEncode(replacedDependencies));
   }
 
-  /// Returns the compact backup value for a dependency.
-  dynamic _backupDependencyValue(dynamic dependency) {
+  /// Returns the normalized backup version or null when it cannot be used.
+  dynamic _normalizeBackupVersionValue(dynamic dependency) {
     if (dependency is String) {
-      return dependency;
+      final trimmed = dependency.trim();
+      if (trimmed.isEmpty) {
+        return null;
+      }
+      if (trimmed.startsWith('path:') || trimmed.startsWith('git:')) {
+        return null;
+      }
+      return trimmed;
     }
 
     if (dependency is Map) {
       final version = dependency['version'];
       if (version != null) {
-        return version.toString();
+        final trimmed = version.toString().trim();
+        if (trimmed.isNotEmpty) {
+          return trimmed;
+        }
       }
 
       final git = dependency['git'];
       if (git is Map) {
         final gitVersion = git['version'];
         if (gitVersion != null) {
-          return gitVersion.toString();
+          final trimmed = gitVersion.toString().trim();
+          if (trimmed.isNotEmpty) {
+            return trimmed;
+          }
         }
       }
     }
 
-    return dependency;
+    return null;
+  }
+
+  /// Returns true when a dependency should refresh its backup version.
+  bool _shouldRefreshBackupValue(String dependencyYaml) {
+    final trimmed = dependencyYaml.trimLeft();
+    if (trimmed.startsWith('path:')) {
+      return false;
+    }
+
+    if (!trimmed.startsWith('git:')) {
+      return true;
+    }
+
+    return trimmed.contains('tag_pattern:');
   }
 
   /// Helper method to copy a file.
