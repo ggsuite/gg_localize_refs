@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+### Added
+
+- Add shouldBackupPublishTo and related tests for publish\_to backup
+
 ### Changed
 
 - kidney: changed references to path

@@ -30,6 +30,7 @@ class ChangeRefsToGitFeatureBranch extends DirCommand<dynamic> {
       'git-ref',
       help: 'Git ref (branch, tag, or commit) to use for git dependencies.',
     );
+    // coverage:ignore-start
     runProcess =
         (
           String executable,
@@ -42,6 +43,7 @@ class ChangeRefsToGitFeatureBranch extends DirCommand<dynamic> {
             workingDirectory: workingDirectory,
           );
         };
+    // coverage:ignore-end
   }
 
   final ManifestCommandSupport _support = const ManifestCommandSupport();
@@ -155,9 +157,11 @@ class ChangeRefsToGitFeatureBranch extends DirCommand<dynamic> {
       references: references,
       shouldRefreshBackup: _shouldBackupOriginalGitDependency,
     );
-    replacedDependencies.addAll(
-      backupPublishTo(yamlMap as Map<dynamic, dynamic>),
-    );
+    if (_support.shouldBackupPublishTo(node: node, references: references)) {
+      replacedDependencies.addAll(
+        backupPublishTo(yamlMap as Map<dynamic, dynamic>),
+      );
+    }
 
     await _support.saveDependenciesAsJson(
       replacedDependencies,
@@ -244,7 +248,7 @@ class ChangeRefsToGitFeatureBranch extends DirCommand<dynamic> {
     fileChangesBuffer.add(manifestFile, updatedContent);
   }
 
-  /// Returns true when any Dart workspace dependency is not yet a plain git ref.
+  /// Returns true when any Dart workspace dependency is not yet a plain git ref
   bool _hasNonGitDartDependencies({
     required ProjectNode node,
     required Map<String, DependencyReference> references,

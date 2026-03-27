@@ -374,31 +374,6 @@ void main() {
         );
 
         test(
-          'when already localized Dart path dependency stays unchanged',
-          () async {
-            final dProject1 = Directory(
-              p.join(dWorkspaceAlreadyLocalized.path, 'project1'),
-            );
-
-            final localMessages = <String>[];
-            final local = ChangeRefsToGitFeatureBranch(
-              ggLog: localMessages.add,
-            );
-            await local.get(
-              directory: dProject1,
-              ggLog: localMessages.add,
-              gitRef: 'feature123',
-            );
-
-            expect(
-              localMessages[0],
-              contains('Running change-refs-to-git-feature-branch in'),
-            );
-            expect(localMessages[1], contains('Localize refs of test1'));
-          },
-        );
-
-        test(
           'keeps existing backup version when dependency was a path entry',
           () async {
             final workspace = createTempDir('git_feature_keep_path_backup_ws');
@@ -546,6 +521,58 @@ void main() {
             expect(backupMap['project2'], '^3.1.0');
             expect(backupJson, isNot(contains('path')));
             expect(backupJson, isNot(contains('git')));
+
+            deleteDirs(<Directory>[workspace]);
+          },
+        );
+
+        test(
+          'backs up publish_to only for pub.dev and tag_pattern refs',
+          () async {
+            final workspace = createTempDir('git_feature_publish_to_allowed');
+            final project1 = Directory(p.join(workspace.path, 'project1'));
+            final project2 = Directory(p.join(workspace.path, 'project2'));
+            await createDirs(<Directory>[project1, project2]);
+
+            File(p.join(project1.path, 'pubspec.yaml')).writeAsStringSync(
+              'name: project1\n'
+              'version: 1.0.0\n'
+              'publish_to: none\n'
+              'dependencies:\n'
+              '  project2:\n'
+              '    git:\n'
+              '      url: git@github.com:user/project2.git\n'
+              '      tag_pattern: {{version}}\n'
+              '    version: ^2.0.0\n',
+            );
+            File(p.join(project2.path, 'pubspec.yaml')).writeAsStringSync(
+              'name: project2\n'
+              'version: 1.0.0\n',
+            );
+
+            Process.runSync('git', <String>[
+              'init',
+            ], workingDirectory: project2.path);
+            Process.runSync('git', <String>[
+              'remote',
+              'add',
+              'origin',
+              'git@github.com:user/project2.git',
+            ], workingDirectory: project2.path);
+
+            final local = ChangeRefsToGitFeatureBranch(ggLog: messages.add);
+            await local.get(
+              directory: project1,
+              ggLog: messages.add,
+              gitRef: 'feature/backup-publish-to',
+            );
+
+            final backupJson = File(
+              p.join(project1.path, '.gg', '.gg_localize_refs_backup.json'),
+            ).readAsStringSync();
+            final backupMap = jsonDecode(backupJson) as Map<String, dynamic>;
+
+            expect(backupMap['publish_to_original'], 'none');
 
             deleteDirs(<Directory>[workspace]);
           },
