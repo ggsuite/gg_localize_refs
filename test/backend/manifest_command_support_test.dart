@@ -397,7 +397,7 @@ void main() {
         expect(result, isTrue);
       });
 
-      test('returns true for git tag_pattern dependency refs', () {
+      test('returns true for git dependency refs with version', () {
         final workspace = createWorkspace(
           'manifest_support_backup_publish_tag',
         );
@@ -421,10 +421,7 @@ void main() {
             sectionName: 'dependencies',
             name: 'dep',
             value: <String, dynamic>{
-              'git': <String, dynamic>{
-                'url': 'git@github.com:user/dep.git',
-                'tag_pattern': '{{version}}',
-              },
+              'git': 'git@github.com:user/dep.git',
               'version': '^2.0.0',
             },
           ),
@@ -473,7 +470,7 @@ void main() {
         expect(result, isFalse);
       });
 
-      test('returns false for plain git refs without tag_pattern', () {
+      test('returns false for plain git refs without version', () {
         final workspace = createWorkspace(
           'manifest_support_backup_publish_git',
         );
@@ -551,10 +548,7 @@ void main() {
               sectionName: 'dependencies',
               name: 'dep',
               value: <String, dynamic>{
-                'git': <String, dynamic>{
-                  'url': 'git@github.com:user/dep.git',
-                  'tag_pattern': '{{version}}',
-                },
+                'git': 'git@github.com:user/dep.git',
                 'version': '^3.0.0',
               },
             ),
@@ -564,7 +558,7 @@ void main() {
             node: node,
             references: references,
             shouldRefreshBackup: (String dependencyYaml) {
-              return dependencyYaml.contains('tag_pattern:');
+              return dependencyYaml.contains('version:');
             },
           );
 

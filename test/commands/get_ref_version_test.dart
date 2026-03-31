@@ -186,16 +186,14 @@ void main() {
         expect(out, contains('ref: main'));
       });
 
-      test('reads version from git tag_pattern block', () async {
+      test('reads version from git version block', () async {
         final d1 = Directory(join(dWorkspace.path, 'p5b'));
         final d2 = Directory(join(dWorkspace.path, 'p6b'));
         await createDirs(<Directory>[d1, d2]);
         File(join(d1.path, 'pubspec.yaml')).writeAsStringSync(
           'name: p5b\nversion: 1.0.0\ndependencies:\n'
           '  p6b:\n'
-          '    git:\n'
-          '      url: git@github.com:user/p6b.git\n'
-          '      tag_pattern: {{version}}\n'
+          '    git: git@github.com:user/p6b.git\n'
           '    version: ^2.0.1\n',
         );
         File(

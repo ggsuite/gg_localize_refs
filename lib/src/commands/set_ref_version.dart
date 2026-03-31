@@ -12,8 +12,8 @@ import 'package:gg_console_colors/gg_console_colors.dart';
 import 'package:gg_localize_refs/src/backend/languages/dart_language.dart';
 import 'package:gg_localize_refs/src/backend/languages/project_language.dart';
 import 'package:gg_localize_refs/src/backend/languages/typescript_language.dart';
-import 'package:gg_localize_refs/src/backend/utils.dart';
 import 'package:gg_localize_refs/src/backend/multi_language_graph.dart';
+import 'package:gg_localize_refs/src/backend/utils.dart';
 import 'package:gg_localize_refs/src/backend/yaml_to_string.dart';
 import 'package:gg_log/gg_log.dart';
 import 'package:gg_publish/gg_publish.dart';
@@ -138,7 +138,7 @@ class SetRefVersion extends DirCommand<dynamic> {
       dependencyName,
     );
     return yamlToString(<String, dynamic>{
-      'git': <String, dynamic>{'url': gitUrl, 'tag_pattern': '{{version}}'},
+      'git': gitUrl,
       'version': newVersion,
     }).trimRight();
   }

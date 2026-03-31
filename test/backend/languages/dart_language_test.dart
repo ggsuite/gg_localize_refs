@@ -228,24 +228,20 @@ void main() {
       expect(reference.value, '^2.0.0');
     });
 
-    test(
-      'stringifyDependencyForReading returns version for git tag_pattern',
-      () {
-        final manifest = language.parseManifestContent(
-          'dependencies:\n'
-          '  a:\n'
-          '    git:\n'
-          '      url: git@github.com:user/a.git\n'
-          '      tag_pattern: {{version}}\n'
-          '    version: ^2.0.0\n',
-        );
-        final reference = language.findDependency(manifest, 'a')!;
+    test('stringifyDependencyForReading returns '
+        'version for git version map', () {
+      final manifest = language.parseManifestContent(
+        'dependencies:\n'
+        '  a:\n'
+        '    git: git@github.com:user/a.git\n'
+        '    version: ^2.0.0\n',
+      );
+      final reference = language.findDependency(manifest, 'a')!;
 
-        final result = language.stringifyDependencyForReading(reference.value);
+      final result = language.stringifyDependencyForReading(reference.value);
 
-        expect(result, '^2.0.0');
-      },
-    );
+      expect(result, '^2.0.0');
+    });
 
     test('stringifyDependencyForReading returns yaml for non git map', () {
       final manifest = language.parseManifestContent(

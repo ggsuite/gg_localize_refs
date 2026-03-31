@@ -272,7 +272,7 @@ void main() {
       );
 
       test(
-        'replace scalar with git tag_pattern when dependency is unpublished',
+        'replace scalar with git version block when dependency is unpublished',
         () async {
           final d1 = Directory(join(dWorkspace.path, 'c1'));
           final d2 = Directory(join(dWorkspace.path, 'c2'));
@@ -305,10 +305,9 @@ void main() {
             join(d1.path, 'pubspec.yaml'),
           ).readAsStringSync();
           expect(content, contains('c2:'));
-          expect(content, contains('git:'));
-          expect(content, contains('url:'));
-          expect(content, contains('tag_pattern: {{version}}'));
+          expect(content, contains('git: git@github.com:user/c2.git'));
           expect(content, contains('version: ^3.0.0'));
+          expect(content, isNot(contains('tag_pattern:')));
         },
       );
 
@@ -339,17 +338,15 @@ void main() {
         expect(content, isNot(contains('git:')));
       });
 
-      test('replace tag_pattern git block version only', () async {
+      test('replace git version block version only', () async {
         final d1 = Directory(join(dWorkspace.path, 'd1b'));
         final d2 = Directory(join(dWorkspace.path, 'd2b'));
         await createDirs(<Directory>[d1, d2]);
         File(join(d1.path, 'pubspec.yaml')).writeAsStringSync(
           'name: d1b\nversion: 1.0.0\ndependencies:\n'
           '  d2b:\n'
-          '    git:\n'
-          '      url: git@github.com:user/d2b.git\n'
-          '      tag_pattern: {{version}}\n'
-          '      version: ^1.0.0\n',
+          '    git: git@github.com:user/d2b.git\n'
+          '    version: ^1.0.0\n',
         );
         File(
           join(d2.path, 'pubspec.yaml'),
@@ -373,9 +370,9 @@ void main() {
           '^3.0.0',
         ]);
         final content = File(join(d1.path, 'pubspec.yaml')).readAsStringSync();
-        expect(content, contains('url:'));
-        expect(content, contains('tag_pattern: {{version}}'));
+        expect(content, contains('git: git@github.com:user/d2b.git'));
         expect(content, contains('version: ^3.0.0'));
+        expect(content, isNot(contains('tag_pattern:')));
       });
 
       test('replace path block with scalar', () async {

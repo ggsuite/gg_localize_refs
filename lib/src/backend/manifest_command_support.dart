@@ -142,11 +142,11 @@ class ManifestCommandSupport {
       final isPubDevVersion =
           !dependencyYaml.startsWith('path:') &&
           !dependencyYaml.startsWith('git:');
-      final isGitTagPattern =
+      final isGitWithVersion =
           dependencyYaml.startsWith('git:') &&
-          dependencyYaml.contains('tag_pattern:');
+          dependencyYaml.contains('version:');
 
-      if (!isPubDevVersion && !isGitTagPattern) {
+      if (!isPubDevVersion && !isGitWithVersion) {
         return false;
       }
     }
