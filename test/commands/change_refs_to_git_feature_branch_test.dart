@@ -322,7 +322,7 @@ void main() {
         });
 
         test(
-          'with Dart tag_pattern dependency converts to plain git ref',
+          'with Dart git version dependency converts to plain git ref',
           () async {
             final workspace = createTempDir('git_feature_tag_pattern_ws');
             final project1 = Directory(p.join(workspace.path, 'project1'));
@@ -334,9 +334,7 @@ void main() {
               'version: 1.0.0\n'
               'dependencies:\n'
               '  project2:\n'
-              '    git:\n'
-              '      url: git@github.com:user/project2.git\n'
-              '      tag_pattern: {{version}}\n'
+              '    git: git@github.com:user/project2.git\n'
               '    version: ^2.0.4\n',
             );
             File(p.join(project2.path, 'pubspec.yaml')).writeAsStringSync(
@@ -527,7 +525,7 @@ void main() {
         );
 
         test(
-          'backs up publish_to only for pub.dev and tag_pattern refs',
+          'backs up publish_to only for pub.dev and git version refs',
           () async {
             final workspace = createTempDir('git_feature_publish_to_allowed');
             final project1 = Directory(p.join(workspace.path, 'project1'));
@@ -540,9 +538,7 @@ void main() {
               'publish_to: none\n'
               'dependencies:\n'
               '  project2:\n'
-              '    git:\n'
-              '      url: git@github.com:user/project2.git\n'
-              '      tag_pattern: {{version}}\n'
+              '    git: git@github.com:user/project2.git\n'
               '    version: ^2.0.0\n',
             );
             File(p.join(project2.path, 'pubspec.yaml')).writeAsStringSync(

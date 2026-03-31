@@ -170,10 +170,10 @@ class DartProjectLanguage extends ProjectLanguage {
 
   @override
   String stringifyDependencyForReading(dynamic dependencyValue) {
-    if (dependencyValue is Map) {
-      final git = dependencyValue['git'];
-      if (git is Map && git.containsKey('tag_pattern')) {
-        return dependencyValue['version'].toString();
+    if (dependencyValue is Map && dependencyValue.containsKey('version')) {
+      final version = dependencyValue['version'];
+      if (version != null) {
+        return version.toString();
       }
     }
 

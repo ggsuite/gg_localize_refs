@@ -318,7 +318,7 @@ void main() {
         });
 
         test(
-          'uses git tag_pattern dependency when package was not published',
+          'uses git version dependency when package was not published',
           () async {
             final workspace = createTempDir('unlocalize_unpublished_git_ws');
             final project1 = Directory(join(workspace.path, 'project1'));
@@ -359,19 +359,18 @@ void main() {
               join(project1.path, 'pubspec.yaml'),
             ).readAsStringSync();
             expect(resultYaml, contains('git:'));
-            expect(resultYaml, contains('url:'));
-            expect(resultYaml, contains('tag_pattern: {{version}}'));
             expect(resultYaml, contains('version: ^2.0.4'));
             expect(resultYaml, isNot(contains('ref:')));
+            expect(resultYaml, isNot(contains('tag_pattern:')));
 
             deleteDirs(<Directory>[workspace]);
           },
         );
 
         test(
-          'does not treat tag_pattern git dependency as localized',
+          'does not treat git dependency with version as localized',
           () async {
-            final workspace = createTempDir('unlocalize_tag_pattern_noop_ws');
+            final workspace = createTempDir('unlocalize_git_version_noop_ws');
             final project1 = Directory(join(workspace.path, 'project1'));
             final project2 = Directory(join(workspace.path, 'project2'));
             await createDirs(<Directory>[project1, project2]);
@@ -381,10 +380,8 @@ void main() {
               'version: 1.0.0\n'
               'dependencies:\n'
               '  project2:\n'
-              '    git:\n'
-              '      url: git@github.com:user/project2.git\n'
-              '      tag_pattern: {{version}}\n'
-              '      version: ^2.0.4\n',
+              '    git: git@github.com:user/project2.git\n'
+              '    version: ^2.0.4\n',
             );
             File(join(project2.path, 'pubspec.yaml')).writeAsStringSync(
               'name: project2\n'

@@ -290,7 +290,7 @@ class ChangeRefsToGitFeatureBranch extends DirCommand<dynamic> {
       return true;
     }
 
-    return trimmed.contains('tag_pattern:');
+    return trimmed.contains('version:');
   }
 
   /// Returns whether the original dependency should be backed up.
@@ -300,7 +300,7 @@ class ChangeRefsToGitFeatureBranch extends DirCommand<dynamic> {
       return true;
     }
 
-    return trimmed.contains('tag_pattern:');
+    return trimmed.contains('version:');
   }
 
   /// Get a dependency Yaml for a git repo.

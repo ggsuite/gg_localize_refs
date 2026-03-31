@@ -273,7 +273,7 @@ class ChangeRefsToPubDev extends DirCommand<dynamic> {
     );
 
     return yamlToString(<String, dynamic>{
-      'git': <String, dynamic>{'url': gitUrl, 'tag_pattern': '{{version}}'},
+      'git': gitUrl,
       'version': version,
     }).trimRight();
   }
@@ -312,7 +312,7 @@ class ChangeRefsToPubDev extends DirCommand<dynamic> {
       return false;
     }
 
-    if (dependencyYaml.contains('tag_pattern:')) {
+    if (dependencyYaml.contains('version:')) {
       return false;
     }
 

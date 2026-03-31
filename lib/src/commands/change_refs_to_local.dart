@@ -219,6 +219,6 @@ class ChangeRefsToLocal extends DirCommand<dynamic> {
       return true;
     }
 
-    return trimmed.contains('tag_pattern:');
+    return trimmed.contains('version:');
   }
 }

@@ -263,9 +263,7 @@ void main() {
             'version: 1.0.0\n'
             'dependencies:\n'
             '  project2:\n'
-            '    git:\n'
-            '      url: git@github.com:ggsuite/testproject_gg_2.git\n'
-            '      tag_pattern: {{version}}\n'
+            '    git: git@github.com:ggsuite/testproject_gg_2.git\n'
             '    version: ^1.0.0\n',
           );
           File(p.join(project2.path, 'pubspec.yaml')).writeAsStringSync(
@@ -287,7 +285,7 @@ void main() {
         });
 
         test(
-          'backs up git.version when dependency map has nested git version',
+          'backs up dependency version when dependency map has git and version',
           () async {
             final workspace = createTempDir('localize_backup_git_version_ws');
             final project1 = Directory(p.join(workspace.path, 'project1'));
@@ -299,9 +297,7 @@ void main() {
               'version: 1.0.0\n'
               'dependencies:\n'
               '  project2:\n'
-              '    git:\n'
-              '      url: git@github.com:user/project2.git\n'
-              '      tag_pattern: {{version}}\n'
+              '    git: git@github.com:user/project2.git\n'
               '    version: ^4.0.0\n',
             );
             File(p.join(project2.path, 'pubspec.yaml')).writeAsStringSync(
@@ -402,7 +398,7 @@ void main() {
         );
 
         test(
-          'backs up publish_to only for pub.dev and tag_pattern refs',
+          'backs up publish_to only for pub.dev and git version refs',
           () async {
             final workspace = createTempDir(
               'localize_publish_to_backup_allowed',
