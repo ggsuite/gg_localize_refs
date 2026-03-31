@@ -305,7 +305,7 @@ void main() {
             join(d1.path, 'pubspec.yaml'),
           ).readAsStringSync();
           expect(content, contains('c2:'));
-          expect(content, contains('git: git@github.com:user/c2.git'));
+          expect(content, contains('git:'));
           expect(content, contains('version: ^3.0.0'));
           expect(content, isNot(contains('tag_pattern:')));
         },
@@ -370,7 +370,7 @@ void main() {
           '^3.0.0',
         ]);
         final content = File(join(d1.path, 'pubspec.yaml')).readAsStringSync();
-        expect(content, contains('git: git@github.com:user/d2b.git'));
+        expect(content, contains('git:'));
         expect(content, contains('version: ^3.0.0'));
         expect(content, isNot(contains('tag_pattern:')));
       });

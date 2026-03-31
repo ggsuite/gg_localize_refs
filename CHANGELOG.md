@@ -1,5 +1,11 @@
 # Changelog
 
+## [Unreleased]
+
+### Changed
+
+- commit
+
 ## [2.0.0] - 2026-03-27
 
 ### Added
@@ -51,5 +57,6 @@
 
 - Update gg\_publish to ^^3.2.0 and remove publish\_to field
 
+[Unreleased]: https://github.com/ggsuite/gg_localize_refs/compare/2.0.0...HEAD
 [2.0.0]: https://github.com/ggsuite/gg_localize_refs/compare/1.0.0...2.0.0
 [1.0.0]: https://github.com/ggsuite/gg_localize_refs/tag/%tag

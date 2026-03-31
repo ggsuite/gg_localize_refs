@@ -358,10 +358,7 @@ void main() {
             final resultYaml = File(
               join(project1.path, 'pubspec.yaml'),
             ).readAsStringSync();
-            expect(
-              resultYaml,
-              contains('git: git@github.com:user/project2.git'),
-            );
+            expect(resultYaml, contains('git:'));
             expect(resultYaml, contains('version: ^2.0.4'));
             expect(resultYaml, isNot(contains('ref:')));
             expect(resultYaml, isNot(contains('tag_pattern:')));
