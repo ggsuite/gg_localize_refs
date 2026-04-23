@@ -482,7 +482,7 @@ void main() {
           final resultJson = File(
             p.join(dProject1.path, 'package.json'),
           ).readAsStringSync();
-          expect(resultJson, contains('"test2_ts":"file:../project2"'));
+          expect(resultJson, contains('"test2_ts": "file:../project2"'));
 
           final backupJson = File(
             p.join(dProject1.path, '.gg_localize_refs_backup.json'),
@@ -561,7 +561,7 @@ void main() {
           final resultJson = File(
             p.join(project1.path, 'package.json'),
           ).readAsStringSync();
-          expect(resultJson, contains('"proj2_ts":"file:../project2"'));
+          expect(resultJson, contains('"proj2_ts": "file:../project2"'));
 
           final backupJson = File(
             p.join(project1.path, '.gg_localize_refs_backup.json'),

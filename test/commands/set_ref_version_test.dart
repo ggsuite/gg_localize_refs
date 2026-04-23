@@ -453,7 +453,7 @@ void main() {
         final d = Directory(join(dWorkspace.path, 'ts_scalar'));
         await createDirs(<Directory>[d]);
         File(join(d.path, 'package.json')).writeAsStringSync(
-          '{"name":"ts_scalar","dependencies":{"dep":"^1.0.0"}}',
+          '{"name":"ts_scalar","dependencies":{"dep": "^1.0.0"}}',
         );
 
         await runner.run(<String>[
@@ -466,14 +466,14 @@ void main() {
           '^2.0.0',
         ]);
         final content = File(join(d.path, 'package.json')).readAsStringSync();
-        expect(content, contains('"dep":"^2.0.0"'));
+        expect(content, contains('"dep": "^2.0.0"'));
       });
 
       test('updates devDependency in package.json', () async {
         final d = Directory(join(dWorkspace.path, 'ts_dev'));
         await createDirs(<Directory>[d]);
         File(join(d.path, 'package.json')).writeAsStringSync(
-          '{"name":"ts_dev","devDependencies":{"dep":"^1.0.0"}}',
+          '{"name":"ts_dev","devDependencies":{"dep": "^1.0.0"}}',
         );
 
         await runner.run(<String>[
@@ -486,7 +486,7 @@ void main() {
           '^1.1.0',
         ]);
         final content = File(join(d.path, 'package.json')).readAsStringSync();
-        expect(content, contains('"dep":"^1.1.0"'));
+        expect(content, contains('"dep": "^1.1.0"'));
       });
 
       test('no change when value is equal in '
@@ -494,7 +494,12 @@ void main() {
         final d = Directory(join(dWorkspace.path, 'ts_equal'));
         await createDirs(<Directory>[d]);
         File(join(d.path, 'package.json')).writeAsStringSync(
-          '{"name":"ts_equal","dependencies":{"dep":"^1.0.0"}}',
+          '{\n'
+          '  "name": "ts_equal",\n'
+          '  "dependencies": {\n'
+          '    "dep": "^1.0.0"\n'
+          '  }\n'
+          '}',
         );
         messages.clear();
         await runner.run(<String>[
@@ -507,7 +512,7 @@ void main() {
           '^1.0.0',
         ]);
         final content = File(join(d.path, 'package.json')).readAsStringSync();
-        expect(content, contains('"dep":"^1.0.0"'));
+        expect(content, contains('"dep": "^1.0.0"'));
         expect(messages.join('\n'), contains('No files were changed'));
       });
 

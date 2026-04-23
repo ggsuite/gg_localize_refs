@@ -207,7 +207,8 @@ void main() {
         newValue: '^2.0.0',
       );
 
-      expect(updated, contains('"dep":"^2.0.0"'));
+      expect(updated, contains('"dep": "^2.0.0"'));
+      expect(updated, contains('\n'));
     });
 
     test('replaceDependencyInContent returns original content with newline '

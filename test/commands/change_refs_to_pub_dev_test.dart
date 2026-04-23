@@ -475,7 +475,7 @@ void main() {
           final resultJson = File(
             join(dProject1.path, 'package.json'),
           ).readAsStringSync();
-          expect(resultJson, contains('"test2_ts":"git+'));
+          expect(resultJson, contains('"test2_ts": "git+'));
         });
 
         test('TypeScript: when package.json '
@@ -587,7 +587,7 @@ void main() {
 
           File(join(project1.path, 'package.json')).writeAsStringSync(
             '{"name":"proj1_ts","version":"1.0.0",'
-            '"devDependencies":{"proj2_ts":"file:../project2"}}',
+            '"devDependencies":{"proj2_ts": "file:../project2"}}',
           );
           File(
             join(project2.path, 'package.json'),
@@ -603,7 +603,7 @@ void main() {
           final resultJson = File(
             join(project1.path, 'package.json'),
           ).readAsStringSync();
-          expect(resultJson, contains('"proj2_ts":"git+'));
+          expect(resultJson, contains('"proj2_ts": "git+'));
           expect(resultJson, isNot(contains('file:')));
 
           deleteDirs(<Directory>[workspace]);
@@ -635,7 +635,7 @@ void main() {
           final resultJson = File(
             join(project1.path, 'package.json'),
           ).readAsStringSync();
-          expect(resultJson, contains('"proj2_ts":"git+'));
+          expect(resultJson, contains('"proj2_ts": "git+'));
 
           deleteDirs(<Directory>[workspace]);
         });
@@ -650,7 +650,7 @@ void main() {
 
             File(join(project1.path, 'package.json')).writeAsStringSync(
               '{"name":"proj1_ts","version":"1.0.0",'
-              '"dependencies":{"proj2_ts":"file:../project2"}}',
+              '"dependencies":{"proj2_ts": "file:../project2"}}',
             );
             File(
               join(project2.path, 'package.json'),
@@ -676,7 +676,7 @@ void main() {
             final resultJson = File(
               join(project1.path, 'package.json'),
             ).readAsStringSync();
-            expect(resultJson, contains('"proj2_ts":"git+'));
+            expect(resultJson, contains('"proj2_ts": "git+'));
 
             deleteDirs(<Directory>[workspace]);
           },

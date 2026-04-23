@@ -13,6 +13,8 @@ import 'package:gg_localize_refs/src/backend/languages/project_language.dart';
 ///
 /// Projects are detected via a package.json manifest file.
 class TypeScriptProjectLanguage extends ProjectLanguage {
+  static const JsonEncoder _encoder = JsonEncoder.withIndent('  ');
+
   @override
   ProjectLanguageId get id => ProjectLanguageId.typescript;
 
@@ -191,11 +193,11 @@ class TypeScriptProjectLanguage extends ProjectLanguage {
     final typedSection = section.cast<String, dynamic>();
     typedSection[reference.name] = newValue;
     manifest[reference.sectionName] = typedSection;
-    return '${jsonEncode(manifest)}\n';
+    return '${_encoder.convert(manifest)}\n';
   }
 
   @override
   String stringifyManifest(dynamic manifest) {
-    return '${jsonEncode(manifest)}\n';
+    return '${_encoder.convert(manifest)}\n';
   }
 }
