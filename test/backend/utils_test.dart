@@ -145,6 +145,26 @@ void main() {
           p.join(project.path, '.gg', '.gg_localize_refs_backup.yaml'),
         );
       });
+
+      test(
+        'dartPublishToBackupFile returns backup json inside .gg directory',
+        () {
+          final workspace = createWorkspace('utils_dart_publish_to_file');
+          final project = Directory(p.join(workspace.path, 'project'));
+          project.createSync(recursive: true);
+
+          final file = Utils.dartPublishToBackupFile(project);
+
+          expect(
+            file.path,
+            p.join(
+              project.path,
+              '.gg',
+              '.gg_localize_refs_publish_to_backup.json',
+            ),
+          );
+        },
+      );
     });
 
     group('readDependenciesFromJson()', () {

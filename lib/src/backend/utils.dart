@@ -53,6 +53,16 @@ class Utils {
     );
   }
 
+  /// Returns the backup file that stores the original `publish_to` value.
+  static File dartPublishToBackupFile(Directory directory) {
+    return File(
+      p.join(
+        dartBackupDir(directory).path,
+        '.gg_localize_refs_publish_to_backup.json',
+      ),
+    );
+  }
+
   /// Reads the origin URL from git for [dependencyName].
   static Future<String> getGitRemoteUrl(
     Directory directory,

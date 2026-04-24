@@ -157,11 +157,6 @@ class ChangeRefsToGitFeatureBranch extends DirCommand<dynamic> {
       references: references,
       shouldRefreshBackup: _shouldBackupOriginalGitDependency,
     );
-    if (_support.shouldBackupPublishTo(node: node, references: references)) {
-      replacedDependencies.addAll(
-        backupPublishTo(yamlMap as Map<dynamic, dynamic>),
-      );
-    }
 
     await _support.saveDependenciesAsJson(
       replacedDependencies,

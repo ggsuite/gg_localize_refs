@@ -260,7 +260,7 @@ void main() {
           final resultYaml = File(
             join(dProject1.path, 'pubspec.yaml'),
           ).readAsStringSync();
-          expect(resultYaml, isNot(contains('publish_to: none')));
+          expect(resultYaml, isNot(contains('path: ../project2')));
         });
 
         test('when pubspec is correct and has git refs', () async {

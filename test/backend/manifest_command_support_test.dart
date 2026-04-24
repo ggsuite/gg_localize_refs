@@ -361,156 +361,6 @@ void main() {
       });
     });
 
-    group('shouldBackupPublishTo()', () {
-      test('returns true for pub.dev dependency versions', () {
-        final workspace = createWorkspace(
-          'manifest_support_backup_publish_yes',
-        );
-        final projectDir = Directory(p.join(workspace.path, 'project1'))
-          ..createSync(recursive: true);
-        final depDir = Directory(p.join(workspace.path, 'project2'))
-          ..createSync(recursive: true);
-        final depNode = createNode(
-          name: 'dep',
-          directory: depDir,
-          language: DartProjectLanguage(),
-        );
-        final node = createNode(
-          name: 'pkg',
-          directory: projectDir,
-          language: DartProjectLanguage(),
-          dependencies: <String, ProjectNode>{'dep': depNode},
-        );
-        final references = <String, DependencyReference>{
-          'dep': const DependencyReference(
-            sectionName: 'dependencies',
-            name: 'dep',
-            value: '^1.0.0',
-          ),
-        };
-
-        final result = support.shouldBackupPublishTo(
-          node: node,
-          references: references,
-        );
-
-        expect(result, isTrue);
-      });
-
-      test('returns true for git dependency refs with version', () {
-        final workspace = createWorkspace(
-          'manifest_support_backup_publish_tag',
-        );
-        final projectDir = Directory(p.join(workspace.path, 'project1'))
-          ..createSync(recursive: true);
-        final depDir = Directory(p.join(workspace.path, 'project2'))
-          ..createSync(recursive: true);
-        final depNode = createNode(
-          name: 'dep',
-          directory: depDir,
-          language: DartProjectLanguage(),
-        );
-        final node = createNode(
-          name: 'pkg',
-          directory: projectDir,
-          language: DartProjectLanguage(),
-          dependencies: <String, ProjectNode>{'dep': depNode},
-        );
-        final references = <String, DependencyReference>{
-          'dep': const DependencyReference(
-            sectionName: 'dependencies',
-            name: 'dep',
-            value: <String, dynamic>{
-              'git': 'git@github.com:user/dep.git',
-              'version': '^2.0.0',
-            },
-          ),
-        };
-
-        final result = support.shouldBackupPublishTo(
-          node: node,
-          references: references,
-        );
-
-        expect(result, isTrue);
-      });
-
-      test('returns false for path dependency refs', () {
-        final workspace = createWorkspace(
-          'manifest_support_backup_publish_path_no',
-        );
-        final projectDir = Directory(p.join(workspace.path, 'project1'))
-          ..createSync(recursive: true);
-        final depDir = Directory(p.join(workspace.path, 'project2'))
-          ..createSync(recursive: true);
-        final depNode = createNode(
-          name: 'dep',
-          directory: depDir,
-          language: DartProjectLanguage(),
-        );
-        final node = createNode(
-          name: 'pkg',
-          directory: projectDir,
-          language: DartProjectLanguage(),
-          dependencies: <String, ProjectNode>{'dep': depNode},
-        );
-        final references = <String, DependencyReference>{
-          'dep': const DependencyReference(
-            sectionName: 'dependencies',
-            name: 'dep',
-            value: <String, dynamic>{'path': '../project2'},
-          ),
-        };
-
-        final result = support.shouldBackupPublishTo(
-          node: node,
-          references: references,
-        );
-
-        expect(result, isFalse);
-      });
-
-      test('returns false for plain git refs without version', () {
-        final workspace = createWorkspace(
-          'manifest_support_backup_publish_git',
-        );
-        final projectDir = Directory(p.join(workspace.path, 'project1'))
-          ..createSync(recursive: true);
-        final depDir = Directory(p.join(workspace.path, 'project2'))
-          ..createSync(recursive: true);
-        final depNode = createNode(
-          name: 'dep',
-          directory: depDir,
-          language: DartProjectLanguage(),
-        );
-        final node = createNode(
-          name: 'pkg',
-          directory: projectDir,
-          language: DartProjectLanguage(),
-          dependencies: <String, ProjectNode>{'dep': depNode},
-        );
-        final references = <String, DependencyReference>{
-          'dep': const DependencyReference(
-            sectionName: 'dependencies',
-            name: 'dep',
-            value: <String, dynamic>{
-              'git': <String, dynamic>{
-                'url': 'git@github.com:user/dep.git',
-                'ref': 'main',
-              },
-            },
-          ),
-        };
-
-        final result = support.shouldBackupPublishTo(
-          node: node,
-          references: references,
-        );
-
-        expect(result, isFalse);
-      });
-    });
-
     group('buildUpdatedDartBackupDependencies()', () {
       test(
         'keeps normalized existing backup entries and refreshes selected ones',
@@ -527,9 +377,8 @@ void main() {
             '{'
             '"keep_scalar":"^1.0.0",'
             '"keep_map":{"version":"^2.0.0"},'
-            '"drop_path":"path: ../x", '
-            '"publish_to_original":"none"'
-            '}',
+            '"drop_path":"path: ../x"'
+            ' }',
           );
 
           final depNode = createNode(
@@ -566,7 +415,6 @@ void main() {
           expect(result['keep_map'], '^2.0.0');
           expect(result['dep'], '^3.0.0');
           expect(result.containsKey('drop_path'), isFalse);
-          expect(result.containsKey('publish_to_original'), isFalse);
         },
       );
 

@@ -117,11 +117,6 @@ class ChangeRefsToLocal extends DirCommand<dynamic> {
       references: references,
       shouldRefreshBackup: _shouldRefreshBackupValue,
     );
-    if (_support.shouldBackupPublishTo(node: node, references: references)) {
-      replacedDependencies.addAll(
-        backupPublishTo(yamlMap as Map<dynamic, dynamic>),
-      );
-    }
 
     var newPubspecContent = pubspecContent;
     for (final dependency in node.dependencies.entries) {

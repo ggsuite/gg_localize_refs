@@ -127,33 +127,6 @@ class ManifestCommandSupport {
     return false;
   }
 
-  /// Returns whether publish_to should be backed up for this manifest.
-  bool shouldBackupPublishTo({
-    required ProjectNode node,
-    required Map<String, DependencyReference> references,
-  }) {
-    for (final dependency in node.dependencies.entries) {
-      final reference = references[dependency.key];
-      if (reference == null) {
-        continue;
-      }
-
-      final dependencyYaml = yamlToString(reference.value).trimLeft();
-      final isPubDevVersion =
-          !dependencyYaml.startsWith('path:') &&
-          !dependencyYaml.startsWith('git:');
-      final isGitWithVersion =
-          dependencyYaml.startsWith('git:') &&
-          dependencyYaml.contains('version:');
-
-      if (!isPubDevVersion && !isGitWithVersion) {
-        return false;
-      }
-    }
-
-    return true;
-  }
-
   /// Returns backup entries normalized to plain version strings where possible.
   Map<String, dynamic> buildUpdatedDartBackupDependencies({
     required ProjectNode node,
@@ -168,10 +141,6 @@ class ManifestCommandSupport {
     final updatedBackup = <String, dynamic>{};
 
     for (final entry in existingBackup.entries) {
-      if (entry.key == 'publish_to_original') {
-        continue;
-      }
-
       final normalizedValue = normalizeBackupVersionValue(entry.value);
       if (normalizedValue != null) {
         updatedBackup[entry.key] = normalizedValue;

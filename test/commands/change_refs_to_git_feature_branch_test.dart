@@ -524,55 +524,52 @@ void main() {
           },
         );
 
-        test(
-          'backs up publish_to only for pub.dev and git version refs',
-          () async {
-            final workspace = createTempDir('git_feature_publish_to_allowed');
-            final project1 = Directory(p.join(workspace.path, 'project1'));
-            final project2 = Directory(p.join(workspace.path, 'project2'));
-            await createDirs(<Directory>[project1, project2]);
+        test('does not write publish_to_original into deps backup', () async {
+          final workspace = createTempDir('git_feature_publish_to_no_backup');
+          final project1 = Directory(p.join(workspace.path, 'project1'));
+          final project2 = Directory(p.join(workspace.path, 'project2'));
+          await createDirs(<Directory>[project1, project2]);
 
-            File(p.join(project1.path, 'pubspec.yaml')).writeAsStringSync(
-              'name: project1\n'
-              'version: 1.0.0\n'
-              'publish_to: none\n'
-              'dependencies:\n'
-              '  project2:\n'
-              '    git: git@github.com:user/project2.git\n'
-              '    version: ^2.0.0\n',
-            );
-            File(p.join(project2.path, 'pubspec.yaml')).writeAsStringSync(
-              'name: project2\n'
-              'version: 1.0.0\n',
-            );
+          File(p.join(project1.path, 'pubspec.yaml')).writeAsStringSync(
+            'name: project1\n'
+            'version: 1.0.0\n'
+            'publish_to: none\n'
+            'dependencies:\n'
+            '  project2:\n'
+            '    git: git@github.com:user/project2.git\n'
+            '    version: ^2.0.0\n',
+          );
+          File(p.join(project2.path, 'pubspec.yaml')).writeAsStringSync(
+            'name: project2\n'
+            'version: 1.0.0\n',
+          );
 
-            Process.runSync('git', <String>[
-              'init',
-            ], workingDirectory: project2.path);
-            Process.runSync('git', <String>[
-              'remote',
-              'add',
-              'origin',
-              'git@github.com:user/project2.git',
-            ], workingDirectory: project2.path);
+          Process.runSync('git', <String>[
+            'init',
+          ], workingDirectory: project2.path);
+          Process.runSync('git', <String>[
+            'remote',
+            'add',
+            'origin',
+            'git@github.com:user/project2.git',
+          ], workingDirectory: project2.path);
 
-            final local = ChangeRefsToGitFeatureBranch(ggLog: messages.add);
-            await local.get(
-              directory: project1,
-              ggLog: messages.add,
-              gitRef: 'feature/backup-publish-to',
-            );
+          final local = ChangeRefsToGitFeatureBranch(ggLog: messages.add);
+          await local.get(
+            directory: project1,
+            ggLog: messages.add,
+            gitRef: 'feature/backup-publish-to',
+          );
 
-            final backupJson = File(
-              p.join(project1.path, '.gg', '.gg_localize_refs_backup.json'),
-            ).readAsStringSync();
-            final backupMap = jsonDecode(backupJson) as Map<String, dynamic>;
+          final backupJson = File(
+            p.join(project1.path, '.gg', '.gg_localize_refs_backup.json'),
+          ).readAsStringSync();
+          final backupMap = jsonDecode(backupJson) as Map<String, dynamic>;
 
-            expect(backupMap['publish_to_original'], 'none');
+          expect(backupMap.containsKey('publish_to_original'), isFalse);
 
-            deleteDirs(<Directory>[workspace]);
-          },
-        );
+          deleteDirs(<Directory>[workspace]);
+        });
 
         test('with TypeScript dependencies converts to git refs', () async {
           final dProject1 = Directory(

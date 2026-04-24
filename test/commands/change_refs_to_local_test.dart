@@ -397,44 +397,8 @@ void main() {
           },
         );
 
-        test(
-          'backs up publish_to only for pub.dev and git version refs',
-          () async {
-            final workspace = createTempDir(
-              'localize_publish_to_backup_allowed',
-            );
-            final project1 = Directory(p.join(workspace.path, 'project1'));
-            final project2 = Directory(p.join(workspace.path, 'project2'));
-            await createDirs(<Directory>[project1, project2]);
-
-            File(p.join(project1.path, 'pubspec.yaml')).writeAsStringSync(
-              'name: project1\n'
-              'version: 1.0.0\n'
-              'publish_to: none\n'
-              'dependencies:\n'
-              '  project2: ^1.2.3\n',
-            );
-            File(p.join(project2.path, 'pubspec.yaml')).writeAsStringSync(
-              'name: project2\n'
-              'version: 1.0.0\n',
-            );
-
-            final local = ChangeRefsToLocal(ggLog: messages.add);
-            await local.get(directory: project1, ggLog: messages.add);
-
-            final backupJson = File(
-              p.join(project1.path, '.gg', '.gg_localize_refs_backup.json'),
-            ).readAsStringSync();
-            final backupMap = jsonDecode(backupJson) as Map<String, dynamic>;
-
-            expect(backupMap['publish_to_original'], 'none');
-
-            deleteDirs(<Directory>[workspace]);
-          },
-        );
-
-        test('does not back up publish_to for plain git refs', () async {
-          final workspace = createTempDir('localize_publish_to_backup_blocked');
+        test('does not write publish_to_original into deps backup', () async {
+          final workspace = createTempDir('localize_publish_to_not_in_backup');
           final project1 = Directory(p.join(workspace.path, 'project1'));
           final project2 = Directory(p.join(workspace.path, 'project2'));
           await createDirs(<Directory>[project1, project2]);
@@ -444,10 +408,7 @@ void main() {
             'version: 1.0.0\n'
             'publish_to: none\n'
             'dependencies:\n'
-            '  project2:\n'
-            '    git:\n'
-            '      url: git@github.com:user/project2.git\n'
-            '      ref: main\n',
+            '  project2: ^1.2.3\n',
           );
           File(p.join(project2.path, 'pubspec.yaml')).writeAsStringSync(
             'name: project2\n'

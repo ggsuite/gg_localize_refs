@@ -13,7 +13,6 @@ import 'package:gg_localize_refs/src/backend/file_changes_buffer.dart';
 import 'package:gg_localize_refs/src/backend/languages/project_language.dart';
 import 'package:gg_localize_refs/src/backend/manifest_command_support.dart';
 import 'package:gg_localize_refs/src/backend/process_dependencies.dart';
-import 'package:gg_localize_refs/src/backend/publish_to_utils.dart';
 import 'package:gg_localize_refs/src/backend/utils.dart';
 import 'package:gg_localize_refs/src/backend/yaml_to_string.dart';
 import 'package:gg_log/gg_log.dart';
@@ -146,7 +145,6 @@ class ChangeRefsToPubDev extends DirCommand<dynamic> {
       );
     }
 
-    newPubspecContent = restorePublishTo(newPubspecContent, savedDependencies);
     fileChangesBuffer.add(pubspec, newPubspecContent);
   }
 
