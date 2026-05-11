@@ -359,9 +359,10 @@ void main() {
               join(project1.path, 'pubspec.yaml'),
             ).readAsStringSync();
             expect(resultYaml, contains('git:'));
+            expect(resultYaml, contains('url:'));
+            expect(resultYaml, contains('tag_pattern: "{{version}}"'));
             expect(resultYaml, contains('version: ^2.0.4'));
             expect(resultYaml, isNot(contains('ref:')));
-            expect(resultYaml, isNot(contains('tag_pattern:')));
 
             deleteDirs(<Directory>[workspace]);
           },
@@ -404,6 +405,43 @@ void main() {
             deleteDirs(<Directory>[workspace]);
           },
         );
+
+        test('leaves git map with tag_pattern and version unchanged', () async {
+          final workspace = createTempDir('unlocalize_git_tagpattern_noop_ws');
+          final project1 = Directory(join(workspace.path, 'project1'));
+          final project2 = Directory(join(workspace.path, 'project2'));
+          await createDirs(<Directory>[project1, project2]);
+
+          File(join(project1.path, 'pubspec.yaml')).writeAsStringSync(
+            'name: project1\n'
+            'version: 1.0.0\n'
+            'dependencies:\n'
+            '  project2:\n'
+            '    git:\n'
+            '      url: git@github.com:user/project2.git\n'
+            '      tag_pattern: "{{version}}"\n'
+            '    version: ^2.0.4\n',
+          );
+          File(join(project2.path, 'pubspec.yaml')).writeAsStringSync(
+            'name: project2\n'
+            'version: 1.0.0\n',
+          );
+          File(join(project1.path, '.gg', '.gg_localize_refs_backup.json'))
+            ..createSync(recursive: true)
+            ..writeAsStringSync('{"project2":"^2.0.4"}');
+
+          final localMessages = <String>[];
+          final unlocal = ChangeRefsToPubDev(ggLog: localMessages.add);
+          await unlocal.get(directory: project1, ggLog: localMessages.add);
+
+          expect(
+            localMessages[0],
+            contains('Running change-refs-to-pub-dev in'),
+          );
+          expect(localMessages[1], contains('No files were changed'));
+
+          deleteDirs(<Directory>[workspace]);
+        });
 
         test(
           'uses saved dependency map version when backup entry is a map',
