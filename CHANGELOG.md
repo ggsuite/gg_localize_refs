@@ -5,6 +5,7 @@
 ### Changed
 
 - fix: add tag\_pattern to git fallback in change-refs-to-pub-dev
+- gg\_multi: changed references to git
 
 ## [2.1.1] - 2026-04-24
 
