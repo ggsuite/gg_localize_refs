@@ -271,7 +271,7 @@ class ChangeRefsToPubDev extends DirCommand<dynamic> {
     );
 
     return yamlToString(<String, dynamic>{
-      'git': gitUrl,
+      'git': <String, dynamic>{'url': gitUrl, 'tag_pattern': '"{{version}}"'},
       'version': version,
     }).trimRight();
   }
