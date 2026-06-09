@@ -5,6 +5,7 @@
 ### Changed
 
 - feat(ts): version-pinned git deps via #semver: + tag-push for npm/pnpm
+- refactor(ts): trim comments to grace-cloud style limits + do\_maintain layout
 
 ## [2.2.0] - 2026-06-08
 

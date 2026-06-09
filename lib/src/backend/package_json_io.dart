@@ -10,23 +10,14 @@ import 'dart:io';
 import 'package:path/path.dart' as p;
 
 // #############################################################################
-/// Small, defensive read-only access to the fields of a `package.json` that
-/// the TypeScript publish flow cares about.
-///
-/// All methods silently return `null` / `false` when the file is missing,
-/// unparseable, or carries an unexpected type. Callers that need the
-/// distinction between "no file" and "field absent" should inspect the
-/// directory themselves.
-///
-/// Lives here (rather than as static methods on `TypeScriptNpmSpec`) so the
-/// spec helper stays I/O-free and easy to unit-test in isolation.
+/// Defensive read-only access to the `package.json` fields the TS publish
+/// flow cares about. All accessors silently return `null`/`false` on missing
+/// or unparseable input — caller decides the fallback.
 class PackageJsonIo {
   PackageJsonIo._(); // coverage:ignore-line
 
   // ...........................................................................
-  /// Returns the value of the `version` field of `<directory>/package.json`,
-  /// or `null` when the file is missing, unparseable, has no `version`, or
-  /// the field is not a non-empty string.
+  /// Returns the `version` field, or `null` when missing/unparseable/empty.
   static String? readVersion(Directory directory) {
     final decoded = _decode(directory);
     if (decoded is! Map) return null;
@@ -36,17 +27,14 @@ class PackageJsonIo {
   }
 
   // ...........................................................................
-  /// Returns `true` when `<directory>/package.json` is flagged
-  /// `"private": true`. All non-true / missing / error states return `false`
-  /// — the caller can fall back to the public-registry path.
+  /// Whether `package.json` is flagged `"private": true`.
+  /// Anything else (missing, parse error, non-bool truthy) → `false`.
   static bool isPrivate(Directory directory) {
     final decoded = _decode(directory);
     return decoded is Map && decoded['private'] == true;
   }
 
-  // ...........................................................................
-  /// Reads and JSON-decodes `<directory>/package.json`, or returns `null`
-  /// when the file is missing or fails to parse.
+  /// Reads and JSON-decodes `<directory>/package.json`, or `null` on failure.
   static dynamic _decode(Directory directory) {
     final pkg = File(p.join(directory.path, 'package.json'));
     if (!pkg.existsSync()) return null;

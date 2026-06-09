@@ -321,9 +321,7 @@ class ChangeRefsToGitFeatureBranch extends DirCommand<dynamic> {
     final url = gitInfo.$1;
     final ref = gitInfo.$2;
 
-    // `git remote get-url` is happy to emit the SCP shorthand
-    // (`git@host:path`) — pnpm 11 isn't, so route the URL through the
-    // normalizer that produces a `git+ssh://…` spec the resolver accepts.
+    // SCP-shorthand `git@host:path` → `git+ssh://…` (pnpm 11 rejects SCP).
     return '${TypeScriptNpmSpec.toNpmGitBase(url)}#$ref';
   }
 

@@ -515,8 +515,7 @@ void main() {
             join(dProject1.path, 'package.json'),
           ).readAsStringSync();
           expect(resultJson, contains('"test2_ts": "git+'));
-          // Private-dep path: the saved registry range (^2.0.4) is preserved
-          // as a `#semver:` selector on the rebuilt git URL.
+          // Private dep: saved `^2.0.4` becomes `#semver:^2.0.4`.
           expect(resultJson, contains('#semver:^2.0.4'));
         });
 
@@ -620,18 +619,9 @@ void main() {
           },
         );
 
-        // ---------------------------------------------------------------
-        // The TS unlocalize scenarios below all share the same 2-project
-        // workspace shape (`project1` is the consumer, `project2` is the
-        // local dependency `proj2_ts`). _TsWorkspace folds that fixture
-        // builder into one call so each test only spells out the variables
-        // that actually drive the scenario.
-        // ---------------------------------------------------------------
+        // TS unlocalize scenarios — `_TsWorkspace` wraps the 2-project setup.
         test('TypeScript: a saved registry range is restored as-is for a '
             'public dependency', () async {
-          // proj2 is *not* `private: true` — the unlocalize step must keep
-          // the original `^2.0.0` range so the installer can hit the npm
-          // registry as it did before localization.
           final ws = await _TsWorkspace.build(
             suffix: 'unlocalize_ts_dev_only_ws',
             backupSpec: '^2.0.0',
@@ -646,10 +636,6 @@ void main() {
 
         test('TypeScript: a saved registry range round-trips even when the '
             'current spec is a git+ssh URL', () async {
-          // CURRENT manifest value is a git+ssh URL (so the localize step
-          // recognized it as non-`file:` and kept it as the saved value),
-          // but the SAVED value is a range. Because proj2 is public, the
-          // resolved spec must again be the saved range.
           final ws = await _TsWorkspace.build(
             suffix: 'unlocalize_ts_dev_git_ws',
             currentDepSpec: 'git+ssh://git@github.com:user/proj2_ts.git#main',
@@ -663,9 +649,6 @@ void main() {
 
         test('TypeScript: a private dependency is rewritten to '
             'git+<remote>#semver:<range>', () async {
-          // proj2 carries `private: true`, so the saved `^2.0.0` registry
-          // range cannot point at the npm registry — it must become a git
-          // URL pinned to the same range via a `#semver:` fragment.
           final ws = await _TsWorkspace.build(
             suffix: 'unlocalize_ts_private_dep_ws',
             backupSpec: '^2.0.0',
@@ -681,11 +664,6 @@ void main() {
         test(
           'TypeScript: an already-pinned saved git URL is preserved verbatim',
           () async {
-            // When the user (or an earlier publish) wrote a fully qualified
-            // git URL with `#semver:` or `#<tag>` into the manifest, the
-            // localize step backs that string up unchanged — the unlocalize
-            // step must restore it exactly so consumer pins survive the
-            // round-trip.
             const pinned =
                 'git+https://github.com/user/proj2_ts.git#semver:^1.0.0';
             final ws = await _TsWorkspace.build(
@@ -701,9 +679,6 @@ void main() {
 
         test('TypeScript: a private dep with a non-version saved spec falls '
             'back to the local package version', () async {
-          // `latest`/`next` are valid npm dist-tags but not SemVer ranges.
-          // For a private dep we fall back to the local `version` and emit
-          // `#semver:^<localVersion>`.
           final ws = await _TsWorkspace.build(
             suffix: 'unlocalize_ts_dist_tag_fallback_ws',
             backupSpec: 'latest',
@@ -719,14 +694,10 @@ void main() {
         test('TypeScript: a private dep falls all the way back to a bare git+ '
             'URL when neither the saved spec nor the local package.json '
             'yields a version', () async {
-          // Edge case: saved spec is a dist-tag, AND the dep package.json
-          // does not declare a `version`. We have nothing to pin against,
-          // so we emit the bare git URL — better an unpinned dependency
-          // than a broken install.
           final ws = await _TsWorkspace.build(
             suffix: 'unlocalize_ts_no_version_ws',
             backupSpec: 'latest',
-            proj2Version: null, // No version field on purpose.
+            proj2Version: null,
             proj2Private: true,
             initProj2Git: true,
           );
@@ -738,9 +709,6 @@ void main() {
 
         test('TypeScript: a saved bare git URL gets a #semver: fragment '
             'from the local package version', () async {
-          // A historical backup may contain just `git+<url>` without a
-          // fragment. We append `#semver:^<localVersion>` so consumers
-          // still get a meaningful range instead of an unpinned HEAD.
           const bare = 'git+https://github.com/user/proj2_ts.git';
           final ws = await _TsWorkspace.build(
             suffix: 'unlocalize_ts_bare_git_ws',
@@ -778,17 +746,12 @@ void main() {
 }
 
 // #############################################################################
-/// Builder for the 2-project TypeScript workspace fixture used by the
-/// `_buildTypeScriptRemoteDependency` scenarios — `project1` is the consumer
-/// and `project2` is the local dep `proj2_ts`. Each named parameter maps
-/// directly to one variable the scenarios actually exercise (current spec,
-/// backup spec, public vs private dep, git remote presence). Tests stay
-/// readable as a single named-arg call instead of a 30-line copy-paste.
+/// Fixture for 2-project TS unlocalize scenarios — `project1` is the
+/// consumer, `project2` is the local dep `proj2_ts`.
 class _TsWorkspace {
   _TsWorkspace._(this._workspace, this._project1);
 
-  /// Sets up the temp dirs, writes the consumer and dep `package.json`, and
-  /// stores the saved backup spec.
+  /// Writes manifests + backup, optionally git-inits the dep.
   static Future<_TsWorkspace> build({
     required String suffix,
     required String backupSpec,

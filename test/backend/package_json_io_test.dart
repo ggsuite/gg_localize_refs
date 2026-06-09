@@ -77,8 +77,7 @@ void main() {
       });
 
       test('returns false when "private" is a non-bool truthy value', () {
-        // Defensive: only the literal boolean `true` flips the flag — we never
-        // want to misclassify a stringly-typed flag as private.
+        // Only the literal `true` counts; stringly flags are not private.
         pkg().writeAsStringSync('{"name":"x","private":"yes"}');
         expect(PackageJsonIo.isPrivate(tmp), isFalse);
       });

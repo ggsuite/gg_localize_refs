@@ -492,10 +492,6 @@ void main() {
       test(
         'rewrites a private dep to git+<existing-url>#semver:<newVersion>',
         () async {
-          // The sibling package is `private: true` and the current spec is
-          // already a `git+https://` URL — `set-ref-version` must preserve
-          // host/protocol/auth (the URL stripped of any fragment) and pin
-          // the new range with `#semver:`.
           final dep = Directory(join(dWorkspace.path, 'priv_dep'));
           final consumer = Directory(join(dWorkspace.path, 'consumer_priv'));
           await createDirs(<Directory>[dep, consumer]);
@@ -533,9 +529,7 @@ void main() {
       test(
         'rewrites a private dep preserving ssh protocol, dropping prior pin',
         () async {
-          // Idempotency test: the current spec carries a `#main` branch pin
-          // and uses `git+ssh://`. The new spec must reuse that base (so the
-          // consumer keeps SSH auth) and swap the fragment for `#semver:`.
+          // Current spec has `#main`; the new spec keeps the SSH base.
           final dep = Directory(join(dWorkspace.path, 'priv_dep_ssh'));
           final consumer = Directory(
             join(dWorkspace.path, 'consumer_priv_ssh'),
@@ -577,11 +571,7 @@ void main() {
 
       test('rewrites a private dep with an SCP-style oldDependency to the '
           'npm-compatible git+ssh:// form', () async {
-        // pnpm 11 rejects the raw SCP shorthand (`git@host:path` and
-        // `git+git@host:path` both fail with
-        // ERR_PNPM_SPEC_NOT_SUPPORTED_BY_ANY_RESOLVER). `set-ref-version`
-        // must therefore normalize the base to the accepted
-        // `git+ssh://…` form before appending `#semver:`.
+        // pnpm 11 rejects SCP; normalize to `git+ssh://...` before pinning.
         final dep = Directory(join(dWorkspace.path, 'priv_dep_scp'));
         final consumer = Directory(join(dWorkspace.path, 'consumer_priv_scp'));
         await createDirs(<Directory>[dep, consumer]);
@@ -618,10 +608,7 @@ void main() {
 
       test('rewrites a private dep with a hosted-range current spec to '
           'git+<freshly-read-remote>#semver:<newVersion>', () async {
-        // The CURRENT spec is a registry range (no git URL to recycle).
-        // For a private dep we must read the git remote freshly and emit
-        // a `git+…#semver:` spec. This covers the non-git branch of
-        // `_buildPrivateTypeScriptGitSpec`.
+        // Covers the non-git branch of `_buildPrivateTypeScriptGitSpec`.
         final dep = Directory(join(dWorkspace.path, 'priv_dep_hosted'));
         final consumer = Directory(
           join(dWorkspace.path, 'consumer_priv_hosted'),
@@ -648,8 +635,7 @@ void main() {
         final content = File(
           join(consumer.path, 'package.json'),
         ).readAsStringSync();
-        // The remote URL is whatever `initGit` wired up — we only assert
-        // the shape, not the temp-dir-specific origin path.
+        // Only the spec shape matters here, not the temp-dir origin path.
         expect(content, contains('"@scope/priv_dep": "git+'));
         expect(content, contains('#semver:^2.0.0'));
       });
@@ -657,9 +643,7 @@ void main() {
       test(
         'replaces with the new version range when the dep package is public',
         () async {
-          // Sibling package without private:true must be overwritten with the
-          // requested hosted version range, i.e. preserves the existing
-          // behaviour for publishable TS dependencies.
+          // Public dep keeps the hosted range — pre-existing behaviour.
           final dep = Directory(join(dWorkspace.path, 'pub_dep'));
           final consumer = Directory(join(dWorkspace.path, 'consumer_pub'));
           await createDirs(<Directory>[dep, consumer]);

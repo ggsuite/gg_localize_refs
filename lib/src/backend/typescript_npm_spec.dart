@@ -5,28 +5,14 @@
 // found in the LICENSE file in the root of this package.
 
 // #############################################################################
-/// Pure helpers around the small grammar of npm dependency-spec strings as
-/// they appear in `package.json`.
-///
-/// The methods here are intentionally I/O-free so they can be unit-tested in
-/// isolation and reused from any command that needs to read or build a spec
-/// string — `change-refs-to-pub-dev`, `set-ref-version`, etc.
-///
-/// The npm spec grammar we care about:
-///
-///  * **Registry range** — `^1.2.3`, `~1.2.3`, `>=1.2.3 <2`, the bare
-///    `1.2.3`, the empty string, `latest`, `next`, …
-///  * **Git URL** — `git+https://…`, `git+ssh://…`, `git://…`
-///  * **Git shorthand** — `github:user/repo`, `gitlab:…`, `bitbucket:…`
-///  * **Localized** — `file:…`, `link:…` (only produced by gg_localize_refs)
-///
-/// A git URL may carry a `#<fragment>` that pins it to a tag, branch, commit,
-/// or — what this helper exists for — a `#semver:<range>` selector.
+/// Pure helpers for the small grammar of npm dependency-spec strings —
+/// classification, SemVer-range coercion, and URL/fragment manipulation.
+/// I/O-free so commands can reuse them and tests stay trivial.
 class TypeScriptNpmSpec {
   TypeScriptNpmSpec._(); // coverage:ignore-line
 
   // ...........................................................................
-  /// Whether [spec] is one of the npm git URL or git-shorthand forms.
+  /// Whether [spec] is an npm git URL or git-shorthand form.
   static bool isGitSpec(String spec) {
     final t = spec.trim();
     return t.startsWith('git+') ||
@@ -37,19 +23,15 @@ class TypeScriptNpmSpec {
   }
 
   // ...........................................................................
-  /// Whether [spec] is a localized path/link reference produced by the
-  /// `change-refs-to-local` step.
+  /// Whether [spec] is a localized `file:`/`link:` reference.
   static bool isLocalizedSpec(String spec) {
     final t = spec.trim();
     return t.startsWith('file:') || t.startsWith('link:');
   }
 
   // ...........................................................................
-  /// Whether [spec] is a git URL that already carries a `#…` fragment
-  /// (a tag, branch, commit, or `#semver:` selector).
-  ///
-  /// Returns `false` for non-git specs so callers can use this as a guard
-  /// without first having to check `isGitSpec`.
+  /// Whether [spec] is a git URL that already carries a `#…` fragment.
+  /// `false` for non-git specs so callers can skip the [isGitSpec] check.
   static bool hasUrlFragment(String spec) {
     final t = spec.trim();
     if (!isGitSpec(t)) return false;
@@ -57,66 +39,33 @@ class TypeScriptNpmSpec {
   }
 
   // ...........................................................................
-  /// Coerces a version-ish string into a SemVer **range** suitable for an
-  /// npm `#semver:` fragment or a `dependencies` entry.
-  ///
-  /// Pass-through for anything already shaped like a range:
-  ///   * `^1.2.3`, `~1.2.3` (caret / tilde)
-  ///   * `>=1.2.3 <2.0.0`, `>1`, `=1.2.3` (comparator-based)
-  ///   * `1.x`, `1.2.x`, `*` (wildcard)
-  ///
-  /// Wraps a bare SemVer with a caret so it behaves like an npm constraint
-  /// rather than an exact pin:
-  ///   * `1.2.3`         → `^1.2.3`
-  ///   * `1.2.3-beta.4`  → `^1.2.3-beta.4`
-  ///
-  /// Returns `null` when [spec] is empty or doesn't look like a version
-  /// (e.g. a tag name like `next` or `latest`) — callers can then fall back
-  /// to a different source or omit the `#semver:` fragment entirely.
+  /// Coerces a version-ish string into a SemVer **range** for `#semver:` or
+  /// `dependencies`. Existing ranges pass through; a bare SemVer gets caret-
+  /// wrapped; non-versions like `latest`/`next` return `null`.
   static String? toSemverRange(String spec) {
     final t = spec.trim();
     if (t.isEmpty) return null;
-    // Already a range — pass through unchanged.
     if (t.startsWith('^') || t.startsWith('~')) return t;
     if (t.startsWith('<') || t.startsWith('>') || t.startsWith('=')) return t;
     if (t == '*' || t.contains('.x')) return t;
-    // Bare SemVer — wrap with caret so the spec stays a range.
     final firstChar = t.codeUnitAt(0);
     if (firstChar >= 0x30 && firstChar <= 0x39) return '^$t';
     return null;
   }
 
   // ...........................................................................
-  /// Converts a raw git remote URL (the kind `git remote get-url` prints) into
-  /// an **npm-compatible** git dependency base.
-  ///
-  /// The npm/pnpm git resolver only accepts a handful of forms; in
-  /// particular it does **not** accept the bare SCP-style URL
-  /// `git@host:path` even with a leading `git+` — that yields
-  /// `ERR_PNPM_SPEC_NOT_SUPPORTED_BY_ANY_RESOLVER` on pnpm 11. This helper
-  /// normalizes the common shapes:
-  ///
-  ///  * `git+https://…`, `git+ssh://…`, `git+git://…` — kept as-is.
-  ///  * `github:`, `gitlab:`, `bitbucket:` shorthands — kept as-is (they do
-  ///    not take a `git+` prefix).
-  ///  * `https://…`, `http://…`, `ssh://…`, `git://…` — prefixed with `git+`.
-  ///  * SCP-style `<user>@<host>:<path>` (with or without an erroneous
-  ///    `git+` prefix) — rewritten to `git+ssh://<user>@<host>/<path>`.
-  ///  * Anything else — prefixed with `git+` so historical call sites that
-  ///    receive a non-URL filesystem path (e.g. test fixtures) still produce
-  ///    a syntactically valid spec.
+  /// Normalizes a raw git remote URL into an npm-compatible base. SCP-style
+  /// `git@host:path` (which pnpm 11 rejects with ERR_PNPM_SPEC_NOT_SUPPORTED_
+  /// BY_ANY_RESOLVER) becomes `git+ssh://git@host/path`.
   static String toNpmGitBase(String remoteUrl) {
     final t = remoteUrl.trim();
 
-    // `git+<body>` — the body decides: re-emit unchanged when it's a real
-    // URL scheme, otherwise let the SCP rewrite normalize it.
     if (t.startsWith('git+')) {
       final body = t.substring(4);
       if (_isAcceptedUrlScheme(body)) return t;
       return _scpToGitPlusSsh(body) ?? t;
     }
 
-    // Already an accepted shape — return as-is.
     if (t.startsWith('git://') ||
         t.startsWith('github:') ||
         t.startsWith('gitlab:') ||
@@ -124,22 +73,16 @@ class TypeScriptNpmSpec {
       return t;
     }
 
-    // Bare URL scheme — prefix `git+`.
     if (_isAcceptedUrlScheme(t)) return 'git+$t';
 
-    // SCP-style remote — rewrite to `git+ssh://…`.
     final ssh = _scpToGitPlusSsh(t);
     if (ssh != null) return ssh;
 
-    // Anything else (filesystem paths, future schemes) — preserve the
-    // historical "just prepend git+" behavior so existing call sites keep
-    // emitting a syntactically valid spec.
+    // Filesystem paths / unknown schemes — historical `git+` fallback.
     return 'git+$t';
   }
 
-  /// True for the URL-scheme prefixes npm/pnpm's git resolver accepts when
-  /// they appear after a leading `git+` (or on their own, in which case the
-  /// caller adds the prefix).
+  /// True for URL-scheme prefixes the npm/pnpm git resolver accepts.
   static bool _isAcceptedUrlScheme(String s) {
     return s.startsWith('https://') ||
         s.startsWith('http://') ||
@@ -147,8 +90,8 @@ class TypeScriptNpmSpec {
         s.startsWith('git://');
   }
 
-  /// Rewrites `<user>@<host>:<path>` to `git+ssh://<user>@<host>/<path>`,
-  /// or returns null if [s] is not SCP-shaped.
+  /// Rewrites `<user>@<host>:<path>` → `git+ssh://<user>@<host>/<path>`,
+  /// or `null` if [s] is not SCP-shaped.
   static String? _scpToGitPlusSsh(String s) {
     final m = RegExp(r'^([A-Za-z0-9._-]+)@([^:/]+):(.+)$').firstMatch(s);
     if (m == null) return null;
@@ -164,9 +107,7 @@ class TypeScriptNpmSpec {
 
   // ...........................................................................
   /// Returns [gitUrl] with its fragment replaced by `#semver:<range>`.
-  ///
-  /// Idempotent — calling this on an already-pinned URL produces the same
-  /// output as calling it on the bare URL.
+  /// Idempotent — safe to re-apply.
   static String withSemverFragment(String gitUrl, String range) {
     return '${stripFragment(gitUrl)}#semver:$range';
   }

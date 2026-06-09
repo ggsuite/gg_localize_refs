@@ -86,8 +86,7 @@ void main() {
       });
 
       test('false for non-git specs even if they contain "#"', () {
-        // We never want to treat a registry range as fragment-bearing —
-        // callers use this as a guard before appending `#semver:`.
+        // Guards `#semver:` append; ranges must never look fragment-bearing.
         expect(TypeScriptNpmSpec.hasUrlFragment('^1.2.3'), isFalse);
         expect(TypeScriptNpmSpec.hasUrlFragment('latest'), isFalse);
         expect(TypeScriptNpmSpec.hasUrlFragment(''), isFalse);
@@ -198,9 +197,7 @@ void main() {
       });
 
       test('rewrites SCP-style URLs to git+ssh:// with a path slash', () {
-        // This is the actual production bug we are fixing — pnpm 11 rejects
-        // `git@host:path` and `git+git@host:path` with
-        // ERR_PNPM_SPEC_NOT_SUPPORTED_BY_ANY_RESOLVER.
+        // pnpm 11 rejects `git@host:path` and `git+git@host:path`.
         expect(
           TypeScriptNpmSpec.toNpmGitBase(
             'git@github.com:tssuite/ts_testproject_3.git',
@@ -219,11 +216,8 @@ void main() {
       });
 
       test('falls back to a bare `git+` prefix for unrecognized inputs '
-          '(local filesystem paths used by tests, future schemes, …)', () {
-        // Preserves the historical behavior of the call sites in
-        // change_refs_to_git_feature_branch / change_refs_to_pub_dev so
-        // tests that wire `Process.run('git init')` against a temp dir
-        // and expect a `git+<path>` spec keep working.
+          '(filesystem paths used by tests, future schemes, ...)', () {
+        // Historical shape: keeps test fixtures with raw temp dirs working.
         expect(
           TypeScriptNpmSpec.toNpmGitBase('weird:input'),
           'git+weird:input',

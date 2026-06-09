@@ -112,10 +112,7 @@ class SetRefVersion extends DirCommand<dynamic> {
     required String newVersion,
   }) async {
     if (language.id == ProjectLanguageId.typescript) {
-      // If the local source package is `private: true`, it cannot live on
-      // the npm registry — emit a `git+<remote>#semver:<range>` spec instead
-      // of a hosted version range (which would 404). Public packages get the
-      // hosted range straight through.
+      // Private dep → git+<remote>#semver:; public dep → hosted range.
       final dependencyDirectory = await _findDependencyDirectory(
         workspaceDirectory: workspaceDirectory,
         dependencyName: dependencyName,
@@ -162,16 +159,9 @@ class SetRefVersion extends DirCommand<dynamic> {
     }).trimRight();
   }
 
-  /// Builds the `git+<remote>#semver:<range>` spec used for private TS
-  /// dependencies.
-  ///
-  /// If the **current** spec is already a git URL its base (host + path,
-  /// stripped of any fragment) is reused — that preserves the user's choice
-  /// of protocol (`git+ssh://` vs `git+https://`) and any embedded auth.
-  /// Otherwise the remote URL of the dependency working tree is read fresh.
-  ///
-  /// [newVersion] is normalized to a SemVer range so a caller passing a bare
-  /// `1.2.3` still ends up with a usable `^1.2.3` constraint.
+  /// Builds `git+<remote>#semver:<range>` for a private TS dep — reuses the
+  /// protocol of an existing git spec, otherwise reads the remote fresh.
+  /// Bare `1.2.3` is caret-wrapped via [TypeScriptNpmSpec.toSemverRange].
   Future<String> _buildPrivateTypeScriptGitSpec({
     required Directory dependencyDirectory,
     required String dependencyName,
