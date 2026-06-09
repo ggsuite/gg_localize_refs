@@ -12,7 +12,9 @@ import 'package:gg_console_colors/gg_console_colors.dart';
 import 'package:gg_localize_refs/src/backend/file_changes_buffer.dart';
 import 'package:gg_localize_refs/src/backend/languages/project_language.dart';
 import 'package:gg_localize_refs/src/backend/manifest_command_support.dart';
+import 'package:gg_localize_refs/src/backend/package_json_io.dart';
 import 'package:gg_localize_refs/src/backend/process_dependencies.dart';
+import 'package:gg_localize_refs/src/backend/typescript_npm_spec.dart';
 import 'package:gg_localize_refs/src/backend/utils.dart';
 import 'package:gg_localize_refs/src/backend/yaml_to_string.dart';
 import 'package:gg_log/gg_log.dart';
@@ -239,9 +241,15 @@ class ChangeRefsToPubDev extends DirCommand<dynamic> {
   }
 
   /// Returns whether [dependencyValue] still points to a localized TS source.
+  ///
+  /// `file:` is the marker `change-refs-to-local` writes; the historical
+  /// `git+` heuristic stays for backward compatibility with backups that were
+  /// produced before this command knew how to round-trip a fully qualified
+  /// git URL.
   bool _isLocalizedTypeScriptDependency(String dependencyValue) {
     final trimmed = dependencyValue.trim();
-    return trimmed.startsWith('file:') || trimmed.startsWith('git+');
+    if (TypeScriptNpmSpec.isLocalizedSpec(trimmed)) return true;
+    return trimmed.startsWith('git+');
   }
 
   /// Builds the final remote Dart dependency YAML for [dependencyNode].
@@ -277,15 +285,71 @@ class ChangeRefsToPubDev extends DirCommand<dynamic> {
   }
 
   /// Builds the final remote TypeScript dependency spec for [dependencyNode].
+  ///
+  /// The result follows three rules, in order:
+  ///
+  ///  1. **Saved was a git URL** — preserved verbatim. An existing
+  ///     `#tag`/`#branch`/`#sha`/`#semver:` fragment is intentionally kept
+  ///     untouched so consumers can pin to whatever the original author
+  ///     chose. A bare git URL gets a `#semver:^<localVersion>` fragment
+  ///     appended so future patch releases of [dependencyNode] reach
+  ///     consumers without an extra manual bump.
+  ///
+  ///  2. **Saved was a registry range AND the local package is `private:
+  ///     true`** — the package cannot live on the npm registry, so we
+  ///     rewrite the spec to `git+<remote>#semver:<range>`. This is the
+  ///     standard inter-workspace case (think the `@tssuite/*` chain).
+  ///
+  ///  3. **Saved was a registry range AND the local package is public** —
+  ///     pass the saved range through. `npm`/`pnpm` will resolve it against
+  ///     the registry as before; injecting a git URL here would only hide
+  ///     the registry version from `pnpm update`.
   Future<String> _buildTypeScriptRemoteDependency({
     required ProjectNode dependencyNode,
     required dynamic savedDependency,
   }) async {
-    final gitUrl = await Utils.getGitRemoteUrl(
-      dependencyNode.directory,
-      dependencyNode.name,
-    );
-    return 'git+$gitUrl';
+    final savedSpec = savedDependency?.toString().trim() ?? '';
+
+    // Rule 1 — preserve a saved git URL. Bases are normalized so historical
+    // SCP-style entries (`git+git@host:path`) round-trip into the
+    // npm-compatible `git+ssh://…` form pnpm accepts.
+    if (TypeScriptNpmSpec.isGitSpec(savedSpec)) {
+      final base = TypeScriptNpmSpec.toNpmGitBase(
+        TypeScriptNpmSpec.stripFragment(savedSpec),
+      );
+      if (TypeScriptNpmSpec.hasUrlFragment(savedSpec)) {
+        final fragment = savedSpec.substring(savedSpec.indexOf('#'));
+        return '$base$fragment';
+      }
+      final range = _localSemverRange(dependencyNode);
+      if (range == null) return base;
+      return TypeScriptNpmSpec.withSemverFragment(base, range);
+    }
+
+    // Rule 2 — private local package: rewrite to a git URL with semver pin.
+    if (PackageJsonIo.isPrivate(dependencyNode.directory)) {
+      final gitUrl = await Utils.getGitRemoteUrl(
+        dependencyNode.directory,
+        dependencyNode.name,
+      );
+      final base = TypeScriptNpmSpec.toNpmGitBase(gitUrl);
+      final range =
+          TypeScriptNpmSpec.toSemverRange(savedSpec) ??
+          _localSemverRange(dependencyNode);
+      if (range == null) return base;
+      return TypeScriptNpmSpec.withSemverFragment(base, range);
+    }
+
+    // Rule 3 — public package: keep the original registry range.
+    return savedSpec;
+  }
+
+  /// Reads `package.json` of [dependencyNode] and returns a caret-style
+  /// SemVer range derived from its `version` field, or `null` when the file
+  /// is missing or carries no usable version.
+  String? _localSemverRange(ProjectNode dependencyNode) {
+    final version = PackageJsonIo.readVersion(dependencyNode.directory);
+    return version == null ? null : TypeScriptNpmSpec.toSemverRange(version);
   }
 
   /// Extracts a version constraint from [savedDependency] if available.

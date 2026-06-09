@@ -1,5 +1,11 @@
 # Changelog
 
+## [Unreleased]
+
+### Changed
+
+- feat(ts): version-pinned git deps via #semver: + tag-push for npm/pnpm
+
 ## [2.2.0] - 2026-06-08
 
 ### Changed
@@ -86,6 +92,7 @@
 
 - Update gg\_publish to ^^3.2.0 and remove publish\_to field
 
+[Unreleased]: https://github.com/ggsuite/gg_localize_refs/compare/2.2.0...HEAD
 [2.2.0]: https://github.com/ggsuite/gg_localize_refs/compare/2.1.2...2.2.0
 [2.1.2]: https://github.com/ggsuite/gg_localize_refs/compare/2.1.1...2.1.2
 [2.1.1]: https://github.com/ggsuite/gg_localize_refs/compare/2.1.0...2.1.1

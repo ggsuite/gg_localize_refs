@@ -13,6 +13,8 @@ import 'package:gg_localize_refs/src/backend/languages/dart_language.dart';
 import 'package:gg_localize_refs/src/backend/languages/project_language.dart';
 import 'package:gg_localize_refs/src/backend/languages/typescript_language.dart';
 import 'package:gg_localize_refs/src/backend/multi_language_graph.dart';
+import 'package:gg_localize_refs/src/backend/package_json_io.dart';
+import 'package:gg_localize_refs/src/backend/typescript_npm_spec.dart';
 import 'package:gg_localize_refs/src/backend/utils.dart';
 import 'package:gg_localize_refs/src/backend/yaml_to_string.dart';
 import 'package:gg_log/gg_log.dart';
@@ -110,6 +112,23 @@ class SetRefVersion extends DirCommand<dynamic> {
     required String newVersion,
   }) async {
     if (language.id == ProjectLanguageId.typescript) {
+      // If the local source package is `private: true`, it cannot live on
+      // the npm registry — emit a `git+<remote>#semver:<range>` spec instead
+      // of a hosted version range (which would 404). Public packages get the
+      // hosted range straight through.
+      final dependencyDirectory = await _findDependencyDirectory(
+        workspaceDirectory: workspaceDirectory,
+        dependencyName: dependencyName,
+      );
+      if (dependencyDirectory != null &&
+          PackageJsonIo.isPrivate(dependencyDirectory)) {
+        return _buildPrivateTypeScriptGitSpec(
+          dependencyDirectory: dependencyDirectory,
+          dependencyName: dependencyName,
+          oldDependency: oldDependency,
+          newVersion: newVersion,
+        );
+      }
       return newVersion;
     }
 
@@ -141,6 +160,37 @@ class SetRefVersion extends DirCommand<dynamic> {
       'git': gitUrl,
       'version': newVersion,
     }).trimRight();
+  }
+
+  /// Builds the `git+<remote>#semver:<range>` spec used for private TS
+  /// dependencies.
+  ///
+  /// If the **current** spec is already a git URL its base (host + path,
+  /// stripped of any fragment) is reused — that preserves the user's choice
+  /// of protocol (`git+ssh://` vs `git+https://`) and any embedded auth.
+  /// Otherwise the remote URL of the dependency working tree is read fresh.
+  ///
+  /// [newVersion] is normalized to a SemVer range so a caller passing a bare
+  /// `1.2.3` still ends up with a usable `^1.2.3` constraint.
+  Future<String> _buildPrivateTypeScriptGitSpec({
+    required Directory dependencyDirectory,
+    required String dependencyName,
+    required dynamic oldDependency,
+    required String newVersion,
+  }) async {
+    final oldSpec = oldDependency?.toString().trim() ?? '';
+    final String rawBase;
+    if (TypeScriptNpmSpec.isGitSpec(oldSpec)) {
+      rawBase = TypeScriptNpmSpec.stripFragment(oldSpec);
+    } else {
+      rawBase = await Utils.getGitRemoteUrl(
+        dependencyDirectory,
+        dependencyName,
+      );
+    }
+    final base = TypeScriptNpmSpec.toNpmGitBase(rawBase);
+    final range = TypeScriptNpmSpec.toSemverRange(newVersion) ?? newVersion;
+    return TypeScriptNpmSpec.withSemverFragment(base, range);
   }
 
   /// Finds the local dependency directory for [dependencyName] if available.

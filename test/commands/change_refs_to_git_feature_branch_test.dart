@@ -607,9 +607,13 @@ void main() {
             p.join(dProject1.path, 'package.json'),
           ).readAsStringSync();
           expect(resultJson, contains('test2_ts'));
+          // The dep's git remote is the SCP shorthand
+          // `git@github.com:user/test2_ts.git`; the command must normalize
+          // that to the npm-compatible `git+ssh://…` form so pnpm 11 can
+          // resolve it.
           expect(
             resultJson,
-            contains('git+git@github.com:user/test2_ts.git#feature123'),
+            contains('git+ssh://git@github.com/user/test2_ts.git#feature123'),
           );
         });
 
