@@ -4,7 +4,6 @@
 // Use of this source code is governed by terms that can be
 // found in the LICENSE file in the root of this package.
 
-import 'dart:convert';
 import 'dart:io';
 
 import 'package:args/command_runner.dart';
@@ -620,46 +619,32 @@ void main() {
           },
         );
 
-        // TS unlocalize scenarios — `_TsWorkspace` wraps the 2-project setup.
+        // TS unlocalize scenarios driven by test/sample_folder_ts fixtures.
         test('TypeScript: a saved registry range is restored as-is for a '
             'public dependency', () async {
-          final ws = await _TsWorkspace.build(
-            suffix: 'unlocalize_ts_dev_only_ws',
-            backupSpec: '^2.0.0',
-            depSection: 'devDependencies',
-          );
-          final result = await ws.runUnlocalizeAndReadManifest();
+          final project1 = await _setupTsScenario('public_range_devdep');
+          final result = await _runUnlocalize(project1);
           expect(result, contains('"proj2_ts": "^2.0.0"'));
           expect(result, isNot(contains('git+')));
           expect(result, isNot(contains('file:')));
-          ws.dispose();
         });
 
         test('TypeScript: a saved registry range round-trips even when the '
             'current spec is a git+ssh URL', () async {
-          final ws = await _TsWorkspace.build(
-            suffix: 'unlocalize_ts_dev_git_ws',
-            currentDepSpec: 'git+ssh://git@github.com:user/proj2_ts.git#main',
-            backupSpec: '^2.0.0',
-            depSection: 'devDependencies',
-          );
-          final result = await ws.runUnlocalizeAndReadManifest();
+          final project1 = await _setupTsScenario('public_range_with_gitssh');
+          final result = await _runUnlocalize(project1);
           expect(result, contains('"proj2_ts": "^2.0.0"'));
-          ws.dispose();
         });
 
         test('TypeScript: a private dependency is rewritten to '
             'git+<remote>#semver:<range>', () async {
-          final ws = await _TsWorkspace.build(
-            suffix: 'unlocalize_ts_private_dep_ws',
-            backupSpec: '^2.0.0',
-            proj2Private: true,
+          final project1 = await _setupTsScenario(
+            'private_range',
             initProj2Git: true,
           );
-          final result = await ws.runUnlocalizeAndReadManifest();
+          final result = await _runUnlocalize(project1);
           expect(result, contains('"proj2_ts": "git+'));
           expect(result, contains('#semver:^2.0.0'));
-          ws.dispose();
         });
 
         test(
@@ -667,59 +652,40 @@ void main() {
           () async {
             const pinned =
                 'git+https://github.com/user/proj2_ts.git#semver:^1.0.0';
-            final ws = await _TsWorkspace.build(
-              suffix: 'unlocalize_ts_pinned_url_ws',
-              backupSpec: pinned,
-              proj2Private: true,
-            );
-            final result = await ws.runUnlocalizeAndReadManifest();
+            final project1 = await _setupTsScenario('pinned_url_preserved');
+            final result = await _runUnlocalize(project1);
             expect(result, contains('"proj2_ts": "$pinned"'));
-            ws.dispose();
           },
         );
 
         test('TypeScript: a private dep with a non-version saved spec falls '
             'back to the local package version', () async {
-          final ws = await _TsWorkspace.build(
-            suffix: 'unlocalize_ts_dist_tag_fallback_ws',
-            backupSpec: 'latest',
-            proj2Version: '7.8.9',
-            proj2Private: true,
+          final project1 = await _setupTsScenario(
+            'private_dist_tag_fallback',
             initProj2Git: true,
           );
-          final result = await ws.runUnlocalizeAndReadManifest();
+          final result = await _runUnlocalize(project1);
           expect(result, contains('#semver:^7.8.9'));
-          ws.dispose();
         });
 
         test('TypeScript: a private dep falls all the way back to a bare git+ '
             'URL when neither the saved spec nor the local package.json '
             'yields a version', () async {
-          final ws = await _TsWorkspace.build(
-            suffix: 'unlocalize_ts_no_version_ws',
-            backupSpec: 'latest',
-            proj2Version: null,
-            proj2Private: true,
+          final project1 = await _setupTsScenario(
+            'private_no_local_version',
             initProj2Git: true,
           );
-          final result = await ws.runUnlocalizeAndReadManifest();
+          final result = await _runUnlocalize(project1);
           expect(result, contains('"proj2_ts": "git+'));
           expect(result, isNot(contains('#semver:')));
-          ws.dispose();
         });
 
         test('TypeScript: a saved bare git URL gets a #semver: fragment '
             'from the local package version', () async {
           const bare = 'git+https://github.com/user/proj2_ts.git';
-          final ws = await _TsWorkspace.build(
-            suffix: 'unlocalize_ts_bare_git_ws',
-            backupSpec: bare,
-            proj2Version: '3.4.5',
-            proj2Private: true,
-          );
-          final result = await ws.runUnlocalizeAndReadManifest();
+          final project1 = await _setupTsScenario('private_bare_git_local_ver');
+          final result = await _runUnlocalize(project1);
           expect(result, contains('"proj2_ts": "$bare#semver:^3.4.5"'));
-          ws.dispose();
         });
       });
     });
@@ -746,72 +712,37 @@ void main() {
   });
 }
 
-// #############################################################################
-/// Fixture for 2-project TS unlocalize scenarios — `project1` is the
-/// consumer, `project2` is the local dep `proj2_ts`.
-class _TsWorkspace {
-  _TsWorkspace._(this._workspace, this._project1);
-
-  /// Writes manifests + backup, optionally git-inits the dep.
-  static Future<_TsWorkspace> build({
-    required String suffix,
-    required String backupSpec,
-    String currentDepSpec = 'file:../project2',
-    String depSection = 'dependencies',
-    String? proj2Version = '1.0.0',
-    bool proj2Private = false,
-    bool initProj2Git = false,
-  }) async {
-    final workspace = createTempDir(suffix);
-    final project1 = Directory(join(workspace.path, 'project1'));
+/// Copies `test/sample_folder_ts/unlocalize_refs/[scenario]` to a fresh tmp
+/// dir and returns the consumer (`project1`). When [initProj2Git] is true,
+/// inits a git repo on `project2` so `Utils.getGitRemoteUrl` can resolve.
+Future<Directory> _setupTsScenario(
+  String scenario, {
+  bool initProj2Git = false,
+}) async {
+  final workspace = createTempDir('unlocalize_ts_${scenario}_');
+  copyDirectory(
+    Directory(join('test', 'sample_folder_ts', 'unlocalize_refs', scenario)),
+    workspace,
+  );
+  final project1 = Directory(join(workspace.path, 'project1'));
+  if (initProj2Git) {
     final project2 = Directory(join(workspace.path, 'project2'));
-    await createDirs(<Directory>[project1, project2]);
-
-    File(join(project1.path, 'package.json')).writeAsStringSync(
-      '{"name":"proj1_ts","version":"1.0.0","$depSection":'
-      '{"proj2_ts": ${jsonEncode(currentDepSpec)}}}',
-    );
-    File(
-      join(project2.path, 'package.json'),
-    ).writeAsStringSync(_buildProj2Manifest(proj2Version, proj2Private));
-    File(
-      join(project1.path, '.gg_localize_refs_backup.json'),
-    ).writeAsStringSync('{"proj2_ts":${jsonEncode(backupSpec)}}');
-
-    if (initProj2Git) {
-      Process.runSync('git', <String>['init'], workingDirectory: project2.path);
-      Process.runSync('git', <String>[
-        'remote',
-        'add',
-        'origin',
-        'git@github.com:user/proj2_ts.git',
-      ], workingDirectory: project2.path);
-    }
-
-    return _TsWorkspace._(workspace, project1);
+    Process.runSync('git', <String>['init'], workingDirectory: project2.path);
+    Process.runSync('git', <String>[
+      'remote',
+      'add',
+      'origin',
+      'git@github.com:user/proj2_ts.git',
+    ], workingDirectory: project2.path);
   }
+  return project1;
+}
 
-  final Directory _workspace;
-  final Directory _project1;
-
-  /// Runs `ChangeRefsToPubDev` on project1 and returns the rewritten
-  /// `package.json` body — the single assertion target of every scenario.
-  Future<String> runUnlocalizeAndReadManifest() async {
-    final localMessages = <String>[];
-    final unlocal = ChangeRefsToPubDev(ggLog: localMessages.add);
-    await unlocal.get(directory: _project1, ggLog: localMessages.add);
-    return File(join(_project1.path, 'package.json')).readAsStringSync();
-  }
-
-  /// Tears down the temp workspace.
-  void dispose() {
-    deleteDirs(<Directory>[_workspace]);
-  }
-
-  static String _buildProj2Manifest(String? version, bool isPrivate) {
-    final fields = <String, dynamic>{'name': 'proj2_ts'};
-    if (version != null) fields['version'] = version;
-    if (isPrivate) fields['private'] = true;
-    return jsonEncode(fields);
-  }
+/// Runs `ChangeRefsToPubDev` on [project1] and returns the rewritten
+/// `package.json` body — the single assertion target of each scenario.
+Future<String> _runUnlocalize(Directory project1) async {
+  final messages = <String>[];
+  final unlocal = ChangeRefsToPubDev(ggLog: messages.add);
+  await unlocal.get(directory: project1, ggLog: messages.add);
+  return File(join(project1.path, 'package.json')).readAsStringSync();
 }

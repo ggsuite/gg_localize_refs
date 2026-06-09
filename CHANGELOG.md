@@ -8,6 +8,10 @@
 - refactor(ts): trim comments to grace-cloud style limits + do\_maintain layout
 - style: apply grace-cloud comment + 80-char limits across ticket
 
+### Fixed
+
+- refactor(tests): drive TS unlocalize scenarios from test/sample\_folder\_ts fixtures
+
 ## [2.2.0] - 2026-06-08
 
 ### Changed
