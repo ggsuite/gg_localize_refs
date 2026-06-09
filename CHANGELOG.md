@@ -6,6 +6,7 @@
 
 - feat(ts): version-pinned git deps via #semver: + tag-push for npm/pnpm
 - refactor(ts): trim comments to grace-cloud style limits + do\_maintain layout
+- style: apply grace-cloud comment + 80-char limits across ticket
 
 ## [2.2.0] - 2026-06-08
 

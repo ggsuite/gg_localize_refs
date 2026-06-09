@@ -12,8 +12,10 @@ import 'package:gg_capture_print/gg_capture_print.dart';
 import 'package:gg_localize_refs/src/backend/file_changes_buffer.dart';
 import 'package:gg_localize_refs/src/backend/languages/dart_language.dart';
 import 'package:gg_localize_refs/src/backend/languages/project_language.dart';
+// ignore: lines_longer_than_80_chars
 import 'package:gg_localize_refs/src/backend/languages/typescript_language.dart';
 import 'package:gg_localize_refs/src/backend/process_dependencies.dart';
+// ignore: lines_longer_than_80_chars
 import 'package:gg_localize_refs/src/commands/change_refs_to_git_feature_branch.dart';
 import 'package:path/path.dart' as p;
 import 'package:test/test.dart';
@@ -607,10 +609,7 @@ void main() {
             p.join(dProject1.path, 'package.json'),
           ).readAsStringSync();
           expect(resultJson, contains('test2_ts'));
-          // The dep's git remote is the SCP shorthand
-          // `git@github.com:user/test2_ts.git`; the command must normalize
-          // that to the npm-compatible `git+ssh://…` form so pnpm 11 can
-          // resolve it.
+          // SCP shorthand must be normalized to npm `git+ssh://…` form.
           expect(
             resultJson,
             contains('git+ssh://git@github.com/user/test2_ts.git#feature123'),
@@ -627,7 +626,8 @@ void main() {
 
             File(p.join(project1.path, 'package.json')).writeAsStringSync(
               '{"name":"proj1_ts","version":"1.0.0",'
-              '"dependencies":{"proj2_ts":"git+git@github.com:user/proj2_ts.git#feature123"}}',
+              '"dependencies":{"proj2_ts":'
+              '"git+git@github.com:user/proj2_ts.git#feature123"}}',
             );
             File(
               p.join(project2.path, 'package.json'),

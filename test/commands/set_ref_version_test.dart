@@ -500,7 +500,8 @@ void main() {
           );
           File(join(consumer.path, 'package.json')).writeAsStringSync(
             '{"name":"consumer_priv","dependencies":'
-            '{"@scope/priv_dep": "git+https://example.com/scope/priv_dep.git"}}',
+            '{"@scope/priv_dep": '
+            '"git+https://example.com/scope/priv_dep.git"}}',
           );
 
           await runner.run(<String>[

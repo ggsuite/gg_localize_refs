@@ -11,6 +11,7 @@ import 'package:gg_args/gg_args.dart';
 import 'package:gg_console_colors/gg_console_colors.dart';
 import 'package:gg_localize_refs/src/backend/languages/dart_language.dart';
 import 'package:gg_localize_refs/src/backend/languages/project_language.dart';
+// ignore: lines_longer_than_80_chars
 import 'package:gg_localize_refs/src/backend/languages/typescript_language.dart';
 import 'package:gg_localize_refs/src/backend/multi_language_graph.dart';
 import 'package:gg_localize_refs/src/backend/package_json_io.dart';
@@ -22,10 +23,8 @@ import 'package:gg_publish/gg_publish.dart';
 
 // #############################################################################
 /// Command that sets the version/spec of a dependency in pubspec.yaml
-/// or package.json.
-///
-/// This command operates directly on the manifest in the provided
-/// input directory. It does not traverse a workspace or use project graphs.
+/// or package.json. Operates directly on the manifest in the input
+/// directory; does not traverse a workspace.
 class SetRefVersion extends DirCommand<dynamic> {
   /// Constructor.
   SetRefVersion({required super.ggLog})
