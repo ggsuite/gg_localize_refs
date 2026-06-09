@@ -14,6 +14,7 @@ import 'package:gg_localize_refs/src/backend/languages/project_language.dart';
 import 'package:gg_localize_refs/src/backend/manifest_command_support.dart';
 import 'package:gg_localize_refs/src/backend/process_dependencies.dart';
 import 'package:gg_localize_refs/src/backend/publish_to_utils.dart';
+import 'package:gg_localize_refs/src/backend/typescript_npm_spec.dart';
 import 'package:gg_localize_refs/src/backend/utils.dart';
 import 'package:gg_localize_refs/src/backend/yaml_to_string.dart';
 import 'package:gg_log/gg_log.dart';
@@ -320,7 +321,8 @@ class ChangeRefsToGitFeatureBranch extends DirCommand<dynamic> {
     final url = gitInfo.$1;
     final ref = gitInfo.$2;
 
-    return 'git+$url#$ref';
+    // SCP-shorthand `git@host:path` → `git+ssh://…` (pnpm 11 rejects SCP).
+    return '${TypeScriptNpmSpec.toNpmGitBase(url)}#$ref';
   }
 
   Future<(String, String)> _resolveGitUrlAndRef(

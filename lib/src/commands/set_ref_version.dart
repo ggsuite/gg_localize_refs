@@ -11,8 +11,11 @@ import 'package:gg_args/gg_args.dart';
 import 'package:gg_console_colors/gg_console_colors.dart';
 import 'package:gg_localize_refs/src/backend/languages/dart_language.dart';
 import 'package:gg_localize_refs/src/backend/languages/project_language.dart';
+// ignore: lines_longer_than_80_chars
 import 'package:gg_localize_refs/src/backend/languages/typescript_language.dart';
 import 'package:gg_localize_refs/src/backend/multi_language_graph.dart';
+import 'package:gg_localize_refs/src/backend/package_json_io.dart';
+import 'package:gg_localize_refs/src/backend/typescript_npm_spec.dart';
 import 'package:gg_localize_refs/src/backend/utils.dart';
 import 'package:gg_localize_refs/src/backend/yaml_to_string.dart';
 import 'package:gg_log/gg_log.dart';
@@ -20,10 +23,8 @@ import 'package:gg_publish/gg_publish.dart';
 
 // #############################################################################
 /// Command that sets the version/spec of a dependency in pubspec.yaml
-/// or package.json.
-///
-/// This command operates directly on the manifest in the provided
-/// input directory. It does not traverse a workspace or use project graphs.
+/// or package.json. Operates directly on the manifest in the input
+/// directory; does not traverse a workspace.
 class SetRefVersion extends DirCommand<dynamic> {
   /// Constructor.
   SetRefVersion({required super.ggLog})
@@ -110,6 +111,20 @@ class SetRefVersion extends DirCommand<dynamic> {
     required String newVersion,
   }) async {
     if (language.id == ProjectLanguageId.typescript) {
+      // Private dep → git+<remote>#semver:; public dep → hosted range.
+      final dependencyDirectory = await _findDependencyDirectory(
+        workspaceDirectory: workspaceDirectory,
+        dependencyName: dependencyName,
+      );
+      if (dependencyDirectory != null &&
+          PackageJsonIo.isPrivate(dependencyDirectory)) {
+        return _buildPrivateTypeScriptGitSpec(
+          dependencyDirectory: dependencyDirectory,
+          dependencyName: dependencyName,
+          oldDependency: oldDependency,
+          newVersion: newVersion,
+        );
+      }
       return newVersion;
     }
 
@@ -141,6 +156,30 @@ class SetRefVersion extends DirCommand<dynamic> {
       'git': gitUrl,
       'version': newVersion,
     }).trimRight();
+  }
+
+  /// Builds `git+<remote>#semver:<range>` for a private TS dep — reuses the
+  /// protocol of an existing git spec, otherwise reads the remote fresh.
+  /// Bare `1.2.3` is caret-wrapped via [TypeScriptNpmSpec.toSemverRange].
+  Future<String> _buildPrivateTypeScriptGitSpec({
+    required Directory dependencyDirectory,
+    required String dependencyName,
+    required dynamic oldDependency,
+    required String newVersion,
+  }) async {
+    final oldSpec = oldDependency?.toString().trim() ?? '';
+    final String rawBase;
+    if (TypeScriptNpmSpec.isGitSpec(oldSpec)) {
+      rawBase = TypeScriptNpmSpec.stripFragment(oldSpec);
+    } else {
+      rawBase = await Utils.getGitRemoteUrl(
+        dependencyDirectory,
+        dependencyName,
+      );
+    }
+    final base = TypeScriptNpmSpec.toNpmGitBase(rawBase);
+    final range = TypeScriptNpmSpec.toSemverRange(newVersion) ?? newVersion;
+    return TypeScriptNpmSpec.withSemverFragment(base, range);
   }
 
   /// Finds the local dependency directory for [dependencyName] if available.

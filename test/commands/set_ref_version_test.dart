@@ -489,6 +489,190 @@ void main() {
         expect(content, contains('"dep": "^1.1.0"'));
       });
 
+      test(
+        'rewrites a private dep to git+<existing-url>#semver:<newVersion>',
+        () async {
+          final dep = Directory(join(dWorkspace.path, 'priv_dep'));
+          final consumer = Directory(join(dWorkspace.path, 'consumer_priv'));
+          await createDirs(<Directory>[dep, consumer]);
+          File(join(dep.path, 'package.json')).writeAsStringSync(
+            '{"name":"@scope/priv_dep","version":"0.0.1","private":true}',
+          );
+          File(join(consumer.path, 'package.json')).writeAsStringSync(
+            '{"name":"consumer_priv","dependencies":'
+            '{"@scope/priv_dep": '
+            '"git+https://example.com/scope/priv_dep.git"}}',
+          );
+
+          await runner.run(<String>[
+            'set-ref-version',
+            '--input',
+            consumer.path,
+            '--ref',
+            '@scope/priv_dep',
+            '--version',
+            '^9.9.9',
+          ]);
+
+          final content = File(
+            join(consumer.path, 'package.json'),
+          ).readAsStringSync();
+          expect(
+            content,
+            contains(
+              '"@scope/priv_dep": '
+              '"git+https://example.com/scope/priv_dep.git#semver:^9.9.9"',
+            ),
+          );
+        },
+      );
+
+      test(
+        'rewrites a private dep preserving ssh protocol, dropping prior pin',
+        () async {
+          // Current spec has `#main`; the new spec keeps the SSH base.
+          final dep = Directory(join(dWorkspace.path, 'priv_dep_ssh'));
+          final consumer = Directory(
+            join(dWorkspace.path, 'consumer_priv_ssh'),
+          );
+          await createDirs(<Directory>[dep, consumer]);
+          File(join(dep.path, 'package.json')).writeAsStringSync(
+            '{"name":"@scope/priv_dep","version":"0.0.1","private":true}',
+          );
+          File(join(consumer.path, 'package.json')).writeAsStringSync(
+            '{"name":"consumer_priv_ssh","dependencies":{'
+            '"@scope/priv_dep":'
+            ' "git+ssh://git@example.com/scope/priv_dep.git#main"}}',
+          );
+
+          await runner.run(<String>[
+            'set-ref-version',
+            '--input',
+            consumer.path,
+            '--ref',
+            '@scope/priv_dep',
+            '--version',
+            '1.2.3',
+          ]);
+
+          final content = File(
+            join(consumer.path, 'package.json'),
+          ).readAsStringSync();
+          expect(
+            content,
+            contains(
+              '"@scope/priv_dep": '
+              '"git+ssh://git@example.com/scope/priv_dep.git#semver:^1.2.3"',
+            ),
+            reason: 'must keep ssh protocol AND wrap a bare version with caret',
+          );
+          expect(content, isNot(contains('#main')));
+        },
+      );
+
+      test('rewrites a private dep with an SCP-style oldDependency to the '
+          'npm-compatible git+ssh:// form', () async {
+        // pnpm 11 rejects SCP; normalize to `git+ssh://...` before pinning.
+        final dep = Directory(join(dWorkspace.path, 'priv_dep_scp'));
+        final consumer = Directory(join(dWorkspace.path, 'consumer_priv_scp'));
+        await createDirs(<Directory>[dep, consumer]);
+        File(join(dep.path, 'package.json')).writeAsStringSync(
+          '{"name":"@scope/priv_dep","version":"0.0.1","private":true}',
+        );
+        File(join(consumer.path, 'package.json')).writeAsStringSync(
+          '{"name":"consumer_priv_scp","dependencies":{'
+          '"@scope/priv_dep":'
+          ' "git+git@example.com:scope/priv_dep.git"}}',
+        );
+
+        await runner.run(<String>[
+          'set-ref-version',
+          '--input',
+          consumer.path,
+          '--ref',
+          '@scope/priv_dep',
+          '--version',
+          '^0.0.2',
+        ]);
+
+        final content = File(
+          join(consumer.path, 'package.json'),
+        ).readAsStringSync();
+        expect(
+          content,
+          contains(
+            '"@scope/priv_dep": '
+            '"git+ssh://git@example.com/scope/priv_dep.git#semver:^0.0.2"',
+          ),
+        );
+      });
+
+      test('rewrites a private dep with a hosted-range current spec to '
+          'git+<freshly-read-remote>#semver:<newVersion>', () async {
+        // Covers the non-git branch of `_buildPrivateTypeScriptGitSpec`.
+        final dep = Directory(join(dWorkspace.path, 'priv_dep_hosted'));
+        final consumer = Directory(
+          join(dWorkspace.path, 'consumer_priv_hosted'),
+        );
+        await createDirs(<Directory>[dep, consumer]);
+        File(join(dep.path, 'package.json')).writeAsStringSync(
+          '{"name":"@scope/priv_dep","version":"0.0.1","private":true}',
+        );
+        File(join(consumer.path, 'package.json')).writeAsStringSync(
+          '{"name":"consumer_priv_hosted","dependencies":'
+          '{"@scope/priv_dep": "^0.0.1"}}',
+        );
+
+        await runner.run(<String>[
+          'set-ref-version',
+          '--input',
+          consumer.path,
+          '--ref',
+          '@scope/priv_dep',
+          '--version',
+          '^2.0.0',
+        ]);
+
+        final content = File(
+          join(consumer.path, 'package.json'),
+        ).readAsStringSync();
+        // Only the spec shape matters here, not the temp-dir origin path.
+        expect(content, contains('"@scope/priv_dep": "git+'));
+        expect(content, contains('#semver:^2.0.0'));
+      });
+
+      test(
+        'replaces with the new version range when the dep package is public',
+        () async {
+          // Public dep keeps the hosted range — pre-existing behaviour.
+          final dep = Directory(join(dWorkspace.path, 'pub_dep'));
+          final consumer = Directory(join(dWorkspace.path, 'consumer_pub'));
+          await createDirs(<Directory>[dep, consumer]);
+          File(
+            join(dep.path, 'package.json'),
+          ).writeAsStringSync('{"name":"@scope/pub_dep","version":"1.0.0"}');
+          File(join(consumer.path, 'package.json')).writeAsStringSync(
+            '{"name":"consumer_pub","dependencies":'
+            '{"@scope/pub_dep": "git+https://example.com/scope/pub_dep.git"}}',
+          );
+
+          await runner.run(<String>[
+            'set-ref-version',
+            '--input',
+            consumer.path,
+            '--ref',
+            '@scope/pub_dep',
+            '--version',
+            '^1.0.0',
+          ]);
+
+          final content = File(
+            join(consumer.path, 'package.json'),
+          ).readAsStringSync();
+          expect(content, contains('"@scope/pub_dep": "^1.0.0"'));
+        },
+      );
+
       test('no change when value is equal in '
           'package.json logs and returns', () async {
         final d = Directory(join(dWorkspace.path, 'ts_equal'));

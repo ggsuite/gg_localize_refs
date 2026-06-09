@@ -1,5 +1,17 @@
 # Changelog
 
+## [2.3.0] - 2026-06-09
+
+### Changed
+
+- feat(ts): version-pinned git deps via #semver: + tag-push for npm/pnpm
+- refactor(ts): trim comments to grace-cloud style limits + do\_maintain layout
+- style: apply grace-cloud comment + 80-char limits across ticket
+
+### Fixed
+
+- refactor(tests): drive TS unlocalize scenarios from test/sample\_folder\_ts fixtures
+
 ## [2.2.0] - 2026-06-08
 
 ### Changed
@@ -86,6 +98,7 @@
 
 - Update gg\_publish to ^^3.2.0 and remove publish\_to field
 
+[2.3.0]: https://github.com/ggsuite/gg_localize_refs/compare/2.2.0...2.3.0
 [2.2.0]: https://github.com/ggsuite/gg_localize_refs/compare/2.1.2...2.2.0
 [2.1.2]: https://github.com/ggsuite/gg_localize_refs/compare/2.1.1...2.1.2
 [2.1.1]: https://github.com/ggsuite/gg_localize_refs/compare/2.1.0...2.1.1

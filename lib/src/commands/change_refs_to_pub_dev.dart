@@ -12,7 +12,9 @@ import 'package:gg_console_colors/gg_console_colors.dart';
 import 'package:gg_localize_refs/src/backend/file_changes_buffer.dart';
 import 'package:gg_localize_refs/src/backend/languages/project_language.dart';
 import 'package:gg_localize_refs/src/backend/manifest_command_support.dart';
+import 'package:gg_localize_refs/src/backend/package_json_io.dart';
 import 'package:gg_localize_refs/src/backend/process_dependencies.dart';
+import 'package:gg_localize_refs/src/backend/typescript_npm_spec.dart';
 import 'package:gg_localize_refs/src/backend/utils.dart';
 import 'package:gg_localize_refs/src/backend/yaml_to_string.dart';
 import 'package:gg_log/gg_log.dart';
@@ -239,9 +241,11 @@ class ChangeRefsToPubDev extends DirCommand<dynamic> {
   }
 
   /// Returns whether [dependencyValue] still points to a localized TS source.
+  /// `file:`/`link:` are current markers; `git+` is the historical heuristic.
   bool _isLocalizedTypeScriptDependency(String dependencyValue) {
     final trimmed = dependencyValue.trim();
-    return trimmed.startsWith('file:') || trimmed.startsWith('git+');
+    if (TypeScriptNpmSpec.isLocalizedSpec(trimmed)) return true;
+    return trimmed.startsWith('git+');
   }
 
   /// Builds the final remote Dart dependency YAML for [dependencyNode].
@@ -276,16 +280,48 @@ class ChangeRefsToPubDev extends DirCommand<dynamic> {
     }).trimRight();
   }
 
-  /// Builds the final remote TypeScript dependency spec for [dependencyNode].
+  /// Builds the remote TS dep. Rule 1: saved git URL → preserve fragment,
+  /// normalize base. Rule 2: private + range → `git+<remote>#semver:`.
+  /// Rule 3: public + range → keep range so `pnpm update` still sees it.
   Future<String> _buildTypeScriptRemoteDependency({
     required ProjectNode dependencyNode,
     required dynamic savedDependency,
   }) async {
-    final gitUrl = await Utils.getGitRemoteUrl(
-      dependencyNode.directory,
-      dependencyNode.name,
-    );
-    return 'git+$gitUrl';
+    final savedSpec = savedDependency?.toString().trim() ?? '';
+
+    if (TypeScriptNpmSpec.isGitSpec(savedSpec)) {
+      final base = TypeScriptNpmSpec.toNpmGitBase(
+        TypeScriptNpmSpec.stripFragment(savedSpec),
+      );
+      if (TypeScriptNpmSpec.hasUrlFragment(savedSpec)) {
+        final fragment = savedSpec.substring(savedSpec.indexOf('#'));
+        return '$base$fragment';
+      }
+      final range = _localSemverRange(dependencyNode);
+      if (range == null) return base;
+      return TypeScriptNpmSpec.withSemverFragment(base, range);
+    }
+
+    if (PackageJsonIo.isPrivate(dependencyNode.directory)) {
+      final gitUrl = await Utils.getGitRemoteUrl(
+        dependencyNode.directory,
+        dependencyNode.name,
+      );
+      final base = TypeScriptNpmSpec.toNpmGitBase(gitUrl);
+      final range =
+          TypeScriptNpmSpec.toSemverRange(savedSpec) ??
+          _localSemverRange(dependencyNode);
+      if (range == null) return base;
+      return TypeScriptNpmSpec.withSemverFragment(base, range);
+    }
+
+    return savedSpec;
+  }
+
+  /// Caret-range derived from the local `package.json` version, or `null`.
+  String? _localSemverRange(ProjectNode dependencyNode) {
+    final version = PackageJsonIo.readVersion(dependencyNode.directory);
+    return version == null ? null : TypeScriptNpmSpec.toSemverRange(version);
   }
 
   /// Extracts a version constraint from [savedDependency] if available.
