@@ -5,6 +5,7 @@
 ### Changed
 
 - Treat dart-typescript bridge repos as TypeScript for can/do review (npm install, skip dart pub get); export isBridgeProject from gg\_one
+- Process cross-language bridge repos in BOTH languages during ref localization: processProject now builds+rewrites the workspace once per language the root supports (buildGraph forLanguage), so a bridge's pubspec.yaml and package.json are both localized/unlocalized
 
 ## [2.3.0] - 2026-06-09
 

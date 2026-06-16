@@ -252,6 +252,82 @@ void main() {
         ),
       );
     });
+
+    MultiLanguageGraph dualGraph() => MultiLanguageGraph(
+      languages: <ProjectLanguage>[
+        DartProjectLanguage(),
+        TypeScriptProjectLanguage(),
+      ],
+    );
+
+    Directory createBridge(String suffix) {
+      final workspace = createWorkspace(suffix);
+      final bridge = Directory(p.join(workspace.path, 'bridge'));
+      bridge.createSync(recursive: true);
+      File(
+        p.join(bridge.path, 'pubspec.yaml'),
+      ).writeAsStringSync('name: bridge_dart\nversion: 1.0.0\n');
+      File(
+        p.join(bridge.path, 'package.json'),
+      ).writeAsStringSync('{"name":"bridge","version":"1.0.0"}');
+      File(p.join(bridge.path, 'tsconfig.json')).writeAsStringSync('{}');
+      return bridge;
+    }
+
+    group('findRootAndLanguages', () {
+      test('returns both languages for a cross-language bridge', () async {
+        final bridge = createBridge('mlg_bridge_root');
+
+        final root = await dualGraph().findRootAndLanguages(bridge);
+
+        expect(root, isNotNull);
+        expect(root!.$1.path, bridge.path);
+        expect(
+          root.$2.map((ProjectLanguage l) => l.id),
+          containsAll(<ProjectLanguageId>[
+            ProjectLanguageId.dart,
+            ProjectLanguageId.typescript,
+          ]),
+        );
+      });
+
+      test('returns a single language for a pure Dart project', () async {
+        final workspace = createWorkspace('mlg_dart_root');
+        final project = Directory(p.join(workspace.path, 'project'));
+        await createDirs(<Directory>[project]);
+        File(
+          p.join(project.path, 'pubspec.yaml'),
+        ).writeAsStringSync('name: only_dart\nversion: 1.0.0\n');
+
+        final root = await dualGraph().findRootAndLanguages(project);
+
+        expect(root, isNotNull);
+        expect(root!.$2.map((ProjectLanguage l) => l.id), <ProjectLanguageId>[
+          ProjectLanguageId.dart,
+        ]);
+      });
+
+      test('returns null when no project root is found', () async {
+        final workspace = createWorkspace('mlg_no_root2');
+
+        final root = await dualGraph().findRootAndLanguages(workspace);
+
+        expect(root, isNull);
+      });
+    });
+
+    test('builds the graph for an explicit language (forLanguage)', () async {
+      final bridge = createBridge('mlg_for_language');
+
+      // Pin TypeScript even though Dart would win auto-detection.
+      final result = await dualGraph().buildGraph(
+        directory: bridge,
+        forLanguage: TypeScriptProjectLanguage(),
+      );
+
+      expect(result.rootNode.name, 'bridge');
+      expect(result.rootNode.language.id, ProjectLanguageId.typescript);
+    });
   });
 }
 

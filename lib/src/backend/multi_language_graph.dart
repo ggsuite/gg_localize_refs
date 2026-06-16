@@ -22,12 +22,21 @@ class MultiLanguageGraph {
 
   /// Builds the graph starting at [directory].
   ///
+  /// The workspace language is the first registered language whose project
+  /// root matches, unless [forLanguage] pins it explicitly. Pass [forLanguage]
+  /// to build the graph for one specific language of a multi-language (bridge)
+  /// workspace; call once per language to cover both manifests.
+  ///
   /// Returns a record containing the root node and all nodes in the workspace.
   Future<({ProjectNode rootNode, Map<String, ProjectNode> allNodes})>
-  buildGraph({required Directory directory, GgLog? ggLog}) async {
+  buildGraph({
+    required Directory directory,
+    GgLog? ggLog,
+    ProjectLanguage? forLanguage,
+  }) async {
     final startDir = _correctDir(directory.absolute);
 
-    final rootInfo = await _findProjectRootAndLanguage(startDir);
+    final rootInfo = await _findProjectRootAndLanguage(startDir, forLanguage);
     if (rootInfo == null) {
       throw Exception(red('No project root found'));
     }
@@ -95,13 +104,46 @@ class MultiLanguageGraph {
     return (rootNode: rootNode, allNodes: nodes);
   }
 
-  Future<(Directory, ProjectLanguage)?> _findProjectRootAndLanguage(
+  /// Finds the nearest ancestor of [directory] (including itself) that is a
+  /// project root for at least one registered language, and returns it
+  /// together with EVERY language that recognizes it.
+  ///
+  /// A cross-language bridge (pubspec.yaml + package.json + tsconfig.json) is a
+  /// root for more than one language, so callers can process each manifest.
+  /// Returns null when no project root is found.
+  Future<(Directory, List<ProjectLanguage>)?> findRootAndLanguages(
     Directory directory,
   ) async {
-    var dir = _correctDir(directory);
+    var dir = _correctDir(directory.absolute);
 
     while (true) {
-      for (final language in languages) {
+      final matched = <ProjectLanguage>[
+        for (final language in languages)
+          if (language.isProjectRoot(dir)) language,
+      ];
+      if (matched.isNotEmpty) {
+        return (_correctDir(dir), matched);
+      }
+
+      final parent = dir.parent;
+      if (parent.path == dir.path) {
+        return null;
+      }
+      dir = parent;
+    }
+  }
+
+  Future<(Directory, ProjectLanguage)?> _findProjectRootAndLanguage(
+    Directory directory, [
+    ProjectLanguage? forLanguage,
+  ]) async {
+    var dir = _correctDir(directory);
+    final candidates = forLanguage != null
+        ? <ProjectLanguage>[forLanguage]
+        : languages;
+
+    while (true) {
+      for (final language in candidates) {
         if (language.isProjectRoot(dir)) {
           return (_correctDir(dir), language);
         }

@@ -217,6 +217,65 @@ void main() {
           deleteDirs(<Directory>[ws]);
         },
       );
+
+      test('processes both manifests of a cross-language bridge', () async {
+        // A bridge ships pubspec.yaml + package.json + tsconfig.json. It must
+        // be processed once as Dart (pubspec) and once as TypeScript
+        // (package.json) so BOTH manifests get rewritten.
+        final ws = createTempDir('pd_bridge_ws');
+        final bridge = Directory(join(ws.path, 'bridge'));
+        final dartDep = Directory(join(ws.path, 'dart_dep'));
+        final tsDep = Directory(join(ws.path, 'ts_dep'));
+        await createDirs(<Directory>[bridge, dartDep, tsDep]);
+
+        File(join(bridge.path, 'pubspec.yaml')).writeAsStringSync(
+          'name: bridge_dart\n'
+          'version: 1.0.0\n'
+          'dependencies:\n'
+          '  dart_dep: ^1.0.0\n',
+        );
+        File(join(bridge.path, 'package.json')).writeAsStringSync(
+          '{"name":"bridge","version":"1.0.0",'
+          '"dependencies":{"ts_dep":"^1.0.0"}}',
+        );
+        File(join(bridge.path, 'tsconfig.json')).writeAsStringSync('{}');
+        File(
+          join(dartDep.path, 'pubspec.yaml'),
+        ).writeAsStringSync('name: dart_dep\nversion: 1.0.0\n');
+        File(
+          join(tsDep.path, 'package.json'),
+        ).writeAsStringSync('{"name":"ts_dep","version":"1.0.0"}');
+        File(join(tsDep.path, 'tsconfig.json')).writeAsStringSync('{}');
+
+        final visited = <String>[];
+
+        await processProject(
+          directory: bridge,
+          modifyFunction:
+              (
+                ProjectNode node,
+                File manifestFile,
+                String manifestContent,
+                dynamic manifestMap,
+                FileChangesBuffer fileChangesBuffer,
+                GgLog ggLog,
+              ) async {
+                visited.add(
+                  '${node.language.id.name}:'
+                  '${basename(node.directory.path)}:'
+                  '${basename(manifestFile.path)}',
+                );
+              },
+          fileChangesBuffer: FileChangesBuffer(),
+          ggLog: <String>[].add,
+        );
+
+        // The bridge directory is processed in BOTH languages.
+        expect(visited, contains('dart:bridge:pubspec.yaml'));
+        expect(visited, contains('typescript:bridge:package.json'));
+
+        deleteDirs(<Directory>[ws]);
+      });
     });
 
     group('Helper methods', () {
