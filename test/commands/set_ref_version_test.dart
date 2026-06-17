@@ -46,6 +46,40 @@ void main() {
       expect(messages.last, contains('Sets the version/spec'));
     });
 
+    test(
+      'updates a TypeScript dependency on a bridge, leaving pubspec untouched',
+      () async {
+        // A bridge carries both manifests. The dependency lives only in
+        // package.json; Utils.findLanguage would pick Dart and miss it. The
+        // per-language loop must still update package.json.
+        final d = Directory(join(dWorkspace.path, 'bridge'));
+        await createDirs(<Directory>[d]);
+        File(
+          join(d.path, 'pubspec.yaml'),
+        ).writeAsStringSync('name: bridge_dart\nversion: 1.0.0\n');
+        File(join(d.path, 'package.json')).writeAsStringSync(
+          '{"name":"bridge","version":"1.0.0",'
+          '"dependencies":{"foo":"^1.0.0"}}',
+        );
+
+        await runner.run(<String>[
+          'set-ref-version',
+          '--input',
+          d.path,
+          '--ref',
+          'foo',
+          '--version',
+          '^2.0.0',
+        ]);
+
+        final pkg = File(join(d.path, 'package.json')).readAsStringSync();
+        expect(pkg, contains('^2.0.0'));
+        // The Dart manifest never declared foo and stays untouched.
+        final pub = File(join(d.path, 'pubspec.yaml')).readAsStringSync();
+        expect(pub, isNot(contains('foo')));
+      },
+    );
+
     group('should throw', () {
       test('when pubspec.yaml was not found', () async {
         await expectLater(

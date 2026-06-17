@@ -65,39 +65,62 @@ class SetRefVersion extends DirCommand<dynamic> {
     }
 
     try {
-      final language = Utils.findLanguage(directory);
-      final manifest = await language.readManifest(directory);
-      final reference = language.findDependency(
-        manifest.parsed,
-        dependencyName,
-      );
+      // A cross-language bridge carries both a pubspec.yaml and a
+      // package.json. Update the dependency in EVERY manifest that declares
+      // it, not just the one Utils.findLanguage would pick. A single-language
+      // repo is handled exactly as before (one manifest).
+      final languages = <ProjectLanguage>[
+        DartProjectLanguage(),
+        TypeScriptProjectLanguage(),
+      ].where((l) => l.isProjectRoot(directory)).toList();
 
-      if (reference == null) {
+      if (languages.isEmpty) {
+        // Reproduce the original "manifest not found" error.
+        Utils.findLanguage(directory);
+      }
+
+      var found = false;
+      var changed = false;
+      for (final language in languages) {
+        final manifest = await language.readManifest(directory);
+        final reference = language.findDependency(
+          manifest.parsed,
+          dependencyName,
+        );
+        if (reference == null) {
+          continue;
+        }
+        found = true;
+
+        final replacement = await _buildReplacement(
+          language: language,
+          workspaceDirectory: directory,
+          dependencyName: dependencyName,
+          oldDependency: reference.value,
+          newVersion: newVersion,
+        );
+
+        final updated = language
+            .replaceDependencyInContent(
+              manifestContent: manifest.content,
+              reference: reference,
+              newValue: replacement,
+            )
+            .trim();
+
+        if (updated == manifest.content) {
+          continue;
+        }
+        manifest.file.writeAsStringSync(updated);
+        changed = true;
+      }
+
+      if (!found) {
         throw Exception('Dependency $dependencyName not found.');
       }
-
-      final replacement = await _buildReplacement(
-        language: language,
-        workspaceDirectory: directory,
-        dependencyName: dependencyName,
-        oldDependency: reference.value,
-        newVersion: newVersion,
-      );
-
-      final updated = language
-          .replaceDependencyInContent(
-            manifestContent: manifest.content,
-            reference: reference,
-            newValue: replacement,
-          )
-          .trim();
-
-      if (updated == manifest.content) {
+      if (!changed) {
         ggLog?.call(yellow('No files were changed.'));
-        return;
       }
-
-      manifest.file.writeAsStringSync(updated);
     } catch (e) {
       throw Exception(red('An error occurred: $e. No files were changed.'));
     }
@@ -115,6 +138,7 @@ class SetRefVersion extends DirCommand<dynamic> {
       final dependencyDirectory = await _findDependencyDirectory(
         workspaceDirectory: workspaceDirectory,
         dependencyName: dependencyName,
+        language: language,
       );
       if (dependencyDirectory != null &&
           PackageJsonIo.isPrivate(dependencyDirectory)) {
@@ -131,6 +155,7 @@ class SetRefVersion extends DirCommand<dynamic> {
     final dependencyDirectory = await _findDependencyDirectory(
       workspaceDirectory: workspaceDirectory,
       dependencyName: dependencyName,
+      language: language,
     );
 
     if (dependencyDirectory == null) {
@@ -182,10 +207,13 @@ class SetRefVersion extends DirCommand<dynamic> {
     return TypeScriptNpmSpec.withSemverFragment(base, range);
   }
 
-  /// Finds the local dependency directory for [dependencyName] if available.
+  /// Finds the local dependency directory for [dependencyName] if available,
+  /// resolving it within the graph of [language] (so a bridge's TypeScript
+  /// dependency is looked up among TypeScript nodes, not Dart ones).
   Future<Directory?> _findDependencyDirectory({
     required Directory workspaceDirectory,
     required String dependencyName,
+    required ProjectLanguage language,
   }) async {
     try {
       final graph = MultiLanguageGraph(
@@ -194,7 +222,10 @@ class SetRefVersion extends DirCommand<dynamic> {
           TypeScriptProjectLanguage(),
         ],
       );
-      final result = await graph.buildGraph(directory: workspaceDirectory);
+      final result = await graph.buildGraph(
+        directory: workspaceDirectory,
+        forLanguage: language,
+      );
       final node = result.allNodes[dependencyName];
       return node?.directory;
     } catch (_) {
