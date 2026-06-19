@@ -14,6 +14,7 @@ import 'package:gg_localize_refs/src/backend/languages/project_language.dart';
 import 'package:gg_localize_refs/src/backend/manifest_command_support.dart';
 import 'package:gg_localize_refs/src/backend/process_dependencies.dart';
 import 'package:gg_localize_refs/src/backend/publish_to_utils.dart';
+import 'package:gg_localize_refs/src/backend/typescript_npm_spec.dart';
 import 'package:gg_localize_refs/src/backend/utils.dart';
 import 'package:gg_localize_refs/src/backend/yaml_to_string.dart';
 import 'package:gg_log/gg_log.dart';
@@ -180,7 +181,7 @@ class ChangeRefsToLocal extends DirCommand<dynamic> {
 
       final oldValue = reference.value;
       final oldString = oldValue.toString();
-      if (!oldString.trim().startsWith('file:')) {
+      if (!TypeScriptNpmSpec.isLocalizedSpec(oldString.trim())) {
         replacedDependencies[dependency.key] = oldValue;
       }
 
@@ -188,10 +189,15 @@ class ChangeRefsToLocal extends DirCommand<dynamic> {
           .relative(dependency.value.directory.path, from: node.directory.path)
           .replaceAll('\\', '/');
 
+      // Use pnpm's `link:` (a live symlink to the sibling source dir), not
+      // `file:` (which pnpm snapshots into its store at install time). A
+      // snapshot goes stale the moment the dependency is rebuilt — e.g. a
+      // bridge whose `dist/` is generated — so a consumer would resolve an
+      // out-of-date copy. `link:` mirrors Dart's `path:` live-link semantics.
       updatedContent = node.language.replaceDependencyInContent(
         manifestContent: updatedContent,
         reference: reference,
-        newValue: 'file:$relativePath',
+        newValue: 'link:$relativePath',
       );
     }
 
