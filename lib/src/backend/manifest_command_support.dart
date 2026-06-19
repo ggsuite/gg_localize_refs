@@ -8,6 +8,7 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:gg_localize_refs/src/backend/languages/project_language.dart';
+import 'package:gg_localize_refs/src/backend/typescript_npm_spec.dart';
 import 'package:gg_localize_refs/src/backend/utils.dart';
 import 'package:gg_localize_refs/src/backend/yaml_to_string.dart';
 import 'package:path/path.dart' as p;
@@ -120,7 +121,9 @@ class ManifestCommandSupport {
       if (value == null) {
         continue;
       }
-      if (!value.trim().startsWith('file:')) {
+      // A `file:` or `link:` spec is already localized; anything else still
+      // needs localizing.
+      if (!TypeScriptNpmSpec.isLocalizedSpec(value.trim())) {
         return true;
       }
     }

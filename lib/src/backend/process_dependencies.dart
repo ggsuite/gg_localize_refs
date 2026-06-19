@@ -40,21 +40,36 @@ Future<void> processProject({
     ],
   );
 
-  final result = await graph.buildGraph(directory: directory, ggLog: ggLog);
+  // A cross-language bridge (pubspec.yaml + package.json + tsconfig.json) is a
+  // project root for more than one language. Build and process the workspace
+  // once per language the root supports, so BOTH the Dart manifest and the
+  // TypeScript manifest of a bridge get rewritten. A single-language repo is
+  // processed exactly once, identically to before.
+  final root = await graph.findRootAndLanguages(directory);
+  if (root == null) {
+    throw Exception(red('No project root found'));
+  }
 
-  final rootNode = result.rootNode;
-  final allNodes = result.allNodes;
+  final (rootDir, rootLanguages) = root;
+  for (final language in rootLanguages) {
+    final result = await graph.buildGraph(
+      directory: rootDir,
+      ggLog: ggLog,
+      forLanguage: language,
+    );
 
-  final processedNodes = <String>{};
-
-  await processNode(
-    rootNode,
-    allNodes,
-    processedNodes,
-    modifyFunction,
-    fileChangesBuffer,
-    ggLog,
-  );
+    // Each language pass has its own node identity space, so it tracks its
+    // own processed set.
+    final processedNodes = <String>{};
+    await processNode(
+      result.rootNode,
+      result.allNodes,
+      processedNodes,
+      modifyFunction,
+      fileChangesBuffer,
+      ggLog,
+    );
+  }
 }
 
 // ...........................................................................

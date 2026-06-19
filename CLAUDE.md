@@ -56,9 +56,11 @@ A `ProjectNode` carries `name`, `directory`, `language`, plus `dependencies` and
 
 1. Finds the project root from the starting directory and picks the matching language.
 2. Treats the **parent** directory as the workspace root and scans its immediate subdirectories.
-3. For each sibling directory that `language.isProjectRoot` recognizes, calls `createNode`. Only projects in the **same language** as the root are included; duplicate names throw.
+3. For each sibling directory that `language.isProjectRoot` recognizes, calls `createNode`. A single `buildGraph` pass covers one language; duplicate names throw.
 4. Cross-links nodes by walking each node's declared deps; if a dep name matches another discovered node, it is wired into both `dependencies` and the counterpart's `dependents`.
 5. Returns `(rootNode, allNodes)`.
+
+A **cross-language bridge** (pubspec.yaml + package.json + tsconfig.json) is a project root for more than one language. `MultiLanguageGraph.findRootAndLanguages` reports every language a root supports, and `processProject` (in `process_dependencies.dart`) builds + processes the workspace **once per language** (`buildGraph(forLanguage: …)`), so a bridge's Dart manifest and TypeScript manifest are both rewritten. A single-language repo is processed exactly once.
 
 Commands then traverse this graph (see `process_dependencies.dart`, `replace_dependency.dart`, `manifest_command_support.dart`) to rewrite manifests consistently. `file_changes_buffer.dart` batches writes so a failure partway through does not leave the workspace half-rewritten.
 

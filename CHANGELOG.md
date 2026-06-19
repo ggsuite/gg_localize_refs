@@ -1,5 +1,16 @@
 # Changelog
 
+## [2.4.0] - 2026-06-19
+
+### Changed
+
+- Treat dart-typescript bridge repos as TypeScript for can/do review (npm install, skip dart pub get); export isBridgeProject from gg\_one
+- Process cross-language bridge repos in BOTH languages during ref localization: processProject now builds+rewrites the workspace once per language the root supports (buildGraph forLanguage), so a bridge's pubspec.yaml and package.json are both localized/unlocalized
+- set-ref-version updates the dependency in every manifest a bridge declares it in (per-language loop over present manifests), so a bridge's package.json dependency is no longer missed; single-language repos unchanged
+- Publish bridges as TypeScript: pnpm-aware publish, dual-manifest version bump, non-swallowed publish errors, idempotent resume, review skips merged repos, link: for local TS deps, package.json scripts check
+- gg\_multi: changed references to git
+- Gg Multi: changed references to pub.dev
+
 ## [2.3.0] - 2026-06-09
 
 ### Changed
@@ -98,6 +109,7 @@
 
 - Update gg\_publish to ^^3.2.0 and remove publish\_to field
 
+[2.4.0]: https://github.com/ggsuite/gg_localize_refs/compare/2.3.0...2.4.0
 [2.3.0]: https://github.com/ggsuite/gg_localize_refs/compare/2.2.0...2.3.0
 [2.2.0]: https://github.com/ggsuite/gg_localize_refs/compare/2.1.2...2.2.0
 [2.1.2]: https://github.com/ggsuite/gg_localize_refs/compare/2.1.1...2.1.2
