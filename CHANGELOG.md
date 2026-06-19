@@ -9,6 +9,7 @@
 - set-ref-version updates the dependency in every manifest a bridge declares it in (per-language loop over present manifests), so a bridge's package.json dependency is no longer missed; single-language repos unchanged
 - Publish bridges as TypeScript: pnpm-aware publish, dual-manifest version bump, non-swallowed publish errors, idempotent resume, review skips merged repos, link: for local TS deps, package.json scripts check
 - gg\_multi: changed references to git
+- Gg Multi: changed references to pub.dev
 
 ## [2.3.0] - 2026-06-09
 
