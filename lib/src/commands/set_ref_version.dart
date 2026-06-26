@@ -92,12 +92,23 @@ class SetRefVersion extends DirCommand<dynamic> {
         }
         found = true;
 
+        // Preserve the constraint operator the dependency is currently
+        // declared with (`^`, `~`, or exact) when [newVersion] is a bare
+        // version number. During a publish the refs were just unlocalized
+        // back to their original spec, so the user's chosen style is
+        // reapplied to the bumped version. An explicit operator/range in
+        // [newVersion] always wins.
+        final effectiveVersion = _bumpVersionPreservingOperator(
+          reference.value,
+          newVersion,
+        );
+
         final replacement = await _buildReplacement(
           language: language,
           workspaceDirectory: directory,
           dependencyName: dependencyName,
           oldDependency: reference.value,
-          newVersion: newVersion,
+          newVersion: effectiveVersion,
         );
 
         final updated = language
@@ -124,6 +135,27 @@ class SetRefVersion extends DirCommand<dynamic> {
     } catch (e) {
       throw Exception(red('An error occurred: $e. No files were changed.'));
     }
+  }
+
+  /// Applies the version number of [newVersion] while keeping the operator the
+  /// dependency currently uses. If [newVersion] already carries an operator or
+  /// range (anything not starting with a digit) it is returned unchanged.
+  /// Otherwise the leading `^`/`~` of [oldDependency] — a scalar like `~1.2.3`
+  /// or a block with a `version:` field — is prepended; a bare/exact current
+  /// spec yields a bare (exact) result.
+  String _bumpVersionPreservingOperator(
+    dynamic oldDependency,
+    String newVersion,
+  ) {
+    final newTrimmed = newVersion.trim();
+    if (!RegExp(r'^\d').hasMatch(newTrimmed)) {
+      return newVersion;
+    }
+    final oldText = oldDependency is String
+        ? oldDependency
+        : yamlToString(oldDependency);
+    final operator = RegExp(r'(\^|~)\s*\d').firstMatch(oldText)?.group(1) ?? '';
+    return '$operator$newTrimmed';
   }
 
   Future<String> _buildReplacement({
