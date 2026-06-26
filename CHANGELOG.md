@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.4.1] - 2026-06-26
+
+### Changed
+
+- Preserve dependency constraint operator (^^/\~/exact) through publish
+- gg\_multi: changed references to git
+
 ## [2.4.0] - 2026-06-19
 
 ### Changed
@@ -109,6 +116,7 @@
 
 - Update gg\_publish to ^^3.2.0 and remove publish\_to field
 
+[2.4.1]: https://github.com/ggsuite/gg_localize_refs/compare/2.4.0...2.4.1
 [2.4.0]: https://github.com/ggsuite/gg_localize_refs/compare/2.3.0...2.4.0
 [2.3.0]: https://github.com/ggsuite/gg_localize_refs/compare/2.2.0...2.3.0
 [2.2.0]: https://github.com/ggsuite/gg_localize_refs/compare/2.1.2...2.2.0

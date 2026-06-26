@@ -483,6 +483,144 @@ void main() {
         expect(messages.join('\n'), contains('No files were changed'));
       });
 
+      group('preserves the operator on a bare version', () {
+        test('keeps an exact (no-operator) spec exact', () async {
+          final d1 = Directory(join(dWorkspace.path, 'op_exact_1'));
+          final d2 = Directory(join(dWorkspace.path, 'op_exact_2'));
+          await createDirs(<Directory>[d1, d2]);
+          File(join(d1.path, 'pubspec.yaml')).writeAsStringSync(
+            'name: op_exact_1\nversion: 1.0.0\n'
+            'dependencies:\n  op_exact_2: 1.0.0',
+          );
+          File(
+            join(d2.path, 'pubspec.yaml'),
+          ).writeAsStringSync('name: op_exact_2\nversion: 1.0.0');
+
+          await runner.run(<String>[
+            'set-ref-version',
+            '--input',
+            d1.path,
+            '--ref',
+            'op_exact_2',
+            '--version',
+            '2.0.0',
+          ]);
+          final content = File(
+            join(d1.path, 'pubspec.yaml'),
+          ).readAsStringSync();
+          expect(content, contains('op_exact_2: 2.0.0'));
+          expect(content, isNot(contains('op_exact_2: ^2.0.0')));
+          expect(content, isNot(contains('op_exact_2: ~2.0.0')));
+        });
+
+        test('keeps ^ from the current spec', () async {
+          final d1 = Directory(join(dWorkspace.path, 'op_caret_1'));
+          final d2 = Directory(join(dWorkspace.path, 'op_caret_2'));
+          await createDirs(<Directory>[d1, d2]);
+          File(join(d1.path, 'pubspec.yaml')).writeAsStringSync(
+            'name: op_caret_1\nversion: 1.0.0\n'
+            'dependencies:\n  op_caret_2: ^1.0.0',
+          );
+          File(
+            join(d2.path, 'pubspec.yaml'),
+          ).writeAsStringSync('name: op_caret_2\nversion: 1.0.0');
+
+          await runner.run(<String>[
+            'set-ref-version',
+            '--input',
+            d1.path,
+            '--ref',
+            'op_caret_2',
+            '--version',
+            '2.0.0',
+          ]);
+          final content = File(
+            join(d1.path, 'pubspec.yaml'),
+          ).readAsStringSync();
+          expect(content, contains('op_caret_2: ^2.0.0'));
+        });
+
+        test('keeps ^ from a git version block (unpublished)', () async {
+          final d1 = Directory(join(dWorkspace.path, 'op_git_1'));
+          final d2 = Directory(join(dWorkspace.path, 'op_git_2'));
+          await createDirs(<Directory>[d1, d2]);
+          File(join(d1.path, 'pubspec.yaml')).writeAsStringSync(
+            'name: op_git_1\nversion: 1.0.0\ndependencies:\n'
+            '  op_git_2:\n'
+            '    git: git@github.com:user/op_git_2.git\n'
+            '    version: ^1.0.0\n',
+          );
+          File(join(d2.path, 'pubspec.yaml')).writeAsStringSync(
+            'name: op_git_2\nversion: 1.0.0\npublish_to: none\n',
+          );
+
+          Process.runSync('git', <String>['init'], workingDirectory: d2.path);
+          Process.runSync('git', <String>[
+            'remote',
+            'add',
+            'origin',
+            'git@github.com:user/op_git_2.git',
+          ], workingDirectory: d2.path);
+
+          await runner.run(<String>[
+            'set-ref-version',
+            '--input',
+            d1.path,
+            '--ref',
+            'op_git_2',
+            '--version',
+            '3.0.0',
+          ]);
+          final content = File(
+            join(d1.path, 'pubspec.yaml'),
+          ).readAsStringSync();
+          expect(content, contains('git:'));
+          expect(content, contains('version: ^3.0.0'));
+        });
+
+        test('keeps ~ from a package.json spec (TypeScript)', () async {
+          final d = Directory(join(dWorkspace.path, 'ts_tilde'));
+          await createDirs(<Directory>[d]);
+          File(join(d.path, 'package.json')).writeAsStringSync(
+            '{"name":"ts_tilde","dependencies":{"dep": "~1.0.0"}}',
+          );
+
+          await runner.run(<String>[
+            'set-ref-version',
+            '--input',
+            d.path,
+            '--ref',
+            'dep',
+            '--version',
+            '2.0.0',
+          ]);
+          final content = File(join(d.path, 'package.json')).readAsStringSync();
+          expect(content, contains('"dep": "~2.0.0"'));
+        });
+
+        test('keeps an exact package.json spec exact (TypeScript)', () async {
+          final d = Directory(join(dWorkspace.path, 'ts_exact'));
+          await createDirs(<Directory>[d]);
+          File(join(d.path, 'package.json')).writeAsStringSync(
+            '{"name":"ts_exact","dependencies":{"dep": "1.0.0"}}',
+          );
+
+          await runner.run(<String>[
+            'set-ref-version',
+            '--input',
+            d.path,
+            '--ref',
+            'dep',
+            '--version',
+            '2.0.0',
+          ]);
+          final content = File(join(d.path, 'package.json')).readAsStringSync();
+          expect(content, contains('"dep": "2.0.0"'));
+          expect(content, isNot(contains('"dep": "^2.0.0"')));
+          expect(content, isNot(contains('"dep": "~2.0.0"')));
+        });
+      });
+
       test('replace scalar with scalar in package.json', () async {
         final d = Directory(join(dWorkspace.path, 'ts_scalar'));
         await createDirs(<Directory>[d]);
