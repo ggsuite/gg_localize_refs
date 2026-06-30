@@ -1,0 +1,34 @@
+{
+  "issue_id": "ts_format_no_direct_eslint",
+  "description": "gg_one: TypeScript-Format-Schritt darf nie direkt eslint aufrufen. eslint-Fallback aus TypeScriptFormatter entfernen - Format laeuft nur noch ueber package.json format/format:check-Script, sonst no-op fuer TS (Stil wird via lint/analyze erzwungen). Zusaetzlich verifizieren, dass TypeScript-Publishing auch ohne --config/.gg-publish.json vollstaendig durchlaeuft. Ausserdem: gg do add schreibt in jedes Ticket-Repo .gg/.ticket.json (issue_id, description, Repo-Liste mit Git-URLs, mehrzeilig/lesbar) und committet sie via .gitignore-Whitelist; do merge entfernt sie wieder, damit sie nicht auf main landet. Neuer Befehl gg do checkout <name>: gg_one checkt die Branch aus; gg_multi reproduziert ein Ticket 1:1 aus .ticket.json (Modi: im .master-Repo => Ticketname aus diesem Repo, Repo-Name => interaktive Branch-Auswahl, sonst Ticketname-Suche ueber alle .master-Repos).",
+  "repositories": [
+    {
+      "name": "gg_git",
+      "url": "git@github.com:ggsuite/gg_git.git"
+    },
+    {
+      "name": "gg_merge",
+      "url": "git@github.com:ggsuite/gg_merge.git"
+    },
+    {
+      "name": "gg_version",
+      "url": "git@github.com:ggsuite/gg_version.git"
+    },
+    {
+      "name": "gg_publish",
+      "url": "git@github.com:ggsuite/gg_publish.git"
+    },
+    {
+      "name": "gg_localize_refs",
+      "url": "git@github.com:ggsuite/gg_localize_refs.git"
+    },
+    {
+      "name": "gg_one",
+      "url": "git@github.com:ggsuite/gg_one.git"
+    },
+    {
+      "name": "gg_multi",
+      "url": "git@github.com:ggsuite/gg_multi.git"
+    }
+  ]
+}
