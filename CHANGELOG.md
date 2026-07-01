@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.5.0] - 2026-07-01
+
+### Changed
+
+- feat(gg): do checkout + .gg/.ticket.json ticket marker; TS format no direct eslint & P:\programs\flutter/bin/internal/exit\_with\_errorlevel.bat
+- gg\_multi: changed references to git
+
 ## [2.4.1] - 2026-06-26
 
 ### Changed
@@ -116,6 +123,7 @@
 
 - Update gg\_publish to ^^3.2.0 and remove publish\_to field
 
+[2.5.0]: https://github.com/ggsuite/gg_localize_refs/compare/2.4.1...2.5.0
 [2.4.1]: https://github.com/ggsuite/gg_localize_refs/compare/2.4.0...2.4.1
 [2.4.0]: https://github.com/ggsuite/gg_localize_refs/compare/2.3.0...2.4.0
 [2.3.0]: https://github.com/ggsuite/gg_localize_refs/compare/2.2.0...2.3.0
