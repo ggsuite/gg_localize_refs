@@ -4,7 +4,8 @@
 
 ### Changed
 
-- feat(gg): do checkout + .gg/.ticket.json ticket marker; TS format no direct eslint &amp; P:\programs\flutter/bin/internal/exit\_with\_errorlevel.bat
+- feat(gg): do checkout + .gg/.ticket.json ticket marker; TS format no direct eslint & P:\programs\flutter/bin/internal/exit\_with\_errorlevel.bat
+- gg\_multi: changed references to git
 
 ## [2.4.1] - 2026-06-26
 
