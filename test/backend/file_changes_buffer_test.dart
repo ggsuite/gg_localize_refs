@@ -136,9 +136,13 @@ void main() {
         // Arrange
         final file1 = File('${tempDir.path}/test1.txt');
         const content1 = 'Content 1';
-        final file2 = File(
-          '/root/test2.txt',
-        ); // Assume insufficient permissions
+
+        // A file used as a directory: writing below it fails on every
+        // platform and for every user. A path like /root/... would be
+        // writable when the tests run as root, e.g. inside a container.
+        final blocker = File('${tempDir.path}/blocker.txt')
+          ..writeAsStringSync('no directory');
+        final file2 = File('${blocker.path}/test2.txt');
         buffer.add(file1, content1);
         buffer.add(file2, 'Content 2');
 

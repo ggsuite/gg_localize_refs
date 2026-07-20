@@ -14,6 +14,11 @@ build
 .idea
 
 .aicode
-.gg
+# Ignore .gg contents, but keep the check-state and ticket files trackable.
+# ».gg« (the bare directory pattern) must not be used here: git never
+# descends into an excluded directory, so the »!«-negations below would
+# have no effect and .gg/.gg.json would never reach CI.
+.gg/*
 !.gg/.gg.json
+!.gg/.ticket.json
 .gg/.gg-publish.json

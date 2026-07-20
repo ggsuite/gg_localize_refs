@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.5.2] - 2026-07-20
+
+### Fixed
+
+- Write `.gg/*` instead of the bare `.gg` into `.gitignore`, so the `!.gg/.gg.json` re-include works and the check state reaches CI; a stale `.gg` is replaced where it stands
+- Make the file-changes-buffer failure test independent of the user it runs as: it wrote below `/root`, which succeeds when the tests run as root (gg\_one\_server's container) and left the expected `FileSystemException` unthrown
+
 ## [2.5.1] - 2026-07-20
 
 ### Added
@@ -133,6 +140,7 @@
 
 - Update gg\_publish to ^^3.2.0 and remove publish\_to field
 
+[2.5.2]: https://github.com/ggsuite/gg_localize_refs/compare/2.5.1...2.5.2
 [2.5.1]: https://github.com/ggsuite/gg_localize_refs/compare/2.5.0...2.5.1
 [2.5.0]: https://github.com/ggsuite/gg_localize_refs/compare/2.4.1...2.5.0
 [2.4.1]: https://github.com/ggsuite/gg_localize_refs/compare/2.4.0...2.4.1

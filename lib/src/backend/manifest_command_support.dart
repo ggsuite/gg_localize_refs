@@ -28,9 +28,16 @@ class ManifestCommandSupport {
   }
 
   /// Ensures `.gitignore` contains the required `.gg` entries.
+  ///
+  /// The contents are ignored via `.gg/*` and not via the bare directory
+  /// pattern `.gg`: git never descends into an excluded directory, so a
+  /// `!.gg/.gg.json` re-include below `.gg` has no effect and the check state
+  /// would never reach CI. A bare `.gg` left over from earlier runs is
+  /// therefore rewritten instead of kept.
   void ensureGitignoreHasDartBackupEntries(Directory projectDir) {
     final gitignore = File(p.join(projectDir.path, '.gitignore'));
-    const ignoreDir = '.gg';
+    const ignoreDir = '.gg/*';
+    const staleIgnoreDir = '.gg';
     const keepConfig = '!.gg/.gg.json';
 
     if (!gitignore.existsSync()) {
@@ -44,6 +51,15 @@ class ManifestCommandSupport {
         ? normalized.substring(0, normalized.length - 1)
         : normalized;
     final lines = content.isEmpty ? <String>[] : content.split('\n');
+
+    // Replace the bare `.gg` written by earlier versions where it stands:
+    // appending the replacement at the end would put it after existing `!`
+    // re-includes and silence them again.
+    final staleIndex = lines.indexWhere((l) => l.trim() == staleIgnoreDir);
+    if (staleIndex >= 0 && !lines.any((l) => l.trim() == ignoreDir)) {
+      lines[staleIndex] = ignoreDir;
+    }
+    lines.removeWhere((line) => line.trim() == staleIgnoreDir);
 
     final hasIgnoreDir = lines.any((line) => line.trim() == ignoreDir);
     final hasKeepConfig = lines.any((line) => line.trim() == keepConfig);

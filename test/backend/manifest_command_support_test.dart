@@ -91,7 +91,7 @@ void main() {
 
         final gitignore = File(p.join(projectDir.path, '.gitignore'));
         expect(gitignore.existsSync(), isTrue);
-        expect(gitignore.readAsStringSync(), '.gg\n!.gg/.gg.json\n');
+        expect(gitignore.readAsStringSync(), '.gg/*\n!.gg/.gg.json\n');
       });
 
       test('appends missing entries to existing .gitignore', () {
@@ -103,7 +103,7 @@ void main() {
 
         support.ensureGitignoreHasDartBackupEntries(projectDir);
 
-        expect(gitignore.readAsStringSync(), 'build/\n.gg\n!.gg/.gg.json\n');
+        expect(gitignore.readAsStringSync(), 'build/\n.gg/*\n!.gg/.gg.json\n');
       });
 
       test(
@@ -115,13 +115,51 @@ void main() {
           final projectDir = Directory(p.join(workspace.path, 'project'))
             ..createSync(recursive: true);
           final gitignore = File(p.join(projectDir.path, '.gitignore'));
-          gitignore.writeAsStringSync('build/\r\n.gg\r\n!.gg/.gg.json\r\n');
+          gitignore.writeAsStringSync('build/\r\n.gg/*\r\n!.gg/.gg.json\r\n');
 
           support.ensureGitignoreHasDartBackupEntries(projectDir);
 
-          expect(gitignore.readAsStringSync(), 'build/\n.gg\n!.gg/.gg.json\n');
+          expect(
+            gitignore.readAsStringSync(),
+            'build/\n.gg/*\n!.gg/.gg.json\n',
+          );
         },
       );
+
+      test('replaces a stale bare .gg where it stands, keeping re-includes '
+          'below it effective', () {
+        final workspace = createWorkspace('manifest_support_gitignore_stale');
+        final projectDir = Directory(p.join(workspace.path, 'project'))
+          ..createSync(recursive: true);
+        final gitignore = File(p.join(projectDir.path, '.gitignore'));
+        gitignore.writeAsStringSync('.gg\n!.gg/.gg.json\n!.gg/.ticket.json\n');
+
+        support.ensureGitignoreHasDartBackupEntries(projectDir);
+
+        expect(
+          gitignore.readAsStringSync(),
+          '.gg/*\n!.gg/.gg.json\n!.gg/.ticket.json\n',
+        );
+      });
+
+      test('drops a stale bare .gg when .gg/* is already present', () {
+        // The replacement must not be inserted twice - a second `.gg/*` after
+        // the `!` re-includes would silence them again.
+        final workspace = createWorkspace('manifest_support_gitignore_both');
+        final projectDir = Directory(p.join(workspace.path, 'project'))
+          ..createSync(recursive: true);
+        final gitignore = File(p.join(projectDir.path, '.gitignore'));
+        gitignore.writeAsStringSync(
+          '.gg/*\n!.gg/.gg.json\n!.gg/.ticket.json\n.gg\n',
+        );
+
+        support.ensureGitignoreHasDartBackupEntries(projectDir);
+
+        expect(
+          gitignore.readAsStringSync(),
+          '.gg/*\n!.gg/.gg.json\n!.gg/.ticket.json\n',
+        );
+      });
     });
 
     group('writeFileCopy()', () {
