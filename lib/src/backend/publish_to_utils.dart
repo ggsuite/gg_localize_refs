@@ -4,6 +4,16 @@
 // Use of this source code is governed by terms that can be
 // found in the LICENSE file in the root of this package.
 
+/// Returns the newline style used by [yamlString] (CRLF on Windows
+/// checkouts with `core.autocrlf`, LF otherwise).
+String _newlineOf(String yamlString) =>
+    yamlString.contains('\r\n') ? '\r\n' : '\n';
+
+/// Matches a whole `publish_to:` line without its line ending. `[^\r\n]*`
+/// instead of `.*` + `\n`, because in Dart regexes `.` matches neither `\n`
+/// nor `\r` — a `.*\n` pattern silently fails on CRLF files.
+final _publishToLineRegex = RegExp(r'^publish_to:[^\r\n]*', multiLine: true);
+
 /// Adds 'publish_to: none' to the YAML string if not present.
 /// Inserts it after the 'version:' line to maintain a logical order.
 String addPublishToNone(String yamlString) {
@@ -13,23 +23,24 @@ String addPublishToNone(String yamlString) {
     return yamlString;
   }
 
-  final versionRegex = RegExp(r'^(version:.*)$', multiLine: true);
+  final nl = _newlineOf(yamlString);
+  final versionRegex = RegExp(r'^version:[^\r\n]*', multiLine: true);
   final match = versionRegex.firstMatch(yamlString);
   if (match != null) {
     return yamlString.replaceFirst(
       versionRegex,
-      '${match.group(0)}\npublish_to: none',
+      '${match.group(0)}${nl}publish_to: none',
     );
   }
 
   // If no version found, add at the end
-  return '$yamlString\npublish_to: none\n';
+  return '$yamlString${nl}publish_to: none$nl';
 }
 
 /// Removes 'publish_to: none' from the YAML string if present.
 String removePublishToNone(String yamlString) {
   return yamlString.replaceAll(
-    RegExp(r'^publish_to:\s*none\s*(\n|$)', multiLine: true),
+    RegExp(r'^publish_to:\s*none[ \t]*(\r?\n|$)', multiLine: true),
     '',
   );
 }
@@ -49,15 +60,14 @@ String restorePublishTo(String yamlString, Map<String, dynamic> backupMap) {
     return removePublishToNone(yamlString);
   }
 
-  final versionRegex = RegExp(r'^(publish_to:\s*.*)\n', multiLine: true);
-  final match = versionRegex.firstMatch(yamlString);
-  if (match != null) {
+  if (_publishToLineRegex.hasMatch(yamlString)) {
     return yamlString.replaceFirst(
-      '${match.group(1)}',
+      _publishToLineRegex,
       'publish_to: $original',
     );
   }
 
   // If no publish_to found, add it at the end
-  return '$yamlString\npublish_to: $original\n';
+  final nl = _newlineOf(yamlString);
+  return '$yamlString${nl}publish_to: $original$nl';
 }
