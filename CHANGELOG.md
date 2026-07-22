@@ -5,6 +5,7 @@
 ### Changed
 
 - Make publish\_to handling CRLF-safe so restore-publish-to no longer appends a duplicate publish\_to line on Windows checkouts
+- gg\_multi: changed references to git
 
 ## [2.5.2] - 2026-07-20
 
