@@ -1,5 +1,11 @@
 # Changelog
 
+## [Unreleased]
+
+### Changed
+
+- Make publish\_to handling CRLF-safe so restore-publish-to no longer appends a duplicate publish\_to line on Windows checkouts
+
 ## [2.5.2] - 2026-07-20
 
 ### Fixed
@@ -140,6 +146,7 @@
 
 - Update gg\_publish to ^^3.2.0 and remove publish\_to field
 
+[Unreleased]: https://github.com/ggsuite/gg_localize_refs/compare/2.5.2...HEAD
 [2.5.2]: https://github.com/ggsuite/gg_localize_refs/compare/2.5.1...2.5.2
 [2.5.1]: https://github.com/ggsuite/gg_localize_refs/compare/2.5.0...2.5.1
 [2.5.0]: https://github.com/ggsuite/gg_localize_refs/compare/2.4.1...2.5.0
