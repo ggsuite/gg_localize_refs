@@ -209,10 +209,24 @@ class SetRefVersion extends DirCommand<dynamic> {
       dependencyDirectory,
       dependencyName,
     );
+    final tagPattern = _extractTagPattern(oldDependency);
     return yamlToString(<String, dynamic>{
-      'git': gitUrl,
+      'git': tagPattern == null
+          ? gitUrl
+          : <String, dynamic>{'url': gitUrl, 'tag_pattern': tagPattern},
       'version': newVersion,
     }).trimRight();
+  }
+
+  /// Returns the quoted `tag_pattern` of [oldDependency]'s git map, or null
+  /// when the old spec has none.
+  String? _extractTagPattern(dynamic oldDependency) {
+    if (oldDependency is! Map) return null;
+    final git = oldDependency['git'];
+    if (git is! Map) return null;
+    final tagPattern = git['tag_pattern'];
+    if (tagPattern == null) return null;
+    return '"$tagPattern"';
   }
 
   /// Builds `git+<remote>#semver:<range>` for a private TS dep — reuses the
