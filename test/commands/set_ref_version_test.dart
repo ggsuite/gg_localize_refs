@@ -409,6 +409,45 @@ void main() {
         expect(content, isNot(contains('tag_pattern:')));
       });
 
+      test('keeps tag_pattern of existing git block', () async {
+        final d1 = Directory(join(dWorkspace.path, 'd1c'));
+        final d2 = Directory(join(dWorkspace.path, 'd2c'));
+        await createDirs(<Directory>[d1, d2]);
+        File(join(d1.path, 'pubspec.yaml')).writeAsStringSync(
+          'name: d1c\nversion: 1.0.0\ndependencies:\n'
+          '  d2c:\n'
+          '    git:\n'
+          '      url: git@github.com:user/d2c.git\n'
+          '      tag_pattern: "{{version}}"\n'
+          '    version: ^1.0.0\n',
+        );
+        File(
+          join(d2.path, 'pubspec.yaml'),
+        ).writeAsStringSync('name: d2c\nversion: 1.0.0\npublish_to: none\n');
+
+        Process.runSync('git', <String>['init'], workingDirectory: d2.path);
+        Process.runSync('git', <String>[
+          'remote',
+          'add',
+          'origin',
+          'git@github.com:user/d2c.git',
+        ], workingDirectory: d2.path);
+
+        await runner.run(<String>[
+          'set-ref-version',
+          '--input',
+          d1.path,
+          '--ref',
+          'd2c',
+          '--version',
+          '^3.0.0',
+        ]);
+        final content = File(join(d1.path, 'pubspec.yaml')).readAsStringSync();
+        expect(content, contains('url: '));
+        expect(content, contains('tag_pattern: "{{version}}"'));
+        expect(content, contains('version: ^3.0.0'));
+      });
+
       test('replace path block with scalar', () async {
         final d1 = Directory(join(dWorkspace.path, 'e1'));
         final d2 = Directory(join(dWorkspace.path, 'e2'));
