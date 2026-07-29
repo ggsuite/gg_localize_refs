@@ -1,26 +1,33 @@
 # Changelog
 
-## [2.5.4] - 2026-07-25
+## 2.6.0 - 2026-07-29
+
+### Changed
+
+- Support projects without manifest: ProjectType.none, checks skipped, version tracked as git tag only
+- gg\_multi: changed references to git
+
+## 2.5.4 - 2026-07-25
 
 ### Fixed
 
 - FIX: tag\_patterns get lost when publishing
 
-## [2.5.3] - 2026-07-22
+## 2.5.3 - 2026-07-22
 
 ### Changed
 
 - Make publish\_to handling CRLF-safe so restore-publish-to no longer appends a duplicate publish\_to line on Windows checkouts
 - gg\_multi: changed references to git
 
-## [2.5.2] - 2026-07-20
+## 2.5.2 - 2026-07-20
 
 ### Fixed
 
 - Write `.gg/*` instead of the bare `.gg` into `.gitignore`, so the `!.gg/.gg.json` re-include works and the check state reaches CI; a stale `.gg` is replaced where it stands
 - Make the file-changes-buffer failure test independent of the user it runs as: it wrote below `/root`, which succeeds when the tests run as root (gg\_one\_server's container) and left the expected `FileSystemException` unthrown
 
-## [2.5.1] - 2026-07-20
+## 2.5.1 - 2026-07-20
 
 ### Added
 
@@ -30,21 +37,21 @@
 
 - gg\_multi: changed references to git
 
-## [2.5.0] - 2026-07-01
+## 2.5.0 - 2026-07-01
 
 ### Changed
 
 - feat(gg): do checkout + .gg/.ticket.json ticket marker; TS format no direct eslint & P:\programs\flutter/bin/internal/exit\_with\_errorlevel.bat
 - gg\_multi: changed references to git
 
-## [2.4.1] - 2026-06-26
+## 2.4.1 - 2026-06-26
 
 ### Changed
 
 - Preserve dependency constraint operator (^^/\~/exact) through publish
 - gg\_multi: changed references to git
 
-## [2.4.0] - 2026-06-19
+## 2.4.0 - 2026-06-19
 
 ### Changed
 
@@ -55,7 +62,7 @@
 - gg\_multi: changed references to git
 - Gg Multi: changed references to pub.dev
 
-## [2.3.0] - 2026-06-09
+## 2.3.0 - 2026-06-09
 
 ### Changed
 
@@ -67,7 +74,7 @@
 
 - refactor(tests): drive TS unlocalize scenarios from test/sample\_folder\_ts fixtures
 
-## [2.2.0] - 2026-06-08
+## 2.2.0 - 2026-06-08
 
 ### Changed
 
@@ -75,34 +82,34 @@
 - gg\_multi: changed references to git
 - gg\_multi: changed references to git
 
-## [2.1.2] - 2026-05-11
+## 2.1.2 - 2026-05-11
 
 ### Changed
 
 - fix: add tag\_pattern to git fallback in change-refs-to-pub-dev
 - gg\_multi: changed references to git
 
-## [2.1.1] - 2026-04-24
+## 2.1.1 - 2026-04-24
 
-## [2.1.0] - 2026-04-23
+## 2.1.0 - 2026-04-23
 
 ### Changed
 
 - kidney: changed references to local
 
-## [2.0.2] - 2026-04-07
+## 2.0.2 - 2026-04-07
 
 ### Changed
 
 - Kidney: changed references to pub.dev
 
-## [2.0.1] - 2026-03-31
+## 2.0.1 - 2026-03-31
 
 ### Changed
 
 - commit
 
-## [2.0.0] - 2026-03-27
+## 2.0.0 - 2026-03-27
 
 ### Added
 
@@ -114,7 +121,7 @@
 - rename localize-refs and unlocalize-refs
 - kidney: changed references to git
 
-## [1.0.0] - 2026-03-24
+## 1.0.0 - 2026-03-24
 
 ### Added
 
@@ -152,20 +159,3 @@
 ### Removed
 
 - Update gg\_publish to ^^3.2.0 and remove publish\_to field
-
-[2.5.4]: https://github.com/ggsuite/gg_localize_refs/compare/2.5.3...2.5.4
-[2.5.3]: https://github.com/ggsuite/gg_localize_refs/compare/2.5.2...2.5.3
-[2.5.2]: https://github.com/ggsuite/gg_localize_refs/compare/2.5.1...2.5.2
-[2.5.1]: https://github.com/ggsuite/gg_localize_refs/compare/2.5.0...2.5.1
-[2.5.0]: https://github.com/ggsuite/gg_localize_refs/compare/2.4.1...2.5.0
-[2.4.1]: https://github.com/ggsuite/gg_localize_refs/compare/2.4.0...2.4.1
-[2.4.0]: https://github.com/ggsuite/gg_localize_refs/compare/2.3.0...2.4.0
-[2.3.0]: https://github.com/ggsuite/gg_localize_refs/compare/2.2.0...2.3.0
-[2.2.0]: https://github.com/ggsuite/gg_localize_refs/compare/2.1.2...2.2.0
-[2.1.2]: https://github.com/ggsuite/gg_localize_refs/compare/2.1.1...2.1.2
-[2.1.1]: https://github.com/ggsuite/gg_localize_refs/compare/2.1.0...2.1.1
-[2.1.0]: https://github.com/ggsuite/gg_localize_refs/compare/2.0.2...2.1.0
-[2.0.2]: https://github.com/ggsuite/gg_localize_refs/compare/2.0.1...2.0.2
-[2.0.1]: https://github.com/ggsuite/gg_localize_refs/compare/2.0.0...2.0.1
-[2.0.0]: https://github.com/ggsuite/gg_localize_refs/compare/1.0.0...2.0.0
-[1.0.0]: https://github.com/ggsuite/gg_localize_refs/tag/%tag
