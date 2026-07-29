@@ -1,0 +1,14 @@
+{
+  "issue_id": "11_use_pubspec_overrides",
+  "description": "Verwende pubspec_override.yaml anstatt pubspec.yaml files zu editieren",
+  "repositories": [
+    {
+      "name": "gg_local_package_dependencies",
+      "url": "git@github.com:ggsuite/gg_local_package_dependencies.git"
+    },
+    {
+      "name": "gg_localize_refs",
+      "url": "git@github.com:ggsuite/gg_localize_refs.git"
+    }
+  ]
+}
