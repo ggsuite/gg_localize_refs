@@ -164,62 +164,68 @@ void main() {
       });
     });
 
-    group('ensureGitignoreHasPubspecOverrides()', () {
-      test('creates .gitignore with the entry when missing', () {
-        final workspace = createWorkspace('manifest_support_overrides_new');
+    group('ensureGitignoreAllowsPubspecOverrides()', () {
+      test('does not create a .gitignore when there is none', () {
+        final workspace = createWorkspace('manifest_support_overrides_none');
         final projectDir = Directory(p.join(workspace.path, 'project'))
           ..createSync(recursive: true);
 
-        support.ensureGitignoreHasPubspecOverrides(projectDir);
+        support.ensureGitignoreAllowsPubspecOverrides(projectDir);
 
         expect(
-          File(p.join(projectDir.path, '.gitignore')).readAsStringSync(),
-          '/pubspec_overrides.yaml\n',
+          File(p.join(projectDir.path, '.gitignore')).existsSync(),
+          isFalse,
         );
       });
 
-      test('appends the entry to an existing .gitignore', () {
-        final workspace = createWorkspace('manifest_support_overrides_append');
+      test('removes an anchored entry an earlier version wrote', () {
+        final workspace = createWorkspace('manifest_support_overrides_drop');
         final projectDir = Directory(p.join(workspace.path, 'project'))
           ..createSync(recursive: true);
         final gitignore = File(p.join(projectDir.path, '.gitignore'));
-        gitignore.writeAsStringSync('build/\n');
+        gitignore.writeAsStringSync('build/\n/pubspec_overrides.yaml\n');
 
-        support.ensureGitignoreHasPubspecOverrides(projectDir);
+        support.ensureGitignoreAllowsPubspecOverrides(projectDir);
 
-        expect(
-          gitignore.readAsStringSync(),
-          'build/\n/pubspec_overrides.yaml\n',
-        );
+        expect(gitignore.readAsStringSync(), 'build/\n');
       });
 
-      test('does not duplicate the entry', () {
-        final workspace = createWorkspace('manifest_support_overrides_dup');
+      test('removes the unanchored entry other repos carry by hand', () {
+        final workspace = createWorkspace('manifest_support_overrides_bare');
         final projectDir = Directory(p.join(workspace.path, 'project'))
           ..createSync(recursive: true);
         final gitignore = File(p.join(projectDir.path, '.gitignore'));
-        gitignore.writeAsStringSync('/pubspec_overrides.yaml\r\nbuild/\r\n');
+        gitignore.writeAsStringSync('pubspec_overrides.yaml\r\nbuild/\r\n');
 
-        support.ensureGitignoreHasPubspecOverrides(projectDir);
+        support.ensureGitignoreAllowsPubspecOverrides(projectDir);
 
-        expect(
-          gitignore.readAsStringSync(),
-          '/pubspec_overrides.yaml\nbuild/\n',
-        );
+        expect(gitignore.readAsStringSync(), 'build/\n');
       });
 
-      test('coexists with the .gg entries', () {
-        final workspace = createWorkspace('manifest_support_overrides_gg');
+      test('leaves a .gitignore without the entry untouched', () {
+        final workspace = createWorkspace('manifest_support_overrides_keep');
         final projectDir = Directory(p.join(workspace.path, 'project'))
           ..createSync(recursive: true);
+        final gitignore = File(p.join(projectDir.path, '.gitignore'));
+        gitignore.writeAsStringSync('build/\n.gg/*\n!.gg/.gg.json\n');
+        final before = gitignore.lastModifiedSync();
 
-        support.ensureGitignoreHasDartBackupEntries(projectDir);
-        support.ensureGitignoreHasPubspecOverrides(projectDir);
+        support.ensureGitignoreAllowsPubspecOverrides(projectDir);
 
-        expect(
-          File(p.join(projectDir.path, '.gitignore')).readAsStringSync(),
-          '.gg/*\n!.gg/.gg.json\n/pubspec_overrides.yaml\n',
-        );
+        expect(gitignore.readAsStringSync(), 'build/\n.gg/*\n!.gg/.gg.json\n');
+        expect(gitignore.lastModifiedSync(), before);
+      });
+
+      test('empties a .gitignore that held nothing else', () {
+        final workspace = createWorkspace('manifest_support_overrides_only');
+        final projectDir = Directory(p.join(workspace.path, 'project'))
+          ..createSync(recursive: true);
+        final gitignore = File(p.join(projectDir.path, '.gitignore'));
+        gitignore.writeAsStringSync('/pubspec_overrides.yaml\n');
+
+        support.ensureGitignoreAllowsPubspecOverrides(projectDir);
+
+        expect(gitignore.readAsStringSync(), isEmpty);
       });
     });
 
@@ -262,7 +268,7 @@ void main() {
     });
 
     group('bufferPubspecOverridesRemoval()', () {
-      test('queues the deletion of an overrides file we own', () {
+      test('queues the deletion for a dependency of the node', () {
         final workspace = createWorkspace('manifest_support_remove_overrides');
         final projectDir = Directory(p.join(workspace.path, 'project'))
           ..createSync(recursive: true);

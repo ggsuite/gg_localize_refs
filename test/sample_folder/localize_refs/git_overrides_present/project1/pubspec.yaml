@@ -4,4 +4,4 @@ dependencies:
   test2:
     git:
       url: git@github.com:user/test2.git
-      ref: feature/x
+      ref: feature123

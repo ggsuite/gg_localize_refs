@@ -35,15 +35,25 @@ void main() {
   }
 
   /// Creates a sibling checkout of [projectDir] holding a package [name].
-  Directory createSibling(String name) {
+  Directory createSibling(String name, {String? packageName}) {
     final dir = Directory(p.join(projectDir.parent.path, name))
       ..createSync(recursive: true);
     File(p.join(dir.path, 'pubspec.yaml')).writeAsStringSync(
-      'name: $name\n'
+      'name: ${packageName ?? name}\n'
       'version: 1.0.0\n',
     );
     return dir;
   }
+
+  /// Creates a sibling directory `other` whose package name does NOT match the
+  /// override key `other`, so an override for it is provably not ours.
+  ///
+  /// The directory has to exist: a missing sibling counts as an entry we wrote
+  /// and lost track of, and would be pruned.
+  void createForeignSibling() => createSibling(
+    'other',
+    packageName: 'a_package_nobody_overrides_by_that_name',
+  );
 
   group('PubspecOverridesEdit', () {
     test('unchanged carries neither content nor a deletion', () {
@@ -127,6 +137,7 @@ void main() {
       });
 
       test('merges into a hand written file and keeps its comments', () {
+        createForeignSibling();
         overridesFile.writeAsStringSync(
           '# keep me\n'
           'dependency_overrides:\n'
@@ -349,6 +360,18 @@ void main() {
 
       test('keeps an override that points outside the workspace', () {
         createSibling('a');
+
+        // The target has to EXIST and carry a matching package name, otherwise
+        // the check short circuits before the workspace boundary matters and
+        // the test would pass with the boundary guard removed.
+        final vendored = Directory(
+          p.join(projectDir.parent.parent.path, 'vendor', 'vendored'),
+        )..createSync(recursive: true);
+        File(p.join(vendored.path, 'pubspec.yaml')).writeAsStringSync(
+          'name: vendored\n'
+          'version: 1.0.0\n',
+        );
+
         overridesFile.writeAsStringSync(
           'dependency_overrides:\n'
           '  a:\n'
@@ -366,6 +389,28 @@ void main() {
               .isUnchanged,
           isTrue,
         );
+
+        vendored.parent.deleteSync(recursive: true);
+      });
+
+      test('prunes an override whose target directory vanished', () {
+        createSibling('a');
+        overridesFile.writeAsStringSync(
+          'dependency_overrides:\n'
+          '  a:\n'
+          '    path: ../a\n'
+          '  gone:\n'
+          '    path: ../gone\n',
+        );
+
+        final edit = io.addPathOverrides(
+          projectDir: projectDir,
+          pathsByDependency: <String, String>{'a': '../a'},
+        );
+
+        final overrides = overridesOf(edit.content!);
+        expect((overrides['a'] as Map)['path'], '../a');
+        expect(overrides.containsKey('gone'), isFalse);
       });
 
       test('keeps a sibling override whose package name differs', () {
@@ -491,6 +536,7 @@ void main() {
       });
 
       test('keeps hand written entries', () {
+        createForeignSibling();
         overridesFile.writeAsStringSync(
           '# keep me\n'
           'dependency_overrides:\n'
@@ -557,6 +603,26 @@ void main() {
         );
       });
 
+      test('removes an override whose target directory vanished', () {
+        // Leaving local mode must not leave behind an entry pub cannot
+        // resolve - the repo would be stuck with a failing pub get.
+        overridesFile.writeAsStringSync(
+          'dependency_overrides:\n'
+          '  gone:\n'
+          '    path: ../gone\n',
+        );
+
+        expect(
+          io
+              .removePathOverrides(
+                projectDir: projectDir,
+                dependencyNames: <String>[],
+              )
+              .deleteFile,
+          isTrue,
+        );
+      });
+
       test(
         'removes an override of a sibling that is no longer a dependency',
         () {
@@ -580,6 +646,7 @@ void main() {
       );
 
       test('ignores dependencies that are not overridden', () {
+        createForeignSibling();
         overridesFile.writeAsStringSync(
           'dependency_overrides:\n'
           '  other:\n'

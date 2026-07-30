@@ -14,14 +14,20 @@ the local path overrides, so exactly one of the three modes is ever active
 - change-refs-to-local migrates a workspace that an earlier version localized
 inside pubspec.yaml: the dependency backup is restored, an injected
 publish_to: none is reverted, and the paths move to pubspec_overrides.yaml
-- change-refs-to-local adds pubspec_overrides.yaml to .gitignore and drops
-an override of a dependency that left pubspec.yaml
+- pubspec_overrides.yaml is committed - it holds relative paths only, so a
+shared ticket workspace keeps resolving against the sibling checkouts;
+change-refs-to-local removes a stale .gitignore entry for it, because
+gitignored plus checked in makes dart pub publish fail
+- change-refs-to-local drops an override of a dependency that left
+pubspec.yaml, and one whose sibling checkout is gone - pub cannot resolve
+either, and the second kind also blocked deleting the file
 - dependency_overrides declared in pubspec.yaml are carried over into
 pubspec_overrides.yaml, because pub replaces that section instead of merging
 - change-refs-to-local writes no dependency backup anymore - pubspec.yaml
 remains the single source of truth for the remote refs
 - TypeScript projects are unchanged: package.json keeps carrying the link: specs
 - Use pubspec_override.yaml instead of editing pubspec.yaml files
+- Commit pubspec_overrides.yaml to share it with others
 
 ## 2.6.0 - 2026-07-29
 

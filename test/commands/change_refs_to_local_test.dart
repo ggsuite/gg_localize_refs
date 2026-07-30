@@ -290,8 +290,31 @@ void main() {
           final gitignoreContent = gitignoreFile.readAsStringSync();
           expect(gitignoreContent, contains('.gg'));
           expect(gitignoreContent, contains('!.gg/.gg.json'));
-          expect(gitignoreContent, contains('pubspec_overrides.yaml'));
+
+          // The overrides file has to stay committable: it carries the local
+          // wiring of a shared ticket workspace.
+          expect(gitignoreContent, isNot(contains('pubspec_overrides.yaml')));
         });
+
+        test(
+          'drops a stale pubspec_overrides.yaml entry from .gitignore',
+          () async {
+            final dProject1 = Directory(
+              p.join(dWorkspaceSucceed.path, 'project1'),
+            );
+            final gitignoreFile = File(p.join(dProject1.path, '.gitignore'))
+              ..writeAsStringSync('build/\npubspec_overrides.yaml\n');
+
+            final local = ChangeRefsToLocal(ggLog: messages.add);
+            await local.get(directory: dProject1, ggLog: messages.add);
+
+            // Gitignored AND checked in is the one combination that makes
+            // dart pub publish fail, so the stale entry must go.
+            final content = gitignoreFile.readAsStringSync();
+            expect(content, contains('build/'));
+            expect(content, isNot(contains('pubspec_overrides.yaml')));
+          },
+        );
 
         test('when run twice nothing is changed the second time', () async {
           final dProject1 = Directory(
@@ -696,6 +719,10 @@ void main() {
           expect(resultYaml, contains('test2: ^1.0.0'));
           expect(resultYaml, isNot(contains('path:')));
           expect(resultYaml, isNot(contains('publish_to')));
+
+          // The line based replacement drops the trailing newline. Without the
+          // fixup every migration adds a "no newline at end of file" diff.
+          expect(resultYaml, endsWith('\n'));
 
           expect(
             File(

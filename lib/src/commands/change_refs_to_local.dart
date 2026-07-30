@@ -114,7 +114,7 @@ class ChangeRefsToLocal extends DirCommand<dynamic> {
   }) async {
     final projectDir = node.directory;
     _support.ensureGitignoreHasDartBackupEntries(projectDir);
-    _support.ensureGitignoreHasPubspecOverrides(projectDir);
+    _support.ensureGitignoreAllowsPubspecOverrides(projectDir);
     final references = _support.referencesFor(node, yamlMap);
 
     await _migrateManifest(
@@ -223,7 +223,11 @@ class ChangeRefsToLocal extends DirCommand<dynamic> {
       newContent = '$newContent\n';
     }
 
-    ggLog('Migrate refs of ${node.name} out of pubspec.yaml');
+    ggLog(
+      restore.content != null
+          ? 'Migrate refs of ${node.name} out of pubspec.yaml'
+          : 'Revert the injected publish_to of ${node.name}',
+    );
     fileChangesBuffer.add(pubspec, newContent);
   }
 

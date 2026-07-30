@@ -21,12 +21,18 @@ up after the previous one.
 For Dart packages, local mode does **not** modify `pubspec.yaml`: the published
 version constraints stay in place and the local paths go into
 `pubspec_overrides.yaml`, a file pub reads in addition to the manifest. That
-keeps a localized package publishable, keeps developer-machine paths out of the
-manifest, and makes the local wiring a one-file, throw-away artifact.
+keeps a localized package publishable and keeps the local wiring in one file
+that a single command writes and removes again.
 
-`pubspec_overrides.yaml` is local state and must never be committed:
-`change-refs-to-local` adds it to `.gitignore` automatically. Leaving local mode
-removes the overrides it wrote — hand written entries in that file survive.
+`pubspec_overrides.yaml` **is committed**. It contains only relative paths, so a
+shared ticket workspace resolves against the same sibling checkouts for everyone
+— and pub always excludes it from a published package. `change-refs-to-local`
+therefore removes a stale `pubspec_overrides.yaml` line from `.gitignore` if it
+finds one, because a file that is gitignored *and* checked in makes
+`dart pub publish` fail.
+
+Leaving local mode removes the overrides this tool wrote — hand written entries
+in that file survive.
 
 TypeScript/JavaScript projects have no equivalent file, so their `link:` specs
 are written into `package.json` as before.

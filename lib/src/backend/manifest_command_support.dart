@@ -63,19 +63,24 @@ class ManifestCommandSupport {
     });
   }
 
-  /// Ensures `.gitignore` excludes `pubspec_overrides.yaml`.
+  /// Ensures `.gitignore` does **not** exclude `pubspec_overrides.yaml`.
   ///
-  /// The overrides file wires a package to the checkouts of one developer
-  /// machine, so it must never be committed. The entry is anchored to the
-  /// package root: an unanchored pattern matches at every depth and would also
-  /// hide the overrides files of test fixtures and example projects.
-  void ensureGitignoreHasPubspecOverrides(Directory projectDir) {
-    const entry = '/${PubspecOverridesIo.fileName}';
+  /// The overrides file holds relative paths only, so it travels with a shared
+  /// ticket workspace exactly like the localized `pubspec.yaml` used to. It has
+  /// to be committable for that, and an earlier version of this package - plus
+  /// several repositories of the suite by hand - added the opposite entry.
+  ///
+  /// Leaving a stale entry in place would be worse than having none: a file
+  /// that is gitignored *and* checked in makes `dart pub publish` fail with a
+  /// "checked-in files are ignored by a .gitignore" warning.
+  void ensureGitignoreAllowsPubspecOverrides(Directory projectDir) {
+    const entry = PubspecOverridesIo.fileName;
+    const anchoredEntry = '/$entry';
 
     _editGitignore(projectDir, (List<String> lines) {
-      if (!lines.any((line) => line.trim() == entry)) {
-        lines.add(entry);
-      }
+      lines.removeWhere(
+        (line) => line.trim() == entry || line.trim() == anchoredEntry,
+      );
     });
   }
 
@@ -83,10 +88,12 @@ class ManifestCommandSupport {
   /// writes the result back. A missing file is treated as empty.
   ///
   /// Nothing is written when [edit] leaves the entries as they are, so a
-  /// command that changes nothing does not touch the file either.
+  /// command that changes nothing does not touch the file either. A file that
+  /// does not exist is not created for nothing either.
   void _editGitignore(Directory projectDir, void Function(List<String>) edit) {
     final gitignore = File(p.join(projectDir.path, '.gitignore'));
-    final raw = gitignore.existsSync() ? gitignore.readAsStringSync() : '';
+    final existed = gitignore.existsSync();
+    final raw = existed ? gitignore.readAsStringSync() : '';
     final normalized = raw.replaceAll('\r\n', '\n').replaceAll('\r', '\n');
     final content = normalized.endsWith('\n')
         ? normalized.substring(0, normalized.length - 1)
@@ -95,8 +102,8 @@ class ManifestCommandSupport {
 
     edit(lines);
 
-    final updated = '${lines.join('\n')}\n';
-    if (gitignore.existsSync() && updated == raw) {
+    final updated = lines.isEmpty ? '' : '${lines.join('\n')}\n';
+    if (updated == raw || (!existed && updated.isEmpty)) {
       return;
     }
 

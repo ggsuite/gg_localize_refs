@@ -343,6 +343,9 @@ void main() {
           );
         });
 
+        // The fixture already pins the very ref that is requested, so the
+        // assertion below is about the overrides file only - it must not be
+        // read as a statement about re-pointing an existing ref.
         test('deletes pubspec_overrides.yaml even when all Dart deps are '
             'already git refs', () async {
           final dProject1 = Directory(
