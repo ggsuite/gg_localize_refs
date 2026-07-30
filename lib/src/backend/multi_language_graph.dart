@@ -8,6 +8,7 @@ import 'dart:io';
 
 import 'package:gg_console_colors/gg_console_colors.dart';
 import 'package:gg_log/gg_log.dart';
+import 'package:path/path.dart' as p;
 
 import 'package:gg_localize_refs/src/backend/languages/project_language.dart';
 
@@ -44,10 +45,7 @@ class MultiLanguageGraph {
     final rootDir = rootInfo.$1;
     final language = rootInfo.$2;
 
-    final workspaceRoot = rootDir.parent.absolute;
-
-    final allDirs = workspaceRoot.listSync().whereType<Directory>().toList()
-      ..sort((a, b) => a.path.compareTo(b.path));
+    final allDirs = projectCandidateDirs(workspaceRootOf(rootDir));
 
     final nodes = <String, ProjectNode>{};
 
@@ -132,6 +130,74 @@ class MultiLanguageGraph {
       dir = parent;
     }
   }
+
+  /// Returns the directory that holds the sibling checkouts of the project at
+  /// [projectRoot].
+  ///
+  /// Usually the repositories sit directly in the workspace, so the parent of
+  /// the project is the workspace root. A gg workspace may additionally group
+  /// its repositories in a folder named after the organization a repository
+  /// belongs to (`<workspace>/<org>/<repo>`); then the grandparent is the
+  /// workspace root. Both gg workspaces are recognized by a marker they always
+  /// carry — the master workspace by its folder name, a ticket workspace by
+  /// its `.ticket` file — so a plain folder of sibling checkouts outside a gg
+  /// workspace keeps resolving to the parent.
+  Directory workspaceRootOf(Directory projectRoot) {
+    final parent = projectRoot.parent.absolute;
+    if (_isWorkspaceRoot(parent)) {
+      return parent;
+    }
+    final grandParent = parent.parent.absolute;
+    if (_isWorkspaceRoot(grandParent)) {
+      return grandParent;
+    }
+    return parent;
+  }
+
+  /// Returns every directory below [workspaceRoot] that may hold a project:
+  /// its direct sub directories plus the children of each of them that is a
+  /// grouping folder, i.e. a visible directory that is neither a project of
+  /// any registered language nor a git repository. Sorted by path.
+  ///
+  /// An organization folder is such a grouping folder, a repository is not —
+  /// so the repositories inside the organization folders are found while
+  /// projects nested inside a repository stay invisible.
+  List<Directory> projectCandidateDirs(Directory workspaceRoot) {
+    final result = <Directory>[];
+    for (final dir in _subDirs(workspaceRoot)) {
+      result.add(dir);
+      if (_isGroupingDir(dir)) {
+        result.addAll(_subDirs(dir));
+      }
+    }
+    return result..sort((a, b) => a.path.compareTo(b.path));
+  }
+
+  /// The name of the master workspace of a gg workspace.
+  static const String _masterFolderName = '.master';
+
+  /// The marker file a gg ticket workspace carries in its root.
+  static const String _ticketFileName = '.ticket';
+
+  /// Returns true when [dir] is the root of a gg workspace.
+  bool _isWorkspaceRoot(Directory dir) =>
+      p.basename(dir.path) == _masterFolderName ||
+      File(p.join(dir.path, _ticketFileName)).existsSync();
+
+  /// Returns true when [dir] groups repositories instead of being one.
+  bool _isGroupingDir(Directory dir) {
+    if (p.basename(dir.path).startsWith('.')) {
+      return false;
+    }
+    if (languages.any((language) => language.isProjectRoot(dir))) {
+      return false;
+    }
+    return !Directory(p.join(dir.path, '.git')).existsSync();
+  }
+
+  /// Returns the direct sub directories of [directory].
+  List<Directory> _subDirs(Directory directory) =>
+      directory.listSync().whereType<Directory>().toList();
 
   Future<(Directory, ProjectLanguage)?> _findProjectRootAndLanguage(
     Directory directory, [
