@@ -22,3 +22,7 @@ build
 !.gg/.gg.json
 !.gg/.ticket.json
 .gg/.gg-publish.json
+
+# Local cross-repo dev override (not for commit). Anchored to the repo root so
+# the pubspec_overrides.yaml files of the test fixtures stay trackable.
+/pubspec_overrides.yaml

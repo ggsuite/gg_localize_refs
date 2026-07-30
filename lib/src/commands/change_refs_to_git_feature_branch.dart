@@ -14,6 +14,7 @@ import 'package:gg_localize_refs/src/backend/languages/project_language.dart';
 import 'package:gg_localize_refs/src/backend/manifest_command_support.dart';
 import 'package:gg_localize_refs/src/backend/process_dependencies.dart';
 import 'package:gg_localize_refs/src/backend/publish_to_utils.dart';
+import 'package:gg_localize_refs/src/backend/pubspec_overrides_io.dart';
 import 'package:gg_localize_refs/src/backend/typescript_npm_spec.dart';
 import 'package:gg_localize_refs/src/backend/utils.dart';
 import 'package:gg_localize_refs/src/backend/yaml_to_string.dart';
@@ -88,7 +89,7 @@ class ChangeRefsToGitFeatureBranch extends DirCommand<dynamic> {
         ggLog: ggLog,
       );
 
-      if (fileChangesBuffer.files.isEmpty) {
+      if (fileChangesBuffer.isEmpty) {
         ggLog.call(yellow('No files were changed.'));
         return;
       }
@@ -141,6 +142,19 @@ class ChangeRefsToGitFeatureBranch extends DirCommand<dynamic> {
     final projectDir = node.directory;
     _support.ensureDartBackupDir(projectDir);
     final references = _support.referencesFor(node, yamlMap);
+
+    // Pinning to a feature branch means leaving local mode: the path overrides
+    // of pubspec_overrides.yaml would keep shadowing the git refs.
+    final overridesEdit = _support.bufferPubspecOverridesRemoval(
+      node: node,
+      fileChangesBuffer: fileChangesBuffer,
+    );
+    if (!overridesEdit.isUnchanged) {
+      ggLog(
+        'Remove the local path overrides of ${node.name} from '
+        '${PubspecOverridesIo.fileName}',
+      );
+    }
 
     if (!_hasNonGitDartDependencies(node: node, references: references)) {
       return;

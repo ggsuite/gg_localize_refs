@@ -7,10 +7,12 @@
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:gg_localize_refs/src/backend/file_changes_buffer.dart';
 import 'package:gg_localize_refs/src/backend/languages/dart_language.dart';
 import 'package:gg_localize_refs/src/backend/languages/project_language.dart';
 import 'package:gg_localize_refs/src/backend/languages/typescript_language.dart';
 import 'package:gg_localize_refs/src/backend/manifest_command_support.dart';
+import 'package:gg_localize_refs/src/backend/pubspec_overrides_io.dart';
 import 'package:path/path.dart' as p;
 import 'package:test/test.dart';
 import 'package:yaml/yaml.dart';
@@ -162,6 +164,166 @@ void main() {
       });
     });
 
+    group('ensureGitignoreHasPubspecOverrides()', () {
+      test('creates .gitignore with the entry when missing', () {
+        final workspace = createWorkspace('manifest_support_overrides_new');
+        final projectDir = Directory(p.join(workspace.path, 'project'))
+          ..createSync(recursive: true);
+
+        support.ensureGitignoreHasPubspecOverrides(projectDir);
+
+        expect(
+          File(p.join(projectDir.path, '.gitignore')).readAsStringSync(),
+          '/pubspec_overrides.yaml\n',
+        );
+      });
+
+      test('appends the entry to an existing .gitignore', () {
+        final workspace = createWorkspace('manifest_support_overrides_append');
+        final projectDir = Directory(p.join(workspace.path, 'project'))
+          ..createSync(recursive: true);
+        final gitignore = File(p.join(projectDir.path, '.gitignore'));
+        gitignore.writeAsStringSync('build/\n');
+
+        support.ensureGitignoreHasPubspecOverrides(projectDir);
+
+        expect(
+          gitignore.readAsStringSync(),
+          'build/\n/pubspec_overrides.yaml\n',
+        );
+      });
+
+      test('does not duplicate the entry', () {
+        final workspace = createWorkspace('manifest_support_overrides_dup');
+        final projectDir = Directory(p.join(workspace.path, 'project'))
+          ..createSync(recursive: true);
+        final gitignore = File(p.join(projectDir.path, '.gitignore'));
+        gitignore.writeAsStringSync('/pubspec_overrides.yaml\r\nbuild/\r\n');
+
+        support.ensureGitignoreHasPubspecOverrides(projectDir);
+
+        expect(
+          gitignore.readAsStringSync(),
+          '/pubspec_overrides.yaml\nbuild/\n',
+        );
+      });
+
+      test('coexists with the .gg entries', () {
+        final workspace = createWorkspace('manifest_support_overrides_gg');
+        final projectDir = Directory(p.join(workspace.path, 'project'))
+          ..createSync(recursive: true);
+
+        support.ensureGitignoreHasDartBackupEntries(projectDir);
+        support.ensureGitignoreHasPubspecOverrides(projectDir);
+
+        expect(
+          File(p.join(projectDir.path, '.gitignore')).readAsStringSync(),
+          '.gg/*\n!.gg/.gg.json\n/pubspec_overrides.yaml\n',
+        );
+      });
+    });
+
+    group('bufferPubspecOverridesEdit()', () {
+      test('queues a write edit as a content change', () {
+        final workspace = createWorkspace('manifest_support_overrides_write');
+        final projectDir = Directory(p.join(workspace.path, 'project'))
+          ..createSync(recursive: true);
+
+        final buffer = FileChangesBuffer();
+        support.bufferPubspecOverridesEdit(
+          projectDir: projectDir,
+          edit: const PubspecOverridesEdit.write('dependency_overrides:\n'),
+          fileChangesBuffer: buffer,
+        );
+
+        expect(buffer.deletions, isEmpty);
+        expect(buffer.files, hasLength(1));
+        expect(
+          buffer.files.single.file.path,
+          p.join(projectDir.path, 'pubspec_overrides.yaml'),
+        );
+        expect(buffer.files.single.content, 'dependency_overrides:\n');
+      });
+
+      test('queues nothing for an unchanged edit', () {
+        final workspace = createWorkspace('manifest_support_overrides_noop');
+        final projectDir = Directory(p.join(workspace.path, 'project'))
+          ..createSync(recursive: true);
+
+        final buffer = FileChangesBuffer();
+        support.bufferPubspecOverridesEdit(
+          projectDir: projectDir,
+          edit: const PubspecOverridesEdit.unchanged(),
+          fileChangesBuffer: buffer,
+        );
+
+        expect(buffer.isEmpty, isTrue);
+      });
+    });
+
+    group('bufferPubspecOverridesRemoval()', () {
+      test('queues the deletion of an overrides file we own', () {
+        final workspace = createWorkspace('manifest_support_remove_overrides');
+        final projectDir = Directory(p.join(workspace.path, 'project'))
+          ..createSync(recursive: true);
+        final dependencyDir = Directory(p.join(workspace.path, 'dep'))
+          ..createSync(recursive: true);
+
+        File(
+          p.join(projectDir.path, 'pubspec_overrides.yaml'),
+        ).writeAsStringSync(
+          'dependency_overrides:\n'
+          '  dep:\n'
+          '    path: ../dep\n',
+        );
+
+        final language = DartProjectLanguage();
+        final node = createNode(
+          name: 'project',
+          directory: projectDir,
+          language: language,
+          dependencies: <String, ProjectNode>{
+            'dep': createNode(
+              name: 'dep',
+              directory: dependencyDir,
+              language: language,
+            ),
+          },
+        );
+
+        final buffer = FileChangesBuffer();
+        support.bufferPubspecOverridesRemoval(
+          node: node,
+          fileChangesBuffer: buffer,
+        );
+
+        expect(buffer.files, isEmpty);
+        expect(buffer.deletions, hasLength(1));
+        expect(
+          buffer.deletions.single.path,
+          p.join(projectDir.path, 'pubspec_overrides.yaml'),
+        );
+      });
+
+      test('queues nothing when there is no overrides file', () {
+        final workspace = createWorkspace('manifest_support_remove_none');
+        final projectDir = Directory(p.join(workspace.path, 'project'))
+          ..createSync(recursive: true);
+
+        final buffer = FileChangesBuffer();
+        support.bufferPubspecOverridesRemoval(
+          node: createNode(
+            name: 'project',
+            directory: projectDir,
+            language: DartProjectLanguage(),
+          ),
+          fileChangesBuffer: buffer,
+        );
+
+        expect(buffer.isEmpty, isTrue);
+      });
+    });
+
     group('writeFileCopy()', () {
       test('copies file content to destination', () async {
         final workspace = createWorkspace('manifest_support_write_copy');
@@ -258,76 +420,6 @@ void main() {
         expect(references.keys, containsAll(<String>['a', 'b']));
         expect(references['a']!.sectionName, 'dependencies');
         expect(references['b']!.sectionName, 'devDependencies');
-      });
-    });
-
-    group('hasNonLocalDartDependencies()', () {
-      test('returns false when all workspace dependencies are path refs', () {
-        final workspace = createWorkspace('manifest_support_non_local_dart_no');
-        final projectDir = Directory(p.join(workspace.path, 'project1'))
-          ..createSync(recursive: true);
-        final depDir = Directory(p.join(workspace.path, 'project2'))
-          ..createSync(recursive: true);
-        final depNode = createNode(
-          name: 'dep',
-          directory: depDir,
-          language: DartProjectLanguage(),
-        );
-        final node = createNode(
-          name: 'pkg',
-          directory: projectDir,
-          language: DartProjectLanguage(),
-          dependencies: <String, ProjectNode>{'dep': depNode},
-        );
-        final references = <String, DependencyReference>{
-          'dep': const DependencyReference(
-            sectionName: 'dependencies',
-            name: 'dep',
-            value: <String, dynamic>{'path': '../project2'},
-          ),
-        };
-
-        final result = support.hasNonLocalDartDependencies(
-          node: node,
-          references: references,
-        );
-
-        expect(result, isFalse);
-      });
-
-      test('returns true when a workspace dependency is a version ref', () {
-        final workspace = createWorkspace(
-          'manifest_support_non_local_dart_yes',
-        );
-        final projectDir = Directory(p.join(workspace.path, 'project1'))
-          ..createSync(recursive: true);
-        final depDir = Directory(p.join(workspace.path, 'project2'))
-          ..createSync(recursive: true);
-        final depNode = createNode(
-          name: 'dep',
-          directory: depDir,
-          language: DartProjectLanguage(),
-        );
-        final node = createNode(
-          name: 'pkg',
-          directory: projectDir,
-          language: DartProjectLanguage(),
-          dependencies: <String, ProjectNode>{'dep': depNode},
-        );
-        final references = <String, DependencyReference>{
-          'dep': const DependencyReference(
-            sectionName: 'dependencies',
-            name: 'dep',
-            value: '^1.0.0',
-          ),
-        };
-
-        final result = support.hasNonLocalDartDependencies(
-          node: node,
-          references: references,
-        );
-
-        expect(result, isTrue);
       });
     });
 

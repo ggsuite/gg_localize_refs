@@ -47,6 +47,76 @@ void main() {
 
         // Assert
         expect(buffer.files, hasLength(1));
+        expect(buffer.isEmpty, isFalse);
+        expect(buffer.isNotEmpty, isTrue);
+      });
+    });
+
+    group('addDeletion()', () {
+      test('should queue the file and count as a change', () async {
+        // Arrange
+        final file = File('${tempDir.path}/test.txt')
+          ..writeAsStringSync('gone soon');
+
+        // Act
+        buffer.addDeletion(file);
+
+        // Assert
+        expect(buffer.deletions, hasLength(1));
+        expect(buffer.files, isEmpty);
+        expect(buffer.isEmpty, isFalse);
+        expect(buffer.isNotEmpty, isTrue);
+        expect(file.existsSync(), isTrue);
+      });
+
+      test('should delete the file when apply() is called', () async {
+        // Arrange
+        final file = File('${tempDir.path}/test.txt')
+          ..writeAsStringSync('gone soon');
+        buffer.addDeletion(file);
+
+        // Act
+        await buffer.apply();
+
+        // Assert
+        expect(file.existsSync(), isFalse);
+      });
+
+      test('should tolerate a missing file and a second apply()', () async {
+        // Arrange
+        final file = File('${tempDir.path}/never_there.txt');
+        buffer.addDeletion(file);
+
+        // Act
+        await buffer.apply();
+        await buffer.apply();
+
+        // Assert
+        expect(file.existsSync(), isFalse);
+      });
+
+      test('should apply writes and deletions together', () async {
+        // Arrange
+        final written = File('${tempDir.path}/written.txt');
+        final deleted = File('${tempDir.path}/deleted.txt')
+          ..writeAsStringSync('gone soon');
+        buffer
+          ..add(written, 'new content')
+          ..addDeletion(deleted);
+
+        // Act
+        await buffer.apply();
+
+        // Assert
+        expect(written.readAsStringSync(), 'new content');
+        expect(deleted.existsSync(), isFalse);
+      });
+    });
+
+    group('isEmpty', () {
+      test('should be true for a fresh buffer', () {
+        expect(buffer.isEmpty, isTrue);
+        expect(buffer.isNotEmpty, isFalse);
       });
     });
 

@@ -33,6 +33,7 @@ void main() {
   Directory dWorkspaceAlreadyUnlocalized = Directory('');
   Directory dWorkspaceSucceed = Directory('');
   Directory dWorkspaceSucceedGit = Directory('');
+  Directory dWorkspaceOverridesPresent = Directory('');
 
   Directory dWorkspaceSucceedTs = Directory('');
   Directory dWorkspaceSucceedGitTs = Directory('');
@@ -61,6 +62,7 @@ void main() {
     dWorkspaceAlreadyUnlocalized = createTempDir(
       'unlocalize_already_unlocalized',
     );
+    dWorkspaceOverridesPresent = createTempDir('unlocalize_overrides_present');
 
     dWorkspaceSucceedTs = createTempDir('unlocalize_ts_succeed');
     dWorkspaceSucceedGitTs = createTempDir('unlocalize_ts_succeed_git');
@@ -92,6 +94,12 @@ void main() {
         join('test', 'sample_folder', 'unlocalize_refs', 'json_not_found'),
       ),
       dJsonNotFound,
+    );
+    copyDirectory(
+      Directory(
+        join('test', 'sample_folder', 'unlocalize_refs', 'overrides_present'),
+      ),
+      dWorkspaceOverridesPresent,
     );
 
     copyDirectory(
@@ -135,6 +143,7 @@ void main() {
       dWorkspaceSucceed,
       dWorkspaceSucceedGit,
       dWorkspaceAlreadyUnlocalized,
+      dWorkspaceOverridesPresent,
       dWorkspaceSucceedTs,
       dWorkspaceSucceedGitTs,
       dWorkspaceAlreadyUnlocalizedTs,
@@ -202,6 +211,34 @@ void main() {
           });
         });
 
+        test('when pubspec_overrides.yaml cannot be parsed', () async {
+          final dProject1 = Directory(
+            join(dWorkspaceOverridesPresent.path, 'project1'),
+          );
+          File(
+            join(dProject1.path, 'pubspec_overrides.yaml'),
+          ).writeAsStringSync('dependency_overrides: [1, 2\n');
+
+          final unlocal = ChangeRefsToPubDev(ggLog: messages.add);
+
+          await expectLater(
+            unlocal.get(directory: dProject1, ggLog: messages.add),
+            throwsA(
+              isA<Exception>()
+                  .having(
+                    (Object e) => e.toString(),
+                    'message',
+                    contains('Cannot parse'),
+                  )
+                  .having(
+                    (Object e) => e.toString(),
+                    'message',
+                    contains('No files were changed.'),
+                  ),
+            ),
+          );
+        });
+
         test('when node not found', () async {
           final localMessages = <String>[];
 
@@ -262,6 +299,68 @@ void main() {
             join(dProject1.path, 'pubspec.yaml'),
           ).readAsStringSync();
           expect(resultYaml, isNot(contains('path: ../project2')));
+        });
+
+        test('deletes pubspec_overrides.yaml of a localized project', () async {
+          final dProject1 = Directory(
+            join(dWorkspaceOverridesPresent.path, 'project1'),
+          );
+
+          final overrides = File(
+            join(dProject1.path, 'pubspec_overrides.yaml'),
+          );
+          expect(overrides.existsSync(), isTrue);
+
+          final pubspecBefore = File(
+            join(dProject1.path, 'pubspec.yaml'),
+          ).readAsStringSync();
+
+          final localMessages = <String>[];
+          final unlocal = ChangeRefsToPubDev(ggLog: localMessages.add);
+          await unlocal.get(directory: dProject1, ggLog: localMessages.add);
+
+          // pubspec.yaml holds no localized refs at all, so the deletion of
+          // the overrides file is the only change.
+          expect(overrides.existsSync(), isFalse);
+          expect(
+            File(join(dProject1.path, 'pubspec.yaml')).readAsStringSync(),
+            pubspecBefore,
+          );
+          expect(
+            localMessages.join('\n'),
+            isNot(contains('No files were changed')),
+          );
+          expect(
+            localMessages.join('\n'),
+            contains('Remove the local path overrides of test1'),
+          );
+        });
+
+        test('keeps hand written entries of pubspec_overrides.yaml', () async {
+          final dProject1 = Directory(
+            join(dWorkspaceOverridesPresent.path, 'project1'),
+          );
+
+          final overrides = File(
+            join(dProject1.path, 'pubspec_overrides.yaml'),
+          );
+          overrides.writeAsStringSync(
+            '# keep me\n'
+            'dependency_overrides:\n'
+            '  test2:\n'
+            '    path: ../project2\n'
+            '  other:\n'
+            '    path: ../../vendor/other\n',
+          );
+
+          final unlocal = ChangeRefsToPubDev(ggLog: messages.add);
+          await unlocal.get(directory: dProject1, ggLog: messages.add);
+
+          expect(overrides.existsSync(), isTrue);
+          final content = overrides.readAsStringSync();
+          expect(content, contains('# keep me'));
+          expect(content, contains('other:'));
+          expect(content, isNot(contains('test2:')));
         });
 
         test('when pubspec is correct and has git refs', () async {
@@ -688,6 +787,55 @@ void main() {
           expect(result, contains('"proj2_ts": "$bare#semver:^3.4.5"'));
         });
       });
+    });
+  });
+
+  group('restoreDartRefs()', () {
+    test('restores the backed up spec verbatim when git refs are not '
+        'reconstructed', () async {
+      final workspace = createTempDir('restore_verbatim_ws');
+      final project1 = Directory(join(workspace.path, 'project1'))
+        ..createSync(recursive: true);
+      final project2 = Directory(join(workspace.path, 'project2'))
+        ..createSync(recursive: true);
+
+      const pubspec =
+          'name: project1\n'
+          'version: 1.0.0\n'
+          'dependencies:\n'
+          '  project2:\n'
+          '    path: ../project2\n';
+      File(join(project1.path, 'pubspec.yaml')).writeAsStringSync(pubspec);
+      File(join(project2.path, 'pubspec.yaml')).writeAsStringSync(
+        'name: project2\n'
+        'version: 1.0.0\n',
+      );
+      File(join(project1.path, '.gg', '.gg_localize_refs_backup.json'))
+        ..createSync(recursive: true)
+        ..writeAsStringSync('{"project2":"^3.1.4"}');
+
+      final language = DartProjectLanguage();
+      final node = await language.createNode(project1);
+      node.dependencies['project2'] = await language.createNode(project2);
+
+      final unlocal = ChangeRefsToPubDev(ggLog: messages.add);
+      final restore = await unlocal.restoreDartRefs(
+        node: node,
+        pubspecContent: pubspec,
+        references: language.listDependencyReferences(
+          language.parseManifestContent(pubspec),
+        ),
+        reconstructGitRefs: false,
+      );
+
+      expect(restore.hadLocalizedRefs, isTrue);
+      expect(restore.backupMissing, isFalse);
+      // No IsOnPubDev, no git remote: the saved constraint is used as it is.
+      expect(restore.content, contains('project2: ^3.1.4'));
+      expect(restore.content, isNot(contains('path:')));
+      expect(restore.content, isNot(contains('git:')));
+
+      deleteDirs(<Directory>[workspace]);
     });
   });
 

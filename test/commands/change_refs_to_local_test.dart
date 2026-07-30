@@ -31,8 +31,22 @@ void main() {
   Directory dWorkspaceSucceed = Directory('');
   Directory dWorkspaceAlreadyLocalized = Directory('');
 
+  Directory dWorkspaceLegacy = Directory('');
+  Directory dWorkspaceLegacyPrivate = Directory('');
+  Directory dWorkspaceLegacyNoBackup = Directory('');
+  Directory dWorkspaceOverridesUnrelated = Directory('');
+  Directory dWorkspaceLegacyNoDepsBackup = Directory('');
+
   Directory dWorkspaceSucceedTs = Directory('');
   Directory dWorkspaceAlreadyLocalizedTs = Directory('');
+
+  /// Copies the Dart scenario [name] of `localize_refs` into [target].
+  void copyLocalizeScenario(String name, Directory target) {
+    copyDirectory(
+      Directory(p.join('test', 'sample_folder', 'localize_refs', name)),
+      target,
+    );
+  }
 
   setUp(() async {
     messages.clear();
@@ -47,8 +61,28 @@ void main() {
     dWorkspaceSucceed = createTempDir('succeed');
     dWorkspaceAlreadyLocalized = createTempDir('already_localized');
 
+    dWorkspaceLegacy = createTempDir('legacy_localized');
+    dWorkspaceLegacyPrivate = createTempDir('legacy_localized_private');
+    dWorkspaceLegacyNoBackup = createTempDir('legacy_localized_no_backup');
+    dWorkspaceOverridesUnrelated = createTempDir('overrides_unrelated');
+    dWorkspaceLegacyNoDepsBackup = createTempDir('legacy_no_deps_backup');
+
     dWorkspaceSucceedTs = createTempDir('ts_succeed');
     dWorkspaceAlreadyLocalizedTs = createTempDir('ts_already_localized');
+
+    copyLocalizeScenario('legacy_localized', dWorkspaceLegacy);
+    copyLocalizeScenario('legacy_localized_private', dWorkspaceLegacyPrivate);
+    copyLocalizeScenario(
+      'legacy_localized_no_backup',
+      dWorkspaceLegacyNoBackup,
+    );
+    copyLocalizeScenario('overrides_unrelated', dWorkspaceOverridesUnrelated);
+    copyDirectory(
+      Directory(
+        p.join('test', 'sample_folder', 'unlocalize_refs', 'json_not_found'),
+      ),
+      dWorkspaceLegacyNoDepsBackup,
+    );
 
     copyDirectory(
       Directory(p.join('test', 'sample_folder', 'localize_refs', 'succeed')),
@@ -86,6 +120,11 @@ void main() {
       dNodeNotFound,
       dWorkspaceAlreadyLocalized,
       dWorkspaceSucceed,
+      dWorkspaceLegacy,
+      dWorkspaceLegacyPrivate,
+      dWorkspaceLegacyNoBackup,
+      dWorkspaceOverridesUnrelated,
+      dWorkspaceLegacyNoDepsBackup,
       dWorkspaceSucceedTs,
       dWorkspaceAlreadyLocalizedTs,
     ]);
@@ -199,6 +238,10 @@ void main() {
             p.join(dWorkspaceSucceed.path, 'project1'),
           );
 
+          final pubspecBefore = File(
+            p.join(dProject1.path, 'pubspec.yaml'),
+          ).readAsStringSync();
+
           final localMessages = <String>[];
           final local = ChangeRefsToLocal(ggLog: localMessages.add);
           await local.get(directory: dProject1, ggLog: localMessages.add);
@@ -206,19 +249,211 @@ void main() {
           expect(localMessages[0], contains('Running change-refs-to-local in'));
           expect(localMessages[1], contains('Localize refs of test1'));
 
+          // pubspec.yaml keeps its published constraints untouched.
           final resultYaml = File(
             p.join(dProject1.path, 'pubspec.yaml'),
           ).readAsStringSync();
-          expect(resultYaml, contains('publish_to: none'));
-          expect(resultYaml, contains('path: ../project2'));
-          expect(resultYaml, isNot(contains('git:')));
+          expect(resultYaml, pubspecBefore);
+          expect(resultYaml, isNot(contains('publish_to')));
+          expect(resultYaml, isNot(contains('path:')));
+
+          // The local wiring lives in pubspec_overrides.yaml.
+          final overrides = File(
+            p.join(dProject1.path, 'pubspec_overrides.yaml'),
+          );
+          expect(overrides.existsSync(), isTrue);
+          final overridesContent = overrides.readAsStringSync();
+          expect(overridesContent, contains('dependency_overrides:'));
+          expect(overridesContent, contains('path: ../project2'));
+
+          // test2 is a dependency AND a dev_dependency, but a YAML map must
+          // not carry the same key twice.
+          expect(
+            RegExp(
+              r'^\s+test2:',
+              multiLine: true,
+            ).allMatches(overridesContent).length,
+            1,
+          );
+
+          // Localizing needs no dependency backup anymore: pubspec.yaml is
+          // still the single source of truth for the remote refs.
+          expect(
+            File(
+              p.join(dProject1.path, '.gg', '.gg_localize_refs_backup.json'),
+            ).existsSync(),
+            isFalse,
+          );
 
           final gitignoreFile = File(p.join(dProject1.path, '.gitignore'));
           expect(gitignoreFile.existsSync(), isTrue);
           final gitignoreContent = gitignoreFile.readAsStringSync();
           expect(gitignoreContent, contains('.gg'));
           expect(gitignoreContent, contains('!.gg/.gg.json'));
+          expect(gitignoreContent, contains('pubspec_overrides.yaml'));
         });
+
+        test('when run twice nothing is changed the second time', () async {
+          final dProject1 = Directory(
+            p.join(dWorkspaceSucceed.path, 'project1'),
+          );
+
+          final local = ChangeRefsToLocal(ggLog: messages.add);
+          await local.get(directory: dProject1, ggLog: messages.add);
+
+          final overrides = File(
+            p.join(dProject1.path, 'pubspec_overrides.yaml'),
+          );
+          final afterFirstRun = overrides.readAsStringSync();
+
+          final secondMessages = <String>[];
+          await local.get(directory: dProject1, ggLog: secondMessages.add);
+
+          expect(secondMessages[1], contains('No files were changed.'));
+          expect(overrides.readAsStringSync(), afterFirstRun);
+        });
+
+        test('carries the dependency_overrides of pubspec.yaml over', () async {
+          final workspace = createTempDir('localize_inherited_overrides_ws');
+          final project1 = Directory(p.join(workspace.path, 'project1'));
+          final project2 = Directory(p.join(workspace.path, 'project2'));
+          await createDirs(<Directory>[project1, project2]);
+
+          const pubspec =
+              'name: project1\n'
+              'version: 1.0.0\n'
+              'dependencies:\n'
+              '  project2: ^1.0.0\n'
+              'dependency_overrides:\n'
+              '  pinned: 1.2.3\n';
+
+          File(
+            p.join(project1.path, 'pubspec.yaml'),
+          ).writeAsStringSync(pubspec);
+          File(p.join(project2.path, 'pubspec.yaml')).writeAsStringSync(
+            'name: project2\n'
+            'version: 1.0.0\n',
+          );
+
+          final local = ChangeRefsToLocal(ggLog: messages.add);
+          await local.get(directory: project1, ggLog: messages.add);
+
+          // Pub replaces the section of pubspec.yaml instead of merging it, so
+          // the inherited entry has to travel along or it stops applying.
+          final overridesContent = File(
+            p.join(project1.path, 'pubspec_overrides.yaml'),
+          ).readAsStringSync();
+          expect(overridesContent, contains('path: ../project2'));
+          expect(overridesContent, contains('pinned: 1.2.3'));
+
+          expect(
+            File(p.join(project1.path, 'pubspec.yaml')).readAsStringSync(),
+            pubspec,
+          );
+
+          deleteDirs(<Directory>[workspace]);
+        });
+
+        test('does not create an empty .gg directory', () async {
+          final dProject1 = Directory(
+            p.join(dWorkspaceSucceed.path, 'project1'),
+          );
+
+          final local = ChangeRefsToLocal(ggLog: messages.add);
+          await local.get(directory: dProject1, ggLog: messages.add);
+
+          expect(
+            Directory(p.join(dProject1.path, '.gg')).existsSync(),
+            isFalse,
+          );
+        });
+
+        test(
+          'prunes the override of a dependency that left pubspec.yaml',
+          () async {
+            final workspace = createTempDir('localize_prune_ws');
+            final project1 = Directory(p.join(workspace.path, 'project1'));
+            final project2 = Directory(p.join(workspace.path, 'project2'));
+            final project3 = Directory(p.join(workspace.path, 'project3'));
+            await createDirs(<Directory>[project1, project2, project3]);
+
+            File(p.join(project2.path, 'pubspec.yaml')).writeAsStringSync(
+              'name: project2\n'
+              'version: 1.0.0\n',
+            );
+            File(p.join(project3.path, 'pubspec.yaml')).writeAsStringSync(
+              'name: project3\n'
+              'version: 1.0.0\n',
+            );
+
+            final pubspec1 = File(p.join(project1.path, 'pubspec.yaml'))
+              ..writeAsStringSync(
+                'name: project1\n'
+                'version: 1.0.0\n'
+                'dependencies:\n'
+                '  project2: ^1.0.0\n'
+                '  project3: ^1.0.0\n',
+              );
+
+            final local = ChangeRefsToLocal(ggLog: messages.add);
+            await local.get(directory: project1, ggLog: messages.add);
+
+            final overrides = File(
+              p.join(project1.path, 'pubspec_overrides.yaml'),
+            );
+            expect(overrides.readAsStringSync(), contains('project3:'));
+
+            // project3 leaves the manifest. Its override has to go too: pub
+            // pulls every overridden package into the resolution, declared or
+            // not.
+            pubspec1.writeAsStringSync(
+              'name: project1\n'
+              'version: 1.0.0\n'
+              'dependencies:\n'
+              '  project2: ^1.0.0\n',
+            );
+
+            await local.get(directory: project1, ggLog: messages.add);
+
+            final content = overrides.readAsStringSync();
+            expect(content, contains('project2:'));
+            expect(content, isNot(contains('project3:')));
+
+            deleteDirs(<Directory>[workspace]);
+          },
+        );
+
+        test(
+          'localizes a dependency declared only in dev_dependencies',
+          () async {
+            final workspace = createTempDir('localize_dev_only_ws');
+            final project1 = Directory(p.join(workspace.path, 'project1'));
+            final project2 = Directory(p.join(workspace.path, 'project2'));
+            await createDirs(<Directory>[project1, project2]);
+
+            File(p.join(project1.path, 'pubspec.yaml')).writeAsStringSync(
+              'name: project1\n'
+              'version: 1.0.0\n'
+              'dev_dependencies:\n'
+              '  project2: ^1.0.0\n',
+            );
+            File(p.join(project2.path, 'pubspec.yaml')).writeAsStringSync(
+              'name: project2\n'
+              'version: 1.0.0\n',
+            );
+
+            final local = ChangeRefsToLocal(ggLog: messages.add);
+            await local.get(directory: project1, ggLog: messages.add);
+
+            final overridesContent = File(
+              p.join(project1.path, 'pubspec_overrides.yaml'),
+            ).readAsStringSync();
+            expect(overridesContent, contains('project2:'));
+            expect(overridesContent, contains('path: ../project2'));
+
+            deleteDirs(<Directory>[workspace]);
+          },
+        );
 
         test('updates existing .gitignore when missing entries', () async {
           final dProject1 = Directory(
@@ -252,42 +487,67 @@ void main() {
           expect(localMessages[1], contains('No files were changed.'));
         });
 
-        test('stores only version strings in Dart backup json', () async {
-          final workspace = createTempDir('localize_backup_versions_only_ws');
-          final project1 = Directory(p.join(workspace.path, 'project1'));
-          final project2 = Directory(p.join(workspace.path, 'project2'));
-          await createDirs(<Directory>[project1, project2]);
+        test(
+          'writes no dependency backup and keeps pubspec.yaml as is',
+          () async {
+            final workspace = createTempDir('localize_no_backup_ws');
+            final project1 = Directory(p.join(workspace.path, 'project1'));
+            final project2 = Directory(p.join(workspace.path, 'project2'));
+            await createDirs(<Directory>[project1, project2]);
 
-          File(p.join(project1.path, 'pubspec.yaml')).writeAsStringSync(
-            'name: project1\n'
-            'version: 1.0.0\n'
-            'dependencies:\n'
-            '  project2:\n'
-            '    git: git@github.com:ggsuite/testproject_gg_2.git\n'
-            '    version: ^1.0.0\n',
-          );
-          File(p.join(project2.path, 'pubspec.yaml')).writeAsStringSync(
-            'name: project2\n'
-            'version: 1.0.0\n',
-          );
+            const pubspec =
+                'name: project1\n'
+                'version: 1.0.0\n'
+                'dependencies:\n'
+                '  project2:\n'
+                '    git: git@github.com:ggsuite/testproject_gg_2.git\n'
+                '    version: ^1.0.0\n';
 
-          final local = ChangeRefsToLocal(ggLog: messages.add);
-          await local.get(directory: project1, ggLog: messages.add);
+            File(
+              p.join(project1.path, 'pubspec.yaml'),
+            ).writeAsStringSync(pubspec);
+            File(p.join(project2.path, 'pubspec.yaml')).writeAsStringSync(
+              'name: project2\n'
+              'version: 1.0.0\n',
+            );
 
-          final backupJson = File(
-            p.join(project1.path, '.gg', '.gg_localize_refs_backup.json'),
-          ).readAsStringSync();
-          final backupMap = jsonDecode(backupJson) as Map<String, dynamic>;
+            final local = ChangeRefsToLocal(ggLog: messages.add);
+            await local.get(directory: project1, ggLog: messages.add);
 
-          expect(backupMap['project2'], '^1.0.0');
+            // A git ref carrying a version is a remote ref, so it stays.
+            expect(
+              File(p.join(project1.path, 'pubspec.yaml')).readAsStringSync(),
+              pubspec,
+            );
 
-          deleteDirs(<Directory>[workspace]);
-        });
+            expect(
+              File(
+                p.join(project1.path, '.gg', '.gg_localize_refs_backup.json'),
+              ).existsSync(),
+              isFalse,
+            );
+            expect(
+              File(
+                p.join(project1.path, '.gg', '.gg_localize_refs_backup.yaml'),
+              ).existsSync(),
+              isFalse,
+            );
+
+            expect(
+              File(
+                p.join(project1.path, 'pubspec_overrides.yaml'),
+              ).readAsStringSync(),
+              contains('path: ../project2'),
+            );
+
+            deleteDirs(<Directory>[workspace]);
+          },
+        );
 
         test(
-          'backs up dependency version when dependency map has git and version',
+          'migrates a legacy path ref back into a version constraint',
           () async {
-            final workspace = createTempDir('localize_backup_git_version_ws');
+            final workspace = createTempDir('localize_migrate_path_ws');
             final project1 = Directory(p.join(workspace.path, 'project1'));
             final project2 = Directory(p.join(workspace.path, 'project2'));
             await createDirs(<Directory>[project1, project2]);
@@ -297,69 +557,55 @@ void main() {
               'version: 1.0.0\n'
               'dependencies:\n'
               '  project2:\n'
-              '    git: git@github.com:user/project2.git\n'
-              '    version: ^4.0.0\n',
+              '    path: ../project2\n',
             );
             File(p.join(project2.path, 'pubspec.yaml')).writeAsStringSync(
               'name: project2\n'
               'version: 1.0.0\n',
             );
+            File(p.join(project1.path, '.gg', '.gg_localize_refs_backup.json'))
+              ..createSync(recursive: true)
+              ..writeAsStringSync('{"project2":"^7.0.0"}');
 
-            final local = ChangeRefsToLocal(ggLog: messages.add);
-            await local.get(directory: project1, ggLog: messages.add);
+            final localMessages = <String>[];
+            final local = ChangeRefsToLocal(ggLog: localMessages.add);
+            await local.get(directory: project1, ggLog: localMessages.add);
 
+            expect(
+              localMessages.join('\n'),
+              contains('Migrate refs of project1 out of pubspec.yaml'),
+            );
+
+            final resultYaml = File(
+              p.join(project1.path, 'pubspec.yaml'),
+            ).readAsStringSync();
+            expect(resultYaml, contains('project2: ^7.0.0'));
+            expect(resultYaml, isNot(contains('path:')));
+
+            expect(
+              File(
+                p.join(project1.path, 'pubspec_overrides.yaml'),
+              ).readAsStringSync(),
+              contains('path: ../project2'),
+            );
+
+            // The backup is left as it was - git feature branch mode owns it.
             final backupJson = File(
               p.join(project1.path, '.gg', '.gg_localize_refs_backup.json'),
             ).readAsStringSync();
-            final backupMap = jsonDecode(backupJson) as Map<String, dynamic>;
-
-            expect(backupMap['project2'], '^4.0.0');
+            expect(
+              (jsonDecode(backupJson) as Map<String, dynamic>)['project2'],
+              '^7.0.0',
+            );
 
             deleteDirs(<Directory>[workspace]);
           },
         );
 
-        test('keeps existing backup version when '
-            'dependency is already a path entry', () async {
-          final workspace = createTempDir('localize_keep_path_backup_ws');
-          final project1 = Directory(p.join(workspace.path, 'project1'));
-          final project2 = Directory(p.join(workspace.path, 'project2'));
-          await createDirs(<Directory>[project1, project2]);
-
-          File(p.join(project1.path, 'pubspec.yaml')).writeAsStringSync(
-            'name: project1\n'
-            'version: 1.0.0\n'
-            'dependencies:\n'
-            '  project2:\n'
-            '    path: ../project2\n',
-          );
-          File(p.join(project2.path, 'pubspec.yaml')).writeAsStringSync(
-            'name: project2\n'
-            'version: 1.0.0\n',
-          );
-          File(p.join(project1.path, '.gg', '.gg_localize_refs_backup.json'))
-            ..createSync(recursive: true)
-            ..writeAsStringSync('{"project2":"^7.0.0"}');
-
-          final local = ChangeRefsToLocal(ggLog: messages.add);
-          await local.get(directory: project1, ggLog: messages.add);
-
-          final backupJson = File(
-            p.join(project1.path, '.gg', '.gg_localize_refs_backup.json'),
-          ).readAsStringSync();
-          final backupMap = jsonDecode(backupJson) as Map<String, dynamic>;
-
-          expect(backupMap['project2'], '^7.0.0');
-          expect(backupJson, isNot(contains('path')));
-          expect(backupJson, isNot(contains('git')));
-
-          deleteDirs(<Directory>[workspace]);
-        });
-
         test(
-          'keeps existing backup version when dependency is plain git ref',
+          'migrates a git feature branch ref back into a version constraint',
           () async {
-            final workspace = createTempDir('localize_keep_git_backup_ws');
+            final workspace = createTempDir('localize_migrate_git_ws');
             final project1 = Directory(p.join(workspace.path, 'project1'));
             final project2 = Directory(p.join(workspace.path, 'project2'));
             await createDirs(<Directory>[project1, project2]);
@@ -384,48 +630,191 @@ void main() {
             final local = ChangeRefsToLocal(ggLog: messages.add);
             await local.get(directory: project1, ggLog: messages.add);
 
-            final backupJson = File(
-              p.join(project1.path, '.gg', '.gg_localize_refs_backup.json'),
+            final resultYaml = File(
+              p.join(project1.path, 'pubspec.yaml'),
             ).readAsStringSync();
-            final backupMap = jsonDecode(backupJson) as Map<String, dynamic>;
+            expect(resultYaml, contains('project2: ^8.0.0'));
+            expect(resultYaml, isNot(contains('git:')));
 
-            expect(backupMap['project2'], '^8.0.0');
-            expect(backupJson, isNot(contains('path')));
-            expect(backupJson, isNot(contains('git')));
+            expect(
+              File(
+                p.join(project1.path, 'pubspec_overrides.yaml'),
+              ).readAsStringSync(),
+              contains('path: ../project2'),
+            );
 
             deleteDirs(<Directory>[workspace]);
           },
         );
 
-        test('does not write publish_to_original into deps backup', () async {
-          final workspace = createTempDir('localize_publish_to_not_in_backup');
-          final project1 = Directory(p.join(workspace.path, 'project1'));
-          final project2 = Directory(p.join(workspace.path, 'project2'));
-          await createDirs(<Directory>[project1, project2]);
+        test(
+          'leaves publish_to alone when nothing has to be migrated',
+          () async {
+            final workspace = createTempDir('localize_publish_to_kept');
+            final project1 = Directory(p.join(workspace.path, 'project1'));
+            final project2 = Directory(p.join(workspace.path, 'project2'));
+            await createDirs(<Directory>[project1, project2]);
 
-          File(p.join(project1.path, 'pubspec.yaml')).writeAsStringSync(
-            'name: project1\n'
-            'version: 1.0.0\n'
-            'publish_to: none\n'
-            'dependencies:\n'
-            '  project2: ^1.2.3\n',
+            File(p.join(project1.path, 'pubspec.yaml')).writeAsStringSync(
+              'name: project1\n'
+              'version: 1.0.0\n'
+              'publish_to: none\n'
+              'dependencies:\n'
+              '  project2: ^1.2.3\n',
+            );
+            File(p.join(project2.path, 'pubspec.yaml')).writeAsStringSync(
+              'name: project2\n'
+              'version: 1.0.0\n',
+            );
+
+            final local = ChangeRefsToLocal(ggLog: messages.add);
+            await local.get(directory: project1, ggLog: messages.add);
+
+            final resultYaml = File(
+              p.join(project1.path, 'pubspec.yaml'),
+            ).readAsStringSync();
+            expect(resultYaml, contains('publish_to: none'));
+            expect(resultYaml, contains('project2: ^1.2.3'));
+
+            deleteDirs(<Directory>[workspace]);
+          },
+        );
+
+        test('migrates a legacy workspace and removes the injected '
+            'publish_to', () async {
+          final dProject1 = Directory(
+            p.join(dWorkspaceLegacy.path, 'project1'),
           );
-          File(p.join(project2.path, 'pubspec.yaml')).writeAsStringSync(
-            'name: project2\n'
-            'version: 1.0.0\n',
+
+          final localMessages = <String>[];
+          final local = ChangeRefsToLocal(ggLog: localMessages.add);
+          await local.get(directory: dProject1, ggLog: localMessages.add);
+
+          final resultYaml = File(
+            p.join(dProject1.path, 'pubspec.yaml'),
+          ).readAsStringSync();
+          expect(resultYaml, contains('test2: ^1.0.0'));
+          expect(resultYaml, isNot(contains('path:')));
+          expect(resultYaml, isNot(contains('publish_to')));
+
+          expect(
+            File(
+              p.join(dProject1.path, 'pubspec_overrides.yaml'),
+            ).readAsStringSync(),
+            contains('path: ../project2'),
+          );
+
+          // The publish_to backup survives - the git feature branch mode
+          // injects publish_to: none again and relies on it.
+          expect(
+            File(
+              p.join(
+                dProject1.path,
+                '.gg',
+                '.gg_localize_refs_publish_to_backup.json',
+              ),
+            ).existsSync(),
+            isTrue,
+          );
+        });
+
+        test('keeps publish_to: none of a package that is private by '
+            'intention', () async {
+          final dProject1 = Directory(
+            p.join(dWorkspaceLegacyPrivate.path, 'project1'),
           );
 
           final local = ChangeRefsToLocal(ggLog: messages.add);
-          await local.get(directory: project1, ggLog: messages.add);
+          await local.get(directory: dProject1, ggLog: messages.add);
 
-          final backupJson = File(
-            p.join(project1.path, '.gg', '.gg_localize_refs_backup.json'),
+          final resultYaml = File(
+            p.join(dProject1.path, 'pubspec.yaml'),
           ).readAsStringSync();
-          final backupMap = jsonDecode(backupJson) as Map<String, dynamic>;
+          expect(resultYaml, contains('test2: ^1.0.0'));
+          expect(resultYaml, contains('publish_to: none'));
+          expect(
+            RegExp(
+              r'^publish_to:',
+              multiLine: true,
+            ).allMatches(resultYaml).length,
+            1,
+          );
+        });
 
-          expect(backupMap.containsKey('publish_to_original'), isFalse);
+        test('keeps publish_to: none and warns when there is no publish_to '
+            'backup', () async {
+          final dProject1 = Directory(
+            p.join(dWorkspaceLegacyNoBackup.path, 'project1'),
+          );
 
-          deleteDirs(<Directory>[workspace]);
+          final localMessages = <String>[];
+          final local = ChangeRefsToLocal(ggLog: localMessages.add);
+          await local.get(directory: dProject1, ggLog: localMessages.add);
+
+          expect(
+            localMessages.join('\n'),
+            contains('Kept publish_to: none in'),
+          );
+
+          final resultYaml = File(
+            p.join(dProject1.path, 'pubspec.yaml'),
+          ).readAsStringSync();
+          expect(resultYaml, contains('test2: ^1.0.0'));
+          expect(resultYaml, contains('publish_to: none'));
+        });
+
+        test('warns and localizes anyway when the dependency backup of a '
+            'legacy workspace is missing', () async {
+          final dProject1 = Directory(
+            p.join(dWorkspaceLegacyNoDepsBackup.path, 'project1'),
+          );
+
+          final pubspecBefore = File(
+            p.join(dProject1.path, 'pubspec.yaml'),
+          ).readAsStringSync();
+
+          final localMessages = <String>[];
+          final local = ChangeRefsToLocal(ggLog: localMessages.add);
+          await local.get(directory: dProject1, ggLog: localMessages.add);
+
+          expect(
+            localMessages.join('\n'),
+            contains('cannot be migrated automatically'),
+          );
+
+          // pubspec.yaml is left to the user, but the overrides are written.
+          expect(
+            File(p.join(dProject1.path, 'pubspec.yaml')).readAsStringSync(),
+            pubspecBefore,
+          );
+          expect(
+            File(
+              p.join(dProject1.path, 'pubspec_overrides.yaml'),
+            ).readAsStringSync(),
+            contains('path: ../project2'),
+          );
+        });
+
+        test('merges into a hand written pubspec_overrides.yaml', () async {
+          final dProject1 = Directory(
+            p.join(dWorkspaceOverridesUnrelated.path, 'project1'),
+          );
+
+          final local = ChangeRefsToLocal(ggLog: messages.add);
+          await local.get(directory: dProject1, ggLog: messages.add);
+
+          final overridesContent = File(
+            p.join(dProject1.path, 'pubspec_overrides.yaml'),
+          ).readAsStringSync();
+
+          expect(overridesContent, contains('# Local experiment - keep me'));
+          expect(overridesContent, contains('some_third_party:'));
+          expect(
+            overridesContent,
+            contains('path: ../../vendor/some_third_party'),
+          );
+          expect(overridesContent, contains('test2:'));
+          expect(overridesContent, contains('path: ../project2'));
         });
 
         test('TypeScript: when package.json is correct (path mode)', () async {
@@ -449,6 +838,12 @@ void main() {
             p.join(dProject1.path, '.gg_localize_refs_backup.json'),
           ).readAsStringSync();
           expect(backupJson, contains('^1.0.0'));
+
+          // A TypeScript project never gets a pubspec_overrides.yaml.
+          expect(
+            File(p.join(dProject1.path, 'pubspec_overrides.yaml')).existsSync(),
+            isFalse,
+          );
         });
 
         test('TypeScript: when already localized', () async {

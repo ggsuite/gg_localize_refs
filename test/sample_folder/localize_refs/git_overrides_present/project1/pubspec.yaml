@@ -1,0 +1,7 @@
+name: test1
+version: 1.0.0
+dependencies:
+  test2:
+    git:
+      url: git@github.com:user/test2.git
+      ref: feature/x
