@@ -328,6 +328,162 @@ void main() {
       expect(result.rootNode.name, 'bridge');
       expect(result.rootNode.language.id, ProjectLanguageId.typescript);
     });
+
+    group('organization folders', () {
+      // Builds `<workspace>/<org>/<project>` for every entry of [byOrg] and
+      // returns the workspace. [marker] is the file that identifies the
+      // workspace root ('.ticket'), or null for a plain folder.
+      Directory createOrgWorkspace(
+        String suffix,
+        Map<String, List<String>> byOrg, {
+        String? marker,
+      }) {
+        final workspace = createWorkspace(suffix);
+        if (marker != null) {
+          File(p.join(workspace.path, marker)).writeAsStringSync('{}');
+        }
+        for (final org in byOrg.entries) {
+          for (final project in org.value) {
+            final dir = Directory(p.join(workspace.path, org.key, project));
+            dir.createSync(recursive: true);
+            copyDirectory(
+              Directory(
+                p.join(
+                  'test',
+                  'sample_folder',
+                  'process_dependencies',
+                  'succeed',
+                  project,
+                ),
+              ),
+              dir,
+            );
+          }
+        }
+        return workspace;
+      }
+
+      test('finds the siblings of the same organization', () async {
+        final workspace = createOrgWorkspace(
+          'mlg_orgs_same',
+          <String, List<String>>{
+            'org_a': <String>['project1', 'project2'],
+          },
+          marker: '.ticket',
+        );
+        final project1 = Directory(p.join(workspace.path, 'org_a', 'project1'));
+
+        final result = await MultiLanguageGraph(
+          languages: <ProjectLanguage>[DartProjectLanguage()],
+        ).buildGraph(directory: project1);
+
+        expect(result.rootNode.name, 'test1');
+        expect(result.allNodes.keys, containsAll(<String>['test1', 'test2']));
+      });
+
+      test('links projects across organization folders', () async {
+        final workspace = createOrgWorkspace(
+          'mlg_orgs_cross',
+          <String, List<String>>{
+            'org_a': <String>['project1'],
+            'org_b': <String>['project2'],
+          },
+          marker: '.ticket',
+        );
+        final project1 = Directory(p.join(workspace.path, 'org_a', 'project1'));
+
+        final result = await MultiLanguageGraph(
+          languages: <ProjectLanguage>[DartProjectLanguage()],
+        ).buildGraph(directory: project1);
+
+        final node1 = result.allNodes['test1']!;
+        final node2 = result.allNodes['test2']!;
+        expect(node1.dependencies['test2'], same(node2));
+        expect(node2.dependents['test1'], same(node1));
+        expect(
+          node2.directory.path,
+          p.join(workspace.path, 'org_b', 'project2'),
+        );
+      });
+
+      test('recognizes the master workspace by its folder name', () async {
+        final parent = createWorkspace('mlg_orgs_master');
+        final master = Directory(p.join(parent.path, '.master'))..createSync();
+        for (final entry in <String, String>{
+          'org_a': 'project1',
+          'org_b': 'project2',
+        }.entries) {
+          final dir = Directory(p.join(master.path, entry.key, entry.value))
+            ..createSync(recursive: true);
+          copyDirectory(
+            Directory(
+              p.join(
+                'test',
+                'sample_folder',
+                'process_dependencies',
+                'succeed',
+                entry.value,
+              ),
+            ),
+            dir,
+          );
+        }
+
+        final result =
+            await MultiLanguageGraph(
+              languages: <ProjectLanguage>[DartProjectLanguage()],
+            ).buildGraph(
+              directory: Directory(p.join(master.path, 'org_a', 'project1')),
+            );
+
+        expect(result.allNodes.keys, containsAll(<String>['test1', 'test2']));
+      });
+
+      test('keeps a plain folder of siblings scoped to its parent', () async {
+        // Without a workspace marker the parent stays the workspace root, so
+        // a project next to the parent is not pulled in.
+        final workspace = createOrgWorkspace(
+          'mlg_orgs_unmarked',
+          <String, List<String>>{
+            'org_a': <String>['project1'],
+            'org_b': <String>['project2'],
+          },
+        );
+        final project1 = Directory(p.join(workspace.path, 'org_a', 'project1'));
+
+        final result = await MultiLanguageGraph(
+          languages: <ProjectLanguage>[DartProjectLanguage()],
+        ).buildGraph(directory: project1);
+
+        expect(result.allNodes.keys, <String>['test1']);
+      });
+
+      test('does not descend into a project', () async {
+        final workspace = createOrgWorkspace(
+          'mlg_orgs_nested',
+          <String, List<String>>{
+            'org_a': <String>['project1', 'project2'],
+          },
+          marker: '.ticket',
+        );
+        // A package inside a project must not become a workspace sibling.
+        final example = Directory(
+          p.join(workspace.path, 'org_a', 'project2', 'example'),
+        )..createSync(recursive: true);
+        File(
+          p.join(example.path, 'pubspec.yaml'),
+        ).writeAsStringSync('name: test2_example\nversion: 1.0.0\n');
+
+        final result =
+            await MultiLanguageGraph(
+              languages: <ProjectLanguage>[DartProjectLanguage()],
+            ).buildGraph(
+              directory: Directory(p.join(workspace.path, 'org_a', 'project1')),
+            );
+
+        expect(result.allNodes.keys, isNot(contains('test2_example')));
+      });
+    });
   });
 }
 
