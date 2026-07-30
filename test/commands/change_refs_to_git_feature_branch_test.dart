@@ -32,6 +32,7 @@ void main() {
   Directory dWorkspaceSucceed = Directory('');
   Directory dWorkspaceAlreadyLocalized = Directory('');
   Directory dGitNoRepo = Directory('');
+  Directory dWorkspaceOverridesPresent = Directory('');
 
   Directory dWorkspaceSucceedTs = Directory('');
   Directory dWorkspaceAlreadyLocalizedTs = Directory('');
@@ -52,6 +53,7 @@ void main() {
     dWorkspaceSucceed = createTempDir('git_feature_succeed');
     dWorkspaceAlreadyLocalized = createTempDir('git_feature_already_localized');
     dGitNoRepo = createTempDir('git_feature_git_no_repo');
+    dWorkspaceOverridesPresent = createTempDir('git_feature_overrides_present');
 
     dWorkspaceSucceedTs = createTempDir('git_feature_ts_succeed');
     dWorkspaceAlreadyLocalizedTs = createTempDir(
@@ -76,6 +78,17 @@ void main() {
         p.join('test', 'sample_folder', 'localize_refs', 'git_no_repo'),
       ),
       dGitNoRepo,
+    );
+    copyDirectory(
+      Directory(
+        p.join(
+          'test',
+          'sample_folder',
+          'localize_refs',
+          'git_overrides_present',
+        ),
+      ),
+      dWorkspaceOverridesPresent,
     );
 
     copyDirectory(
@@ -111,6 +124,7 @@ void main() {
       dWorkspaceSucceed,
       dWorkspaceAlreadyLocalized,
       dGitNoRepo,
+      dWorkspaceOverridesPresent,
       dWorkspaceSucceedTs,
       dWorkspaceAlreadyLocalizedTs,
       dGitNoRepoTs,
@@ -321,6 +335,53 @@ void main() {
           expect(resultYaml, contains('url: git@github.com:user/test2.git'));
           expect(resultYaml, contains('ref: feature123'));
           expect(resultYaml, contains('publish_to: none'));
+
+          // Local path overrides would shadow the git refs.
+          expect(
+            File(p.join(dProject1.path, 'pubspec_overrides.yaml')).existsSync(),
+            isFalse,
+          );
+        });
+
+        // The fixture already pins the very ref that is requested, so the
+        // assertion below is about the overrides file only - it must not be
+        // read as a statement about re-pointing an existing ref.
+        test('deletes pubspec_overrides.yaml even when all Dart deps are '
+            'already git refs', () async {
+          final dProject1 = Directory(
+            p.join(dWorkspaceOverridesPresent.path, 'project1'),
+          );
+
+          final overrides = File(
+            p.join(dProject1.path, 'pubspec_overrides.yaml'),
+          );
+          expect(overrides.existsSync(), isTrue);
+
+          final pubspecBefore = File(
+            p.join(dProject1.path, 'pubspec.yaml'),
+          ).readAsStringSync();
+
+          final localMessages = <String>[];
+          final local = ChangeRefsToGitFeatureBranch(ggLog: localMessages.add);
+          await local.get(
+            directory: dProject1,
+            ggLog: localMessages.add,
+            gitRef: 'feature123',
+          );
+
+          expect(overrides.existsSync(), isFalse);
+          expect(
+            File(p.join(dProject1.path, 'pubspec.yaml')).readAsStringSync(),
+            pubspecBefore,
+          );
+          expect(
+            localMessages.join('\n'),
+            isNot(contains('No files were changed')),
+          );
+          expect(
+            localMessages.join('\n'),
+            contains('Remove the local path overrides of test1'),
+          );
         });
 
         test(

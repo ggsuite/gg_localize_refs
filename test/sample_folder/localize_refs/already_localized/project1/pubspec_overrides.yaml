@@ -1,0 +1,3 @@
+dependency_overrides:
+  test2:
+    path: ../project2

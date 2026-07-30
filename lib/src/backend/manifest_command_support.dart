@@ -7,7 +7,9 @@
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:gg_localize_refs/src/backend/file_changes_buffer.dart';
 import 'package:gg_localize_refs/src/backend/languages/project_language.dart';
+import 'package:gg_localize_refs/src/backend/pubspec_overrides_io.dart';
 import 'package:gg_localize_refs/src/backend/typescript_npm_spec.dart';
 import 'package:gg_localize_refs/src/backend/utils.dart';
 import 'package:gg_localize_refs/src/backend/yaml_to_string.dart';
@@ -35,43 +37,120 @@ class ManifestCommandSupport {
   /// would never reach CI. A bare `.gg` left over from earlier runs is
   /// therefore rewritten instead of kept.
   void ensureGitignoreHasDartBackupEntries(Directory projectDir) {
-    final gitignore = File(p.join(projectDir.path, '.gitignore'));
     const ignoreDir = '.gg/*';
     const staleIgnoreDir = '.gg';
     const keepConfig = '!.gg/.gg.json';
 
-    if (!gitignore.existsSync()) {
-      gitignore.writeAsStringSync('$ignoreDir\n$keepConfig\n');
-      return;
-    }
+    _editGitignore(projectDir, (List<String> lines) {
+      // Replace the bare `.gg` written by earlier versions where it stands:
+      // appending the replacement at the end would put it after existing `!`
+      // re-includes and silence them again.
+      final staleIndex = lines.indexWhere((l) => l.trim() == staleIgnoreDir);
+      if (staleIndex >= 0 && !lines.any((l) => l.trim() == ignoreDir)) {
+        lines[staleIndex] = ignoreDir;
+      }
+      lines.removeWhere((line) => line.trim() == staleIgnoreDir);
 
-    final raw = gitignore.readAsStringSync();
+      final hasIgnoreDir = lines.any((line) => line.trim() == ignoreDir);
+      final hasKeepConfig = lines.any((line) => line.trim() == keepConfig);
+
+      if (!hasIgnoreDir) {
+        lines.add(ignoreDir);
+      }
+      if (!hasKeepConfig) {
+        lines.add(keepConfig);
+      }
+    });
+  }
+
+  /// Ensures `.gitignore` does **not** exclude `pubspec_overrides.yaml`.
+  ///
+  /// The overrides file holds relative paths only, so it travels with a shared
+  /// ticket workspace exactly like the localized `pubspec.yaml` used to. It has
+  /// to be committable for that, and an earlier version of this package - plus
+  /// several repositories of the suite by hand - added the opposite entry.
+  ///
+  /// Leaving a stale entry in place would be worse than having none: a file
+  /// that is gitignored *and* checked in makes `dart pub publish` fail with a
+  /// "checked-in files are ignored by a .gitignore" warning.
+  void ensureGitignoreAllowsPubspecOverrides(Directory projectDir) {
+    const entry = PubspecOverridesIo.fileName;
+    const anchoredEntry = '/$entry';
+
+    _editGitignore(projectDir, (List<String> lines) {
+      lines.removeWhere(
+        (line) => line.trim() == entry || line.trim() == anchoredEntry,
+      );
+    });
+  }
+
+  /// Reads `.gitignore` of [projectDir] as lines, hands them to [edit] and
+  /// writes the result back. A missing file is treated as empty.
+  ///
+  /// Nothing is written when [edit] leaves the entries as they are, so a
+  /// command that changes nothing does not touch the file either. A file that
+  /// does not exist is not created for nothing either.
+  void _editGitignore(Directory projectDir, void Function(List<String>) edit) {
+    final gitignore = File(p.join(projectDir.path, '.gitignore'));
+    final existed = gitignore.existsSync();
+    final raw = existed ? gitignore.readAsStringSync() : '';
     final normalized = raw.replaceAll('\r\n', '\n').replaceAll('\r', '\n');
     final content = normalized.endsWith('\n')
         ? normalized.substring(0, normalized.length - 1)
         : normalized;
     final lines = content.isEmpty ? <String>[] : content.split('\n');
 
-    // Replace the bare `.gg` written by earlier versions where it stands:
-    // appending the replacement at the end would put it after existing `!`
-    // re-includes and silence them again.
-    final staleIndex = lines.indexWhere((l) => l.trim() == staleIgnoreDir);
-    if (staleIndex >= 0 && !lines.any((l) => l.trim() == ignoreDir)) {
-      lines[staleIndex] = ignoreDir;
-    }
-    lines.removeWhere((line) => line.trim() == staleIgnoreDir);
+    edit(lines);
 
-    final hasIgnoreDir = lines.any((line) => line.trim() == ignoreDir);
-    final hasKeepConfig = lines.any((line) => line.trim() == keepConfig);
-
-    if (!hasIgnoreDir) {
-      lines.add(ignoreDir);
-    }
-    if (!hasKeepConfig) {
-      lines.add(keepConfig);
+    final updated = lines.isEmpty ? '' : '${lines.join('\n')}\n';
+    if (updated == raw || (!existed && updated.isEmpty)) {
+      return;
     }
 
-    gitignore.writeAsStringSync('${lines.join('\n')}\n');
+    gitignore.writeAsStringSync(updated);
+  }
+
+  /// Queues [edit] for the `pubspec_overrides.yaml` of [projectDir].
+  void bufferPubspecOverridesEdit({
+    required Directory projectDir,
+    required PubspecOverridesEdit edit,
+    required FileChangesBuffer fileChangesBuffer,
+  }) {
+    if (edit.isUnchanged) {
+      return;
+    }
+
+    final overridesFile = const PubspecOverridesIo().file(projectDir);
+    if (edit.deleteFile) {
+      fileChangesBuffer.addDeletion(overridesFile);
+      return;
+    }
+
+    fileChangesBuffer.add(overridesFile, edit.content!);
+  }
+
+  /// Queues the removal of the local path overrides of [node] and returns the
+  /// edit, so the caller can report it.
+  ///
+  /// Only the overrides of the workspace dependencies are dropped, so hand
+  /// written entries survive. Used by the commands that leave local mode:
+  /// their remote refs would otherwise stay shadowed by the local paths.
+  PubspecOverridesEdit bufferPubspecOverridesRemoval({
+    required ProjectNode node,
+    required FileChangesBuffer fileChangesBuffer,
+  }) {
+    final edit = const PubspecOverridesIo().removePathOverrides(
+      projectDir: node.directory,
+      dependencyNames: node.dependencies.keys,
+    );
+
+    bufferPubspecOverridesEdit(
+      projectDir: node.directory,
+      edit: edit,
+      fileChangesBuffer: fileChangesBuffer,
+    );
+
+    return edit;
   }
 
   /// Copies [source] to [destination].
@@ -107,23 +186,6 @@ class ManifestCommandSupport {
     dynamic manifestMap,
   ) {
     return node.language.listDependencyReferences(manifestMap);
-  }
-
-  /// Returns true when any workspace Dart dependency is not yet localized.
-  bool hasNonLocalDartDependencies({
-    required ProjectNode node,
-    required Map<String, DependencyReference> references,
-  }) {
-    for (final dependency in node.dependencies.entries) {
-      final reference = references[dependency.key];
-      if (reference == null) {
-        continue;
-      }
-      if (!yamlToString(reference.value).startsWith('path:')) {
-        return true;
-      }
-    }
-    return false;
   }
 
   /// Returns true when any workspace TS dependency is not yet localized.

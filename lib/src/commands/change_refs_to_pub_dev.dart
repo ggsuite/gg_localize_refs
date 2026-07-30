@@ -14,12 +14,44 @@ import 'package:gg_localize_refs/src/backend/languages/project_language.dart';
 import 'package:gg_localize_refs/src/backend/manifest_command_support.dart';
 import 'package:gg_localize_refs/src/backend/package_json_io.dart';
 import 'package:gg_localize_refs/src/backend/process_dependencies.dart';
+import 'package:gg_localize_refs/src/backend/pubspec_overrides_io.dart';
 import 'package:gg_localize_refs/src/backend/typescript_npm_spec.dart';
 import 'package:gg_localize_refs/src/backend/utils.dart';
 import 'package:gg_localize_refs/src/backend/yaml_to_string.dart';
 import 'package:gg_log/gg_log.dart';
 import 'package:gg_publish/gg_publish.dart';
 import 'package:path/path.dart' as p;
+
+// #############################################################################
+/// The outcome of restoring the localized Dart refs of one project.
+///
+/// Restoring is separated from logging and from writing so that
+/// `change-refs-to-local` can reuse it to migrate a project that was localized
+/// by an earlier version of this package - back then the local paths were
+/// written into `pubspec.yaml` itself.
+class DartRefsRestore {
+  /// Creates a restore result.
+  const DartRefsRestore({
+    required this.hadLocalizedRefs,
+    required this.backupMissing,
+    required this.content,
+  });
+
+  /// Nothing was localized, so there was nothing to restore.
+  const DartRefsRestore.nothingLocalized()
+    : hadLocalizedRefs = false,
+      backupMissing = false,
+      content = null;
+
+  /// Whether `pubspec.yaml` still contained localized refs.
+  final bool hadLocalizedRefs;
+
+  /// Whether the dependency backup needed for restoring is missing.
+  final bool backupMissing;
+
+  /// The restored `pubspec.yaml` content, or null when nothing was restored.
+  final String? content;
+}
 
 // #############################################################################
 /// Command that reverts localized references back to remote dependencies.
@@ -44,19 +76,40 @@ class ChangeRefsToPubDev extends DirCommand<dynamic> {
 
     final fileChangesBuffer = FileChangesBuffer();
 
-    await processProject(
-      directory: directory,
-      modifyFunction: modifyManifest,
-      fileChangesBuffer: fileChangesBuffer,
-      ggLog: ggLog,
-    );
+    try {
+      await processProject(
+        directory: directory,
+        modifyFunction: modifyManifest,
+        fileChangesBuffer: fileChangesBuffer,
+        ggLog: ggLog,
+      );
 
-    if (fileChangesBuffer.files.isEmpty) {
-      ggLog.call(yellow('No files were changed.'));
+      if (fileChangesBuffer.isEmpty) {
+        ggLog.call(yellow('No files were changed.'));
+        return;
+      }
+
+      await fileChangesBuffer.apply();
+    } catch (e) {
+      throw Exception(yellow('An error occurred: $e. No files were changed.'));
+    }
+  }
+
+  // ...........................................................................
+  /// Logs the removal of the local path overrides of [node].
+  void _logOverridesRemoval({
+    required ProjectNode node,
+    required PubspecOverridesEdit edit,
+    required GgLog ggLog,
+  }) {
+    if (edit.isUnchanged) {
       return;
     }
 
-    await fileChangesBuffer.apply();
+    ggLog(
+      'Remove the local path overrides of ${node.name} from '
+      '${PubspecOverridesIo.fileName}',
+    );
   }
 
   // ...........................................................................
@@ -99,16 +152,32 @@ class ChangeRefsToPubDev extends DirCommand<dynamic> {
     required FileChangesBuffer fileChangesBuffer,
     required GgLog ggLog,
   }) async {
+    // Going remote means leaving local mode: the path overrides of
+    // pubspec_overrides.yaml would keep shadowing the restored refs.
+    _logOverridesRemoval(
+      node: node,
+      edit: _support.bufferPubspecOverridesRemoval(
+        node: node,
+        fileChangesBuffer: fileChangesBuffer,
+      ),
+      ggLog: ggLog,
+    );
+
     final references = _support.referencesFor(node, yamlMap);
 
-    if (!_hasLocalizedDependencies(node: node, references: references)) {
+    final restore = await restoreDartRefs(
+      node: node,
+      pubspecContent: pubspecContent,
+      references: references,
+    );
+
+    if (!restore.hadLocalizedRefs) {
       return;
     }
 
     ggLog('Unlocalize refs of ${node.name}');
 
-    final backupFile = Utils.dartBackupFile(node.directory);
-    if (!backupFile.existsSync()) {
+    if (restore.backupMissing) {
       ggLog(
         yellow(
           'The automatic change of dependencies could not be performed. '
@@ -118,6 +187,43 @@ class ChangeRefsToPubDev extends DirCommand<dynamic> {
         ),
       );
       return;
+    }
+
+    fileChangesBuffer.add(pubspec, restore.content!);
+  }
+
+  // ...........................................................................
+  /// Restores every localized workspace dependency of [node] in
+  /// [pubspecContent] back to the remote ref it was declared with.
+  ///
+  /// Pure with respect to the file system: it reads the dependency backup but
+  /// writes nothing, so the caller decides how to log and when to apply the
+  /// result. [references] are the dependency references of the manifest that
+  /// [pubspecContent] was read from.
+  ///
+  /// With [reconstructGitRefs] a dependency that does not publish to pub.dev is
+  /// turned into a git ref built from its origin - the shape a published
+  /// closed-source dependency needs. Pass false to restore the backed up spec
+  /// verbatim: the backup only remembers a version constraint, so rebuilding a
+  /// git ref would invent a url and a tag pattern, and it would fail outright
+  /// for a checkout without an origin remote.
+  Future<DartRefsRestore> restoreDartRefs({
+    required ProjectNode node,
+    required String pubspecContent,
+    required Map<String, DependencyReference> references,
+    bool reconstructGitRefs = true,
+  }) async {
+    if (!_hasLocalizedDependencies(node: node, references: references)) {
+      return const DartRefsRestore.nothingLocalized();
+    }
+
+    final backupFile = Utils.dartBackupFile(node.directory);
+    if (!backupFile.existsSync()) {
+      return const DartRefsRestore(
+        hadLocalizedRefs: true,
+        backupMissing: true,
+        content: null,
+      );
     }
 
     final savedDependencies = Utils.readDependenciesFromJson(backupFile.path);
@@ -135,10 +241,12 @@ class ChangeRefsToPubDev extends DirCommand<dynamic> {
         continue;
       }
 
-      final newDependencyYaml = await _buildDartRemoteDependencyYaml(
-        dependencyNode: dependency.value,
-        savedDependencies: savedDependencies,
-      );
+      final newDependencyYaml = reconstructGitRefs
+          ? await _buildDartRemoteDependencyYaml(
+              dependencyNode: dependency.value,
+              savedDependencies: savedDependencies,
+            )
+          : yamlToString(savedDependencies[dependencyName]).trimRight();
 
       newPubspecContent = node.language.replaceDependencyInContent(
         manifestContent: newPubspecContent,
@@ -147,7 +255,11 @@ class ChangeRefsToPubDev extends DirCommand<dynamic> {
       );
     }
 
-    fileChangesBuffer.add(pubspec, newPubspecContent);
+    return DartRefsRestore(
+      hadLocalizedRefs: true,
+      backupMissing: false,
+      content: newPubspecContent,
+    );
   }
 
   Future<void> _unlocalizeTypeScript({

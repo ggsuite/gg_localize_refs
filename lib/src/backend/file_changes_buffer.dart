@@ -19,11 +19,14 @@ class FileChanges {
 
 /// A buffer that collects file changes and applies them all at once.
 ///
-/// Use [add] to queue up changes to files,
-/// and [apply] to write all changes to disk.
+/// Use [add] to queue up changes to files, [addDeletion] to queue up files to
+/// be removed, and [apply] to write all changes to disk.
 class FileChangesBuffer {
   /// A list of file changes to be applied.
   final List<FileChanges> files = [];
+
+  /// A list of files to be deleted.
+  final List<File> deletions = [];
 
   /// Adds a file and its new content to the buffer.
   ///
@@ -33,13 +36,34 @@ class FileChangesBuffer {
     files.add(FileChanges(file, content));
   }
 
-  /// Applies all buffered file changes by writing the new content to each file.
+  /// Queues [file] for deletion.
+  ///
+  /// Deleting is a change like any other, so a command that only removes a
+  /// file still reports that it changed something (see [isEmpty]).
+  void addDeletion(File file) {
+    deletions.add(file);
+  }
+
+  /// Whether the buffer holds neither a content change nor a deletion.
+  bool get isEmpty => files.isEmpty && deletions.isEmpty;
+
+  /// Whether the buffer holds at least one content change or deletion.
+  bool get isNotEmpty => !isEmpty;
+
+  /// Applies all buffered file changes by writing the new content to each file
+  /// and removing the files queued for deletion.
   ///
   /// If a file already exists,
   /// it will be deleted before writing the new content.
   Future<void> apply() async {
     for (final fileChange in files) {
       await _writeToFile(content: fileChange.content, file: fileChange.file);
+    }
+
+    for (final file in deletions) {
+      if (await file.exists()) {
+        await file.delete();
+      }
     }
   }
 }

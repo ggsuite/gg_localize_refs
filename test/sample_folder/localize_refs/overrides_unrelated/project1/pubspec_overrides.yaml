@@ -1,0 +1,4 @@
+# Local experiment - keep me
+dependency_overrides:
+  some_third_party:
+    path: ../../vendor/some_third_party
