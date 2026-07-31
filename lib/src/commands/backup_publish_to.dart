@@ -20,7 +20,7 @@ import 'package:yaml/yaml.dart';
 /// Command that backs up the original `publish_to` value of a Dart project.
 ///
 /// The backup is written as JSON to
-/// `.gg/.gg_localize_refs_publish_to_backup.json`. The command is a no-op for
+/// `.gg/gg_localize_refs_publish_to_backup.json`. The command is a no-op for
 /// non-Dart projects and is idempotent: it does not overwrite an existing
 /// backup file, so repeated invocations do not capture a previously injected
 /// `publish_to: none` as the original value.
@@ -31,7 +31,7 @@ class BackupPublishTo extends DirCommand<void> {
         name: 'backup-publish-to',
         description:
             'Backs up the original publish_to value of pubspec.yaml to '
-            '.gg/.gg_localize_refs_publish_to_backup.json.',
+            '.gg/gg_localize_refs_publish_to_backup.json.',
       );
 
   final ManifestCommandSupport _support = const ManifestCommandSupport();

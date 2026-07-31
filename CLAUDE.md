@@ -57,9 +57,9 @@ Rules that follow from it:
 
 An earlier version wrote the local paths into `pubspec.yaml` itself and injected `publish_to: none`. `change-refs-to-local` undoes that before writing the overrides file:
 
-- `path:` refs and version-less git refs are restored from `.gg/.gg_localize_refs_backup.json` — **verbatim**, via `ChangeRefsToPubDev.restoreDartRefs(reconstructGitRefs: false)`. The networkless pub.dev reconstruction must not run here: `IsOnPubDev` reads the *dependency's* `publish_to`, which the old localization set to `none` for every repo of a ticket, so every dependency would be rewritten into a git ref with an invented `tag_pattern` — and a checkout without an `origin` remote would abort the command.
+- `path:` refs and version-less git refs are restored from `.gg/gg_localize_refs_backup.json` — **verbatim**, via `ChangeRefsToPubDev.restoreDartRefs(reconstructGitRefs: false)`. The networkless pub.dev reconstruction must not run here: `IsOnPubDev` reads the *dependency's* `publish_to`, which the old localization set to `none` for every repo of a ticket, so every dependency would be rewritten into a git ref with an invented `tag_pattern` — and a checkout without an `origin` remote would abort the command.
 - Without a dependency backup nothing is guessed: the manifest is left alone and the user is warned.
-- `publish_to: none` is reverted only when `.gg/.gg_localize_refs_publish_to_backup.json` says it was not the original value. Without that backup it is kept (it cannot be told apart from a package that is private by intention) and the user is warned. The backup file is **not** deleted — git feature branch mode still injects `publish_to: none` and needs it.
+- `publish_to: none` is reverted only when `.gg/gg_localize_refs_publish_to_backup.json` says it was not the original value. Without that backup it is kept (it cannot be told apart from a package that is private by intention) and the user is warned. The backup file is **not** deleted — git feature branch mode still injects `publish_to: none` and needs it.
 
 ## Architecture
 

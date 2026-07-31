@@ -33,23 +33,22 @@ class ManifestCommandSupport {
   ///
   /// The contents are ignored via `.gg/*` and not via the bare directory
   /// pattern `.gg`: git never descends into an excluded directory, so a
-  /// `!.gg/.gg.json` re-include below `.gg` has no effect and the check state
+  /// `!.gg/gg.json` re-include below `.gg` has no effect and the check state
   /// would never reach CI. A bare `.gg` left over from earlier runs is
-  /// therefore rewritten instead of kept.
+  /// therefore rewritten instead of kept — and so is the `!.gg/.gg.json` of
+  /// the days when the files inside `.gg` were still hidden.
   void ensureGitignoreHasDartBackupEntries(Directory projectDir) {
     const ignoreDir = '.gg/*';
     const staleIgnoreDir = '.gg';
-    const keepConfig = '!.gg/.gg.json';
+    const keepConfig = '!.gg/gg.json';
+    const staleKeepConfig = '!.gg/.gg.json';
 
     _editGitignore(projectDir, (List<String> lines) {
-      // Replace the bare `.gg` written by earlier versions where it stands:
-      // appending the replacement at the end would put it after existing `!`
-      // re-includes and silence them again.
-      final staleIndex = lines.indexWhere((l) => l.trim() == staleIgnoreDir);
-      if (staleIndex >= 0 && !lines.any((l) => l.trim() == ignoreDir)) {
-        lines[staleIndex] = ignoreDir;
-      }
-      lines.removeWhere((line) => line.trim() == staleIgnoreDir);
+      // Replace the stale entries written by earlier versions where they
+      // stand: appending the replacement at the end would put it after
+      // existing `!` re-includes and silence them again.
+      _replaceStaleEntry(lines, staleIgnoreDir, ignoreDir);
+      _replaceStaleEntry(lines, staleKeepConfig, keepConfig);
 
       final hasIgnoreDir = lines.any((line) => line.trim() == ignoreDir);
       final hasKeepConfig = lines.any((line) => line.trim() == keepConfig);
@@ -61,6 +60,21 @@ class ManifestCommandSupport {
         lines.add(keepConfig);
       }
     });
+  }
+
+  /// Rewrites the first [stale] entry of [lines] into [replacement] and drops
+  /// the remaining ones. Nothing is rewritten when [replacement] is already
+  /// present — the stale entries are then only removed.
+  void _replaceStaleEntry(
+    List<String> lines,
+    String stale,
+    String replacement,
+  ) {
+    final staleIndex = lines.indexWhere((l) => l.trim() == stale);
+    if (staleIndex >= 0 && !lines.any((l) => l.trim() == replacement)) {
+      lines[staleIndex] = replacement;
+    }
+    lines.removeWhere((line) => line.trim() == stale);
   }
 
   /// Ensures `.gitignore` does **not** exclude `pubspec_overrides.yaml`.

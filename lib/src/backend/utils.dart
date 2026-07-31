@@ -41,26 +41,36 @@ class Utils {
 
   /// Returns the Dart backup file used by this package.
   static File dartBackupFile(Directory directory) {
-    return File(
-      p.join(dartBackupDir(directory).path, '.gg_localize_refs_backup.json'),
-    );
+    return _inBackupDir(directory, 'gg_localize_refs_backup.json');
   }
 
   /// Returns the Dart backup copy of pubspec.yaml.
   static File dartBackupYamlFile(Directory directory) {
-    return File(
-      p.join(dartBackupDir(directory).path, '.gg_localize_refs_backup.yaml'),
-    );
+    return _inBackupDir(directory, 'gg_localize_refs_backup.yaml');
   }
 
   /// Returns the backup file that stores the original `publish_to` value.
   static File dartPublishToBackupFile(Directory directory) {
-    return File(
-      p.join(
-        dartBackupDir(directory).path,
-        '.gg_localize_refs_publish_to_backup.json',
-      ),
-    );
+    return _inBackupDir(directory, 'gg_localize_refs_publish_to_backup.json');
+  }
+
+  /// Returns `<directory>/.gg/<name>`, migrating the dot-prefixed name an
+  /// earlier version wrote.
+  ///
+  /// The files inside `.gg` are no longer hidden. A checkout made before that
+  /// change still carries `.<name>`; renaming it on first access keeps the
+  /// legacy dependency and `publish_to` backups readable instead of silently
+  /// falling back to "no backup found".
+  static File _inBackupDir(Directory directory, String name) {
+    final backupDir = dartBackupDir(directory);
+    final file = File(p.join(backupDir.path, name));
+    final legacy = File(p.join(backupDir.path, '.$name'));
+
+    if (!file.existsSync() && legacy.existsSync()) {
+      legacy.renameSync(file.path);
+    }
+
+    return file;
   }
 
   /// Reads the origin URL from git for [dependencyName].

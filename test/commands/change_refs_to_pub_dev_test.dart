@@ -437,7 +437,7 @@ void main() {
               'version: 1.0.0\n'
               'publish_to: none\n',
             );
-            File(join(project1.path, '.gg', '.gg_localize_refs_backup.json'))
+            File(join(project1.path, '.gg', 'gg_localize_refs_backup.json'))
               ..createSync(recursive: true)
               ..writeAsStringSync('{"project2":"^2.0.4"}');
 
@@ -488,7 +488,7 @@ void main() {
               'name: project2\n'
               'version: 1.0.0\n',
             );
-            File(join(project1.path, '.gg', '.gg_localize_refs_backup.json'))
+            File(join(project1.path, '.gg', 'gg_localize_refs_backup.json'))
               ..createSync(recursive: true)
               ..writeAsStringSync('{"project2":"^2.0.4"}');
 
@@ -526,7 +526,7 @@ void main() {
             'name: project2\n'
             'version: 1.0.0\n',
           );
-          File(join(project1.path, '.gg', '.gg_localize_refs_backup.json'))
+          File(join(project1.path, '.gg', 'gg_localize_refs_backup.json'))
             ..createSync(recursive: true)
             ..writeAsStringSync('{"project2":"^2.0.4"}');
 
@@ -563,7 +563,7 @@ void main() {
               'version: 1.0.0\n'
               'publish_to: none\n',
             );
-            File(join(project1.path, '.gg', '.gg_localize_refs_backup.json'))
+            File(join(project1.path, '.gg', 'gg_localize_refs_backup.json'))
               ..createSync(recursive: true)
               ..writeAsStringSync('{"project2":{"version":"^5.0.0"}}');
 
@@ -810,7 +810,7 @@ void main() {
         'name: project2\n'
         'version: 1.0.0\n',
       );
-      File(join(project1.path, '.gg', '.gg_localize_refs_backup.json'))
+      File(join(project1.path, '.gg', 'gg_localize_refs_backup.json'))
         ..createSync(recursive: true)
         ..writeAsStringSync('{"project2":"^3.1.4"}');
 

@@ -17,7 +17,7 @@ import 'package:path/path.dart' as p;
 
 /// Command that restores the original `publish_to` value from the backup.
 ///
-/// Reads `.gg/.gg_localize_refs_publish_to_backup.json`, applies
+/// Reads `.gg/gg_localize_refs_publish_to_backup.json`, applies
 /// [restorePublishTo] to the current `pubspec.yaml`, and deletes the backup
 /// file. If no backup exists, the manifest is left untouched — in particular,
 /// an existing `publish_to: none` is preserved.
@@ -28,7 +28,7 @@ class RestorePublishTo extends DirCommand<void> {
         name: 'restore-publish-to',
         description:
             'Restores the original publish_to value in pubspec.yaml from '
-            '.gg/.gg_localize_refs_publish_to_backup.json.',
+            '.gg/gg_localize_refs_publish_to_backup.json.',
       );
 
   @override

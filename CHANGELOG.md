@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+### Changed
+
+- Don't hide files in .gg folder
+
 ## 3.0.0 - 2026-07-31
 
 ## 2.7.1 - 2026-07-30
