@@ -5,6 +5,10 @@
     {
       "name": "gg_localize_refs",
       "url": "git@github.com:ggsuite/gg_localize_refs.git"
+    },
+    {
+      "name": "gg_multi",
+      "url": "git@github.com:ggsuite/gg_multi.git"
     }
   ]
 }
