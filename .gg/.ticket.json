@@ -1,0 +1,23 @@
+{
+  "issue_id": "43_check_if_package_is_in_registry_before_publishing",
+  "description": "Make sure package is already published in registry before publishing",
+  "gg_version": "7.0.1",
+  "repositories": [
+    {
+      "name": "gg_publish",
+      "url": "git@github.com:ggsuite/gg_publish.git"
+    },
+    {
+      "name": "gg_localize_refs",
+      "url": "git@github.com:ggsuite/gg_localize_refs.git"
+    },
+    {
+      "name": "gg_one",
+      "url": "git@github.com:ggsuite/gg_one.git"
+    },
+    {
+      "name": "gg_multi",
+      "url": "git@github.com:ggsuite/gg_multi.git"
+    }
+  ]
+}
