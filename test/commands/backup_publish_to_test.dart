@@ -34,7 +34,7 @@ void main() {
       await command.exec(directory: dir, ggLog: messages.add);
 
       final backupFile = File(
-        p.join(dir.path, '.gg', '.gg_localize_refs_publish_to_backup.json'),
+        p.join(dir.path, '.gg', 'gg_localize_refs_publish_to_backup.json'),
       );
       expect(backupFile.existsSync(), isTrue);
       final backup =
@@ -54,7 +54,7 @@ void main() {
       await command.exec(directory: dir, ggLog: messages.add);
 
       final backupFile = File(
-        p.join(dir.path, '.gg', '.gg_localize_refs_publish_to_backup.json'),
+        p.join(dir.path, '.gg', 'gg_localize_refs_publish_to_backup.json'),
       );
       final backup =
           jsonDecode(backupFile.readAsStringSync()) as Map<String, dynamic>;
@@ -75,7 +75,7 @@ void main() {
       await command.exec(directory: dir, ggLog: messages.add);
 
       final backupFile = File(
-        p.join(dir.path, '.gg', '.gg_localize_refs_publish_to_backup.json'),
+        p.join(dir.path, '.gg', 'gg_localize_refs_publish_to_backup.json'),
       );
       final backup =
           jsonDecode(backupFile.readAsStringSync()) as Map<String, dynamic>;
@@ -105,7 +105,7 @@ void main() {
       await command.exec(directory: dir, ggLog: messages.add);
 
       final backupFile = File(
-        p.join(dir.path, '.gg', '.gg_localize_refs_publish_to_backup.json'),
+        p.join(dir.path, '.gg', 'gg_localize_refs_publish_to_backup.json'),
       );
       final backup =
           jsonDecode(backupFile.readAsStringSync()) as Map<String, dynamic>;
@@ -120,7 +120,7 @@ void main() {
       await command.exec(directory: dir, ggLog: messages.add);
 
       final backupFile = File(
-        p.join(dir.path, '.gg', '.gg_localize_refs_publish_to_backup.json'),
+        p.join(dir.path, '.gg', 'gg_localize_refs_publish_to_backup.json'),
       );
       expect(backupFile.existsSync(), isFalse);
       expect(messages.any((m) => m.contains('No pubspec.yaml found')), isTrue);
@@ -135,7 +135,7 @@ void main() {
       await command.exec(directory: dir, ggLog: messages.add);
 
       final backupFile = File(
-        p.join(dir.path, '.gg', '.gg_localize_refs_publish_to_backup.json'),
+        p.join(dir.path, '.gg', 'gg_localize_refs_publish_to_backup.json'),
       );
       final backup =
           jsonDecode(backupFile.readAsStringSync()) as Map<String, dynamic>;
@@ -157,7 +157,7 @@ void main() {
       expect(gitignore.existsSync(), isTrue);
       final contents = gitignore.readAsStringSync();
       expect(contents, contains('.gg'));
-      expect(contents, contains('!.gg/.gg.json'));
+      expect(contents, contains('!.gg/gg.json'));
 
       deleteDirs(<Directory>[dir]);
     });

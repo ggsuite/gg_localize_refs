@@ -129,7 +129,7 @@ void main() {
 
         expect(
           file.path,
-          p.join(project.path, '.gg', '.gg_localize_refs_backup.json'),
+          p.join(project.path, '.gg', 'gg_localize_refs_backup.json'),
         );
       });
 
@@ -142,7 +142,7 @@ void main() {
 
         expect(
           file.path,
-          p.join(project.path, '.gg', '.gg_localize_refs_backup.yaml'),
+          p.join(project.path, '.gg', 'gg_localize_refs_backup.yaml'),
         );
       });
 
@@ -160,11 +160,74 @@ void main() {
             p.join(
               project.path,
               '.gg',
-              '.gg_localize_refs_publish_to_backup.json',
+              'gg_localize_refs_publish_to_backup.json',
             ),
           );
         },
       );
+
+      test('renames the hidden backup files an earlier version wrote', () {
+        final workspace = createWorkspace('utils_dart_backup_legacy');
+        final project = Directory(p.join(workspace.path, 'project'));
+        final backupDir = Directory(p.join(project.path, '.gg'))
+          ..createSync(recursive: true);
+        File(
+          p.join(backupDir.path, '.gg_localize_refs_backup.json'),
+        ).writeAsStringSync('{"a":"^1.0.0"}');
+        File(
+          p.join(backupDir.path, '.gg_localize_refs_backup.yaml'),
+        ).writeAsStringSync('name: test_pkg\n');
+        File(
+          p.join(backupDir.path, '.gg_localize_refs_publish_to_backup.json'),
+        ).writeAsStringSync('{"publish_to":"none"}');
+
+        expect(
+          Utils.dartBackupFile(project).readAsStringSync(),
+          '{"a":"^1.0.0"}',
+        );
+        expect(
+          Utils.dartBackupYamlFile(project).readAsStringSync(),
+          'name: test_pkg\n',
+        );
+        expect(
+          Utils.dartPublishToBackupFile(project).readAsStringSync(),
+          '{"publish_to":"none"}',
+        );
+
+        expect(
+          backupDir.listSync().map((e) => p.basename(e.path)).toSet(),
+          <String>{
+            'gg_localize_refs_backup.json',
+            'gg_localize_refs_backup.yaml',
+            'gg_localize_refs_publish_to_backup.json',
+          },
+        );
+      });
+
+      test('keeps the current backup file when a hidden one also exists', () {
+        // Only a leftover may be renamed - never a backup that is in use.
+        final workspace = createWorkspace('utils_dart_backup_both');
+        final project = Directory(p.join(workspace.path, 'project'));
+        final backupDir = Directory(p.join(project.path, '.gg'))
+          ..createSync(recursive: true);
+        File(
+          p.join(backupDir.path, '.gg_localize_refs_backup.json'),
+        ).writeAsStringSync('{"legacy":true}');
+        File(
+          p.join(backupDir.path, 'gg_localize_refs_backup.json'),
+        ).writeAsStringSync('{"current":true}');
+
+        expect(
+          Utils.dartBackupFile(project).readAsStringSync(),
+          '{"current":true}',
+        );
+        expect(
+          File(
+            p.join(backupDir.path, '.gg_localize_refs_backup.json'),
+          ).existsSync(),
+          isTrue,
+        );
+      });
     });
 
     group('readDependenciesFromJson()', () {

@@ -280,7 +280,7 @@ void main() {
           // still the single source of truth for the remote refs.
           expect(
             File(
-              p.join(dProject1.path, '.gg', '.gg_localize_refs_backup.json'),
+              p.join(dProject1.path, '.gg', 'gg_localize_refs_backup.json'),
             ).existsSync(),
             isFalse,
           );
@@ -289,7 +289,7 @@ void main() {
           expect(gitignoreFile.existsSync(), isTrue);
           final gitignoreContent = gitignoreFile.readAsStringSync();
           expect(gitignoreContent, contains('.gg'));
-          expect(gitignoreContent, contains('!.gg/.gg.json'));
+          expect(gitignoreContent, contains('!.gg/gg.json'));
 
           // The overrides file has to stay committable: it carries the local
           // wiring of a shared ticket workspace.
@@ -494,7 +494,7 @@ void main() {
           final gitignoreContent = gitignoreFile.readAsStringSync();
           expect(gitignoreContent, contains('build/'));
           expect(gitignoreContent, contains('.gg'));
-          expect(gitignoreContent, contains('!.gg/.gg.json'));
+          expect(gitignoreContent, contains('!.gg/gg.json'));
         });
 
         test('when already localized', () async {
@@ -545,13 +545,13 @@ void main() {
 
             expect(
               File(
-                p.join(project1.path, '.gg', '.gg_localize_refs_backup.json'),
+                p.join(project1.path, '.gg', 'gg_localize_refs_backup.json'),
               ).existsSync(),
               isFalse,
             );
             expect(
               File(
-                p.join(project1.path, '.gg', '.gg_localize_refs_backup.yaml'),
+                p.join(project1.path, '.gg', 'gg_localize_refs_backup.yaml'),
               ).existsSync(),
               isFalse,
             );
@@ -586,7 +586,7 @@ void main() {
               'name: project2\n'
               'version: 1.0.0\n',
             );
-            File(p.join(project1.path, '.gg', '.gg_localize_refs_backup.json'))
+            File(p.join(project1.path, '.gg', 'gg_localize_refs_backup.json'))
               ..createSync(recursive: true)
               ..writeAsStringSync('{"project2":"^7.0.0"}');
 
@@ -614,7 +614,7 @@ void main() {
 
             // The backup is left as it was - git feature branch mode owns it.
             final backupJson = File(
-              p.join(project1.path, '.gg', '.gg_localize_refs_backup.json'),
+              p.join(project1.path, '.gg', 'gg_localize_refs_backup.json'),
             ).readAsStringSync();
             expect(
               (jsonDecode(backupJson) as Map<String, dynamic>)['project2'],
@@ -646,7 +646,7 @@ void main() {
               'name: project2\n'
               'version: 1.0.0\n',
             );
-            File(p.join(project1.path, '.gg', '.gg_localize_refs_backup.json'))
+            File(p.join(project1.path, '.gg', 'gg_localize_refs_backup.json'))
               ..createSync(recursive: true)
               ..writeAsStringSync('{"project2":"^8.0.0"}');
 
@@ -738,7 +738,7 @@ void main() {
               p.join(
                 dProject1.path,
                 '.gg',
-                '.gg_localize_refs_publish_to_backup.json',
+                'gg_localize_refs_publish_to_backup.json',
               ),
             ).existsSync(),
             isTrue,

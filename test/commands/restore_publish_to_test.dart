@@ -25,7 +25,7 @@ void main() {
 
     void writeBackup(Directory dir, Map<String, dynamic> map) {
       final file = File(
-        p.join(dir.path, '.gg', '.gg_localize_refs_publish_to_backup.json'),
+        p.join(dir.path, '.gg', 'gg_localize_refs_publish_to_backup.json'),
       )..createSync(recursive: true);
       file.writeAsStringSync(jsonEncode(map));
     }
@@ -45,7 +45,7 @@ void main() {
       expect(pubspec, contains('publish_to: none'));
       expect(
         File(
-          p.join(dir.path, '.gg', '.gg_localize_refs_publish_to_backup.json'),
+          p.join(dir.path, '.gg', 'gg_localize_refs_publish_to_backup.json'),
         ).existsSync(),
         isFalse,
       );
@@ -68,7 +68,7 @@ void main() {
       expect(pubspec, isNot(contains('publish_to:')));
       expect(
         File(
-          p.join(dir.path, '.gg', '.gg_localize_refs_publish_to_backup.json'),
+          p.join(dir.path, '.gg', 'gg_localize_refs_publish_to_backup.json'),
         ).existsSync(),
         isFalse,
       );
@@ -126,7 +126,7 @@ void main() {
       // Backup file is left untouched when pubspec is missing.
       expect(
         File(
-          p.join(dir.path, '.gg', '.gg_localize_refs_publish_to_backup.json'),
+          p.join(dir.path, '.gg', 'gg_localize_refs_publish_to_backup.json'),
         ).existsSync(),
         isTrue,
       );

@@ -93,7 +93,7 @@ void main() {
 
         final gitignore = File(p.join(projectDir.path, '.gitignore'));
         expect(gitignore.existsSync(), isTrue);
-        expect(gitignore.readAsStringSync(), '.gg/*\n!.gg/.gg.json\n');
+        expect(gitignore.readAsStringSync(), '.gg/*\n!.gg/gg.json\n');
       });
 
       test('appends missing entries to existing .gitignore', () {
@@ -105,7 +105,7 @@ void main() {
 
         support.ensureGitignoreHasDartBackupEntries(projectDir);
 
-        expect(gitignore.readAsStringSync(), 'build/\n.gg/*\n!.gg/.gg.json\n');
+        expect(gitignore.readAsStringSync(), 'build/\n.gg/*\n!.gg/gg.json\n');
       });
 
       test(
@@ -117,14 +117,11 @@ void main() {
           final projectDir = Directory(p.join(workspace.path, 'project'))
             ..createSync(recursive: true);
           final gitignore = File(p.join(projectDir.path, '.gitignore'));
-          gitignore.writeAsStringSync('build/\r\n.gg/*\r\n!.gg/.gg.json\r\n');
+          gitignore.writeAsStringSync('build/\r\n.gg/*\r\n!.gg/gg.json\r\n');
 
           support.ensureGitignoreHasDartBackupEntries(projectDir);
 
-          expect(
-            gitignore.readAsStringSync(),
-            'build/\n.gg/*\n!.gg/.gg.json\n',
-          );
+          expect(gitignore.readAsStringSync(), 'build/\n.gg/*\n!.gg/gg.json\n');
         },
       );
 
@@ -134,14 +131,38 @@ void main() {
         final projectDir = Directory(p.join(workspace.path, 'project'))
           ..createSync(recursive: true);
         final gitignore = File(p.join(projectDir.path, '.gitignore'));
-        gitignore.writeAsStringSync('.gg\n!.gg/.gg.json\n!.gg/.ticket.json\n');
+        gitignore.writeAsStringSync('.gg\n!.gg/gg.json\n!.gg/.ticket.json\n');
 
         support.ensureGitignoreHasDartBackupEntries(projectDir);
 
         expect(
           gitignore.readAsStringSync(),
-          '.gg/*\n!.gg/.gg.json\n!.gg/.ticket.json\n',
+          '.gg/*\n!.gg/gg.json\n!.gg/.ticket.json\n',
         );
+      });
+
+      test('replaces the stale !.gg/.gg.json re-include where it stands', () {
+        final workspace = createWorkspace('manifest_support_gitignore_hidden');
+        final projectDir = Directory(p.join(workspace.path, 'project'))
+          ..createSync(recursive: true);
+        final gitignore = File(p.join(projectDir.path, '.gitignore'));
+        gitignore.writeAsStringSync('.gg/*\n!.gg/.gg.json\nbuild/\n');
+
+        support.ensureGitignoreHasDartBackupEntries(projectDir);
+
+        expect(gitignore.readAsStringSync(), '.gg/*\n!.gg/gg.json\nbuild/\n');
+      });
+
+      test('drops the stale !.gg/.gg.json when the new entry is present', () {
+        final workspace = createWorkspace('manifest_support_gitignore_dup');
+        final projectDir = Directory(p.join(workspace.path, 'project'))
+          ..createSync(recursive: true);
+        final gitignore = File(p.join(projectDir.path, '.gitignore'));
+        gitignore.writeAsStringSync('.gg/*\n!.gg/gg.json\n!.gg/.gg.json\n');
+
+        support.ensureGitignoreHasDartBackupEntries(projectDir);
+
+        expect(gitignore.readAsStringSync(), '.gg/*\n!.gg/gg.json\n');
       });
 
       test('drops a stale bare .gg when .gg/* is already present', () {
@@ -152,14 +173,14 @@ void main() {
           ..createSync(recursive: true);
         final gitignore = File(p.join(projectDir.path, '.gitignore'));
         gitignore.writeAsStringSync(
-          '.gg/*\n!.gg/.gg.json\n!.gg/.ticket.json\n.gg\n',
+          '.gg/*\n!.gg/gg.json\n!.gg/.ticket.json\n.gg\n',
         );
 
         support.ensureGitignoreHasDartBackupEntries(projectDir);
 
         expect(
           gitignore.readAsStringSync(),
-          '.gg/*\n!.gg/.gg.json\n!.gg/.ticket.json\n',
+          '.gg/*\n!.gg/gg.json\n!.gg/.ticket.json\n',
         );
       });
     });
@@ -207,12 +228,12 @@ void main() {
         final projectDir = Directory(p.join(workspace.path, 'project'))
           ..createSync(recursive: true);
         final gitignore = File(p.join(projectDir.path, '.gitignore'));
-        gitignore.writeAsStringSync('build/\n.gg/*\n!.gg/.gg.json\n');
+        gitignore.writeAsStringSync('build/\n.gg/*\n!.gg/gg.json\n');
         final before = gitignore.lastModifiedSync();
 
         support.ensureGitignoreAllowsPubspecOverrides(projectDir);
 
-        expect(gitignore.readAsStringSync(), 'build/\n.gg/*\n!.gg/.gg.json\n');
+        expect(gitignore.readAsStringSync(), 'build/\n.gg/*\n!.gg/gg.json\n');
         expect(gitignore.lastModifiedSync(), before);
       });
 
@@ -507,7 +528,7 @@ void main() {
           final depDir = Directory(p.join(workspace.path, 'project2'))
             ..createSync(recursive: true);
           final backupFile = File(
-            p.join(projectDir.path, '.gg', '.gg_localize_refs_backup.json'),
+            p.join(projectDir.path, '.gg', 'gg_localize_refs_backup.json'),
           )..createSync(recursive: true);
           backupFile.writeAsStringSync(
             '{'
