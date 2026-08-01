@@ -3,3 +3,4 @@
 .gg/gg.json merge=ours
 pubspec.lock merge=ours
 .gg_multi_status merge=ours
+.gg/.gg.json merge=ours
