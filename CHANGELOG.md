@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+### Changed
+
+- Fix: Skipping unchanged repos from publishing does not work
+
 ## 3.2.0 - 2026-08-01
 
 ### Changed

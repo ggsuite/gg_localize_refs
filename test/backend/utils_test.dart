@@ -97,7 +97,7 @@ void main() {
     });
 
     group('backup path helpers', () {
-      test('typeScriptBackupFile returns backup file in project root', () {
+      test('typeScriptBackupFile returns the _ts backup json in .gg', () {
         final workspace = createWorkspace('utils_ts_backup_file');
         final project = Directory(p.join(workspace.path, 'project'));
         project.createSync(recursive: true);
@@ -106,8 +106,23 @@ void main() {
 
         expect(
           file.path,
-          p.join(project.path, '.gg_localize_refs_backup.json'),
+          p.join(project.path, '.gg', 'gg_localize_refs_backup_ts.json'),
         );
+      });
+
+      test('typeScriptBackupFile moves the legacy root backup into .gg', () {
+        final workspace = createWorkspace('utils_ts_backup_migrate');
+        final project = Directory(p.join(workspace.path, 'project'));
+        project.createSync(recursive: true);
+        final legacy = File(
+          p.join(project.path, '.gg_localize_refs_backup.json'),
+        )..writeAsStringSync('{"a": "^1.0.0"}');
+
+        final file = Utils.typeScriptBackupFile(project);
+
+        expect(legacy.existsSync(), isFalse);
+        expect(file.existsSync(), isTrue);
+        expect(file.readAsStringSync(), '{"a": "^1.0.0"}');
       });
 
       test('dartBackupDir returns .gg directory in project root', () {
@@ -120,7 +135,7 @@ void main() {
         expect(directory.path, p.join(project.path, '.gg'));
       });
 
-      test('dartBackupFile returns backup json inside .gg directory', () {
+      test('dartBackupFile returns the _dart backup json in .gg', () {
         final workspace = createWorkspace('utils_dart_backup_file');
         final project = Directory(p.join(workspace.path, 'project'));
         project.createSync(recursive: true);
@@ -129,7 +144,7 @@ void main() {
 
         expect(
           file.path,
-          p.join(project.path, '.gg', 'gg_localize_refs_backup.json'),
+          p.join(project.path, '.gg', 'gg_localize_refs_backup_dart.json'),
         );
       });
 
@@ -142,7 +157,7 @@ void main() {
 
         expect(
           file.path,
-          p.join(project.path, '.gg', 'gg_localize_refs_backup.yaml'),
+          p.join(project.path, '.gg', 'gg_localize_refs_backup_dart.yaml'),
         );
       });
 
@@ -197,24 +212,51 @@ void main() {
         expect(
           backupDir.listSync().map((e) => p.basename(e.path)).toSet(),
           <String>{
-            'gg_localize_refs_backup.json',
-            'gg_localize_refs_backup.yaml',
+            'gg_localize_refs_backup_dart.json',
+            'gg_localize_refs_backup_dart.yaml',
             'gg_localize_refs_publish_to_backup.json',
           },
         );
       });
 
-      test('keeps the current backup file when a hidden one also exists', () {
-        // Only a leftover may be renamed - never a backup that is in use.
+      test('prefers the newer legacy name when both legacies exist', () {
+        // Two renames happened: hidden -> unhidden, then unhidden -> _dart.
+        // A checkout that stopped at the middle step carries both, and the
+        // newer one is the backup that was actually in use.
         final workspace = createWorkspace('utils_dart_backup_both');
         final project = Directory(p.join(workspace.path, 'project'));
         final backupDir = Directory(p.join(project.path, '.gg'))
           ..createSync(recursive: true);
         File(
           p.join(backupDir.path, '.gg_localize_refs_backup.json'),
-        ).writeAsStringSync('{"legacy":true}');
+        ).writeAsStringSync('{"oldest":true}');
         File(
           p.join(backupDir.path, 'gg_localize_refs_backup.json'),
+        ).writeAsStringSync('{"newer":true}');
+
+        expect(
+          Utils.dartBackupFile(project).readAsStringSync(),
+          '{"newer":true}',
+        );
+        expect(
+          File(
+            p.join(backupDir.path, '.gg_localize_refs_backup.json'),
+          ).existsSync(),
+          isTrue,
+        );
+      });
+
+      test('keeps the current backup file when a legacy one also exists', () {
+        // Only a leftover may be renamed - never a backup that is in use.
+        final workspace = createWorkspace('utils_dart_backup_current');
+        final project = Directory(p.join(workspace.path, 'project'));
+        final backupDir = Directory(p.join(project.path, '.gg'))
+          ..createSync(recursive: true);
+        File(
+          p.join(backupDir.path, 'gg_localize_refs_backup.json'),
+        ).writeAsStringSync('{"legacy":true}');
+        File(
+          p.join(backupDir.path, 'gg_localize_refs_backup_dart.json'),
         ).writeAsStringSync('{"current":true}');
 
         expect(
@@ -223,7 +265,7 @@ void main() {
         );
         expect(
           File(
-            p.join(backupDir.path, '.gg_localize_refs_backup.json'),
+            p.join(backupDir.path, 'gg_localize_refs_backup.json'),
           ).existsSync(),
           isTrue,
         );

@@ -280,7 +280,11 @@ void main() {
           // still the single source of truth for the remote refs.
           expect(
             File(
-              p.join(dProject1.path, '.gg', 'gg_localize_refs_backup.json'),
+              p.join(
+                dProject1.path,
+                '.gg',
+                'gg_localize_refs_backup_dart.json',
+              ),
             ).existsSync(),
             isFalse,
           );
@@ -545,13 +549,21 @@ void main() {
 
             expect(
               File(
-                p.join(project1.path, '.gg', 'gg_localize_refs_backup.json'),
+                p.join(
+                  project1.path,
+                  '.gg',
+                  'gg_localize_refs_backup_dart.json',
+                ),
               ).existsSync(),
               isFalse,
             );
             expect(
               File(
-                p.join(project1.path, '.gg', 'gg_localize_refs_backup.yaml'),
+                p.join(
+                  project1.path,
+                  '.gg',
+                  'gg_localize_refs_backup_dart.yaml',
+                ),
               ).existsSync(),
               isFalse,
             );
@@ -586,7 +598,13 @@ void main() {
               'name: project2\n'
               'version: 1.0.0\n',
             );
-            File(p.join(project1.path, '.gg', 'gg_localize_refs_backup.json'))
+            File(
+                p.join(
+                  project1.path,
+                  '.gg',
+                  'gg_localize_refs_backup_dart.json',
+                ),
+              )
               ..createSync(recursive: true)
               ..writeAsStringSync('{"project2":"^7.0.0"}');
 
@@ -614,7 +632,7 @@ void main() {
 
             // The backup is left as it was - git feature branch mode owns it.
             final backupJson = File(
-              p.join(project1.path, '.gg', 'gg_localize_refs_backup.json'),
+              p.join(project1.path, '.gg', 'gg_localize_refs_backup_dart.json'),
             ).readAsStringSync();
             expect(
               (jsonDecode(backupJson) as Map<String, dynamic>)['project2'],
@@ -646,7 +664,13 @@ void main() {
               'name: project2\n'
               'version: 1.0.0\n',
             );
-            File(p.join(project1.path, '.gg', 'gg_localize_refs_backup.json'))
+            File(
+                p.join(
+                  project1.path,
+                  '.gg',
+                  'gg_localize_refs_backup_dart.json',
+                ),
+              )
               ..createSync(recursive: true)
               ..writeAsStringSync('{"project2":"^8.0.0"}');
 
@@ -862,7 +886,7 @@ void main() {
           expect(resultJson, contains('"test2_ts": "link:../project2"'));
 
           final backupJson = File(
-            p.join(dProject1.path, '.gg_localize_refs_backup.json'),
+            p.join(dProject1.path, '.gg', 'gg_localize_refs_backup_ts.json'),
           ).readAsStringSync();
           expect(backupJson, contains('^1.0.0'));
 
@@ -947,7 +971,7 @@ void main() {
           expect(resultJson, contains('"proj2_ts": "link:../project2"'));
 
           final backupJson = File(
-            p.join(project1.path, '.gg_localize_refs_backup.json'),
+            p.join(project1.path, '.gg', 'gg_localize_refs_backup_ts.json'),
           ).readAsStringSync();
           expect(backupJson, contains('^1.0.0'));
 
