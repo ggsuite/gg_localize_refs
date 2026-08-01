@@ -5,6 +5,7 @@
 ### Changed
 
 - Make sure package is already published in registry before publishing
+- Adapt first-publish gate to merge-only mode. Make sure package is at least one time published before publishing.
 
 ## 3.2.1 - 2026-08-01
 
