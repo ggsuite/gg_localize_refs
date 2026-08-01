@@ -1,5 +1,15 @@
 # Changelog
 
+## 3.3.0 - 2026-08-01
+
+### Fixed
+
+- Fix missing git references
+
+### Removed
+
+- Remove code modifying publish_to because it is not used anymore
+
 ## 3.2.2 - 2026-08-01
 
 ### Changed

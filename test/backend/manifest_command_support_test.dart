@@ -351,39 +351,6 @@ void main() {
       });
     });
 
-    group('writeFileCopy()', () {
-      test('copies file content to destination', () async {
-        final workspace = createWorkspace('manifest_support_write_copy');
-        final source = File(p.join(workspace.path, 'source.txt'));
-        final destination = File(p.join(workspace.path, 'copy.txt'));
-        source.writeAsStringSync('copied content');
-
-        await support.writeFileCopy(source: source, destination: destination);
-
-        expect(destination.existsSync(), isTrue);
-        expect(destination.readAsStringSync(), 'copied content');
-      });
-    });
-
-    group('saveDependenciesAsJson()', () {
-      test('writes dependencies as json', () async {
-        final workspace = createWorkspace('manifest_support_save_json');
-        final filePath = p.join(workspace.path, 'deps.json');
-
-        await support.saveDependenciesAsJson(<String, dynamic>{
-          'a': '^1.0.0',
-          'b': '^2.0.0',
-        }, filePath);
-
-        final file = File(filePath);
-        expect(file.existsSync(), isTrue);
-        final data =
-            jsonDecode(file.readAsStringSync()) as Map<String, dynamic>;
-        expect(data['a'], '^1.0.0');
-        expect(data['b'], '^2.0.0');
-      });
-    });
-
     group('writeTypeScriptBackup()', () {
       test('writes backup file into the .gg directory', () async {
         final workspace = createWorkspace('manifest_support_ts_backup');
@@ -518,143 +485,24 @@ void main() {
       });
     });
 
-    group('buildUpdatedDartBackupDependencies()', () {
-      test(
-        'keeps normalized existing backup entries and refreshes selected ones',
-        () {
-          final workspace = createWorkspace('manifest_support_build_backup');
-          final projectDir = Directory(p.join(workspace.path, 'project1'))
-            ..createSync(recursive: true);
-          final depDir = Directory(p.join(workspace.path, 'project2'))
-            ..createSync(recursive: true);
-          final backupFile = File(
-            p.join(projectDir.path, '.gg', 'gg_localize_refs_backup_dart.json'),
-          )..createSync(recursive: true);
-          backupFile.writeAsStringSync(
-            '{'
-            '"keep_scalar":"^1.0.0",'
-            '"keep_map":{"version":"^2.0.0"},'
-            '"drop_path":"path: ../x"'
-            ' }',
-          );
+    group('dependencyOverridesOf()', () {
+      test('returns the dependency_overrides of the manifest', () {
+        final result = support.dependencyOverridesOf(<dynamic, dynamic>{
+          'dependency_overrides': <dynamic, dynamic>{'dep': '^1.0.0'},
+        });
 
-          final depNode = createNode(
-            name: 'dep',
-            directory: depDir,
-            language: DartProjectLanguage(),
-          );
-          final node = createNode(
-            name: 'pkg',
-            directory: projectDir,
-            language: DartProjectLanguage(),
-            dependencies: <String, ProjectNode>{'dep': depNode},
-          );
-          final references = <String, DependencyReference>{
-            'dep': const DependencyReference(
-              sectionName: 'dependencies',
-              name: 'dep',
-              value: <String, dynamic>{
-                'git': 'git@github.com:user/dep.git',
-                'version': '^3.0.0',
-              },
-            ),
-          };
-
-          final result = support.buildUpdatedDartBackupDependencies(
-            node: node,
-            references: references,
-            shouldRefreshBackup: (String dependencyYaml) {
-              return dependencyYaml.contains('version:');
-            },
-          );
-
-          expect(result['keep_scalar'], '^1.0.0');
-          expect(result['keep_map'], '^2.0.0');
-          expect(result['dep'], '^3.0.0');
-          expect(result.containsKey('drop_path'), isFalse);
-        },
-      );
-
-      test('does not refresh dependency when predicate returns false', () {
-        final workspace = createWorkspace('manifest_support_build_backup_skip');
-        final projectDir = Directory(p.join(workspace.path, 'project1'))
-          ..createSync(recursive: true);
-        final depDir = Directory(p.join(workspace.path, 'project2'))
-          ..createSync(recursive: true);
-        final depNode = createNode(
-          name: 'dep',
-          directory: depDir,
-          language: DartProjectLanguage(),
-        );
-        final node = createNode(
-          name: 'pkg',
-          directory: projectDir,
-          language: DartProjectLanguage(),
-          dependencies: <String, ProjectNode>{'dep': depNode},
-        );
-        final references = <String, DependencyReference>{
-          'dep': const DependencyReference(
-            sectionName: 'dependencies',
-            name: 'dep',
-            value: '^4.0.0',
-          ),
-        };
-
-        final result = support.buildUpdatedDartBackupDependencies(
-          node: node,
-          references: references,
-          shouldRefreshBackup: (_) => false,
-        );
-
-        expect(result.containsKey('dep'), isFalse);
-      });
-    });
-
-    group('normalizeBackupVersionValue()', () {
-      test('returns trimmed string for plain version values', () {
-        expect(support.normalizeBackupVersionValue('  ^1.0.0  '), '^1.0.0');
+        expect(result, <String, dynamic>{'dep': '^1.0.0'});
       });
 
-      test('returns null for empty string values', () {
-        expect(support.normalizeBackupVersionValue('   '), isNull);
+      test('returns an empty map when the manifest is no map', () {
+        expect(support.dependencyOverridesOf('not a map'), isEmpty);
       });
 
-      test('returns null for path string values', () {
+      test('returns an empty map when there is no section', () {
         expect(
-          support.normalizeBackupVersionValue('path: ../project2'),
-          isNull,
+          support.dependencyOverridesOf(<dynamic, dynamic>{'name': 'pkg'}),
+          isEmpty,
         );
-      });
-
-      test('returns null for git string values', () {
-        expect(
-          support.normalizeBackupVersionValue('git:\n  url: repo'),
-          isNull,
-        );
-      });
-
-      test('returns version from top-level map', () {
-        final value = support.normalizeBackupVersionValue(<String, dynamic>{
-          'version': '^2.0.0',
-        });
-
-        expect(value, '^2.0.0');
-      });
-
-      test('returns version from nested git map', () {
-        final value = support.normalizeBackupVersionValue(<String, dynamic>{
-          'git': <String, dynamic>{'version': '^3.0.0'},
-        });
-
-        expect(value, '^3.0.0');
-      });
-
-      test('returns null for unsupported map values', () {
-        final value = support.normalizeBackupVersionValue(<String, dynamic>{
-          'git': <String, dynamic>{'url': 'git@github.com:user/repo.git'},
-        });
-
-        expect(value, isNull);
       });
     });
   });

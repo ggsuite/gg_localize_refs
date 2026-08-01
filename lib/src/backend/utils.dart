@@ -55,16 +55,6 @@ class Utils {
     ],
   );
 
-  /// Returns the Dart backup copy of pubspec.yaml.
-  static File dartBackupYamlFile(Directory directory) => _inBackupDir(
-    directory,
-    'gg_localize_refs_backup_dart.yaml',
-    legacyPaths: const <String>[
-      '.gg/gg_localize_refs_backup.yaml',
-      '.gg/.gg_localize_refs_backup.yaml',
-    ],
-  );
-
   /// Returns the backup file that stores the original `publish_to` value.
   static File dartPublishToBackupFile(Directory directory) {
     return _inBackupDir(directory, 'gg_localize_refs_publish_to_backup.json');

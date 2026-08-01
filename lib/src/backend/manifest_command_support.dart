@@ -12,7 +12,6 @@ import 'package:gg_localize_refs/src/backend/languages/project_language.dart';
 import 'package:gg_localize_refs/src/backend/pubspec_overrides_io.dart';
 import 'package:gg_localize_refs/src/backend/typescript_npm_spec.dart';
 import 'package:gg_localize_refs/src/backend/utils.dart';
-import 'package:gg_localize_refs/src/backend/yaml_to_string.dart';
 import 'package:path/path.dart' as p;
 
 /// Shared helpers for manifest based ref-changing commands.
@@ -143,17 +142,18 @@ class ManifestCommandSupport {
     fileChangesBuffer.add(overridesFile, edit.content!);
   }
 
-  /// Queues the removal of the local path overrides of [node] and returns the
-  /// edit, so the caller can report it.
+  /// Queues the removal of the overrides this package wrote for [node] and
+  /// returns the edit, so the caller can report it.
   ///
   /// Only the overrides of the workspace dependencies are dropped, so hand
-  /// written entries survive. Used by the commands that leave local mode:
-  /// their remote refs would otherwise stay shadowed by the local paths.
+  /// written entries survive. Used by `change-refs-to-pub-dev`: both the local
+  /// paths and the git feature branch refs would otherwise keep shadowing the
+  /// published constraints of `pubspec.yaml`.
   PubspecOverridesEdit bufferPubspecOverridesRemoval({
     required ProjectNode node,
     required FileChangesBuffer fileChangesBuffer,
   }) {
-    final edit = const PubspecOverridesIo().removePathOverrides(
+    final edit = const PubspecOverridesIo().removeOwnedOverrides(
       projectDir: node.directory,
       dependencyNames: node.dependencies.keys,
     );
@@ -165,24 +165,6 @@ class ManifestCommandSupport {
     );
 
     return edit;
-  }
-
-  /// Copies [source] to [destination].
-  Future<void> writeFileCopy({
-    required File source,
-    required File destination,
-  }) async {
-    await source.copy(destination.path);
-  }
-
-  /// Saves [replacedDependencies] as JSON at [filePath].
-  Future<void> saveDependenciesAsJson(
-    Map<String, dynamic> replacedDependencies,
-    String filePath,
-  ) async {
-    final jsonString = jsonEncode(replacedDependencies);
-    final file = File(filePath);
-    await file.writeAsString(jsonString);
   }
 
   /// Writes the TypeScript backup file for [projectDirectory].
@@ -197,6 +179,25 @@ class ManifestCommandSupport {
     ensureGitignoreHasDartBackupEntries(projectDirectory);
     final backupFile = Utils.typeScriptBackupFile(projectDirectory);
     await backupFile.writeAsString(jsonEncode(replacedDependencies));
+  }
+
+  /// Returns the `dependency_overrides` declared in [manifestMap].
+  ///
+  /// Pub replaces them entirely once `pubspec_overrides.yaml` exists, so every
+  /// command writing that file carries them over.
+  Map<String, dynamic> dependencyOverridesOf(dynamic manifestMap) {
+    if (manifestMap is! Map) {
+      return const <String, dynamic>{};
+    }
+
+    final section = manifestMap['dependency_overrides'];
+    if (section is! Map) {
+      return const <String, dynamic>{};
+    }
+
+    return <String, dynamic>{
+      for (final entry in section.entries) entry.key.toString(): entry.value,
+    };
   }
 
   /// Returns dependency references from [manifestMap].
@@ -225,82 +226,5 @@ class ManifestCommandSupport {
       }
     }
     return false;
-  }
-
-  /// Returns backup entries normalized to plain version strings where possible.
-  Map<String, dynamic> buildUpdatedDartBackupDependencies({
-    required ProjectNode node,
-    required Map<String, DependencyReference> references,
-    required bool Function(String dependencyYaml) shouldRefreshBackup,
-  }) {
-    final backupFile = Utils.dartBackupFile(node.directory);
-    final existingBackup = backupFile.existsSync()
-        ? Utils.readDependenciesFromJson(backupFile.path)
-        : <String, dynamic>{};
-
-    final updatedBackup = <String, dynamic>{};
-
-    for (final entry in existingBackup.entries) {
-      final normalizedValue = normalizeBackupVersionValue(entry.value);
-      if (normalizedValue != null) {
-        updatedBackup[entry.key] = normalizedValue;
-      }
-    }
-
-    for (final dependency in node.dependencies.entries) {
-      final reference = references[dependency.key];
-      if (reference == null) {
-        continue;
-      }
-
-      final dependencyYaml = yamlToString(reference.value);
-      if (!shouldRefreshBackup(dependencyYaml)) {
-        continue;
-      }
-
-      final normalizedValue = normalizeBackupVersionValue(reference.value);
-      if (normalizedValue != null) {
-        updatedBackup[dependency.key] = normalizedValue;
-      }
-    }
-
-    return updatedBackup;
-  }
-
-  /// Returns the normalized backup version or null when it cannot be used.
-  dynamic normalizeBackupVersionValue(dynamic dependency) {
-    if (dependency is String) {
-      final trimmed = dependency.trim();
-      if (trimmed.isEmpty) {
-        return null;
-      }
-      if (trimmed.startsWith('path:') || trimmed.startsWith('git:')) {
-        return null;
-      }
-      return trimmed;
-    }
-
-    if (dependency is Map) {
-      final version = dependency['version'];
-      if (version != null) {
-        final trimmed = version.toString().trim();
-        if (trimmed.isNotEmpty) {
-          return trimmed;
-        }
-      }
-
-      final git = dependency['git'];
-      if (git is Map) {
-        final gitVersion = git['version'];
-        if (gitVersion != null) {
-          final trimmed = gitVersion.toString().trim();
-          if (trimmed.isNotEmpty) {
-            return trimmed;
-          }
-        }
-      }
-    }
-
-    return null;
   }
 }

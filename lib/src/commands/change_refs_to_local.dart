@@ -135,7 +135,7 @@ class ChangeRefsToLocal extends DirCommand<dynamic> {
             to: dependency.value.directory,
           ),
       },
-      inheritedOverrides: _dependencyOverridesOf(yamlMap),
+      inheritedOverrides: _support.dependencyOverridesOf(yamlMap),
     );
 
     if (edit.isUnchanged) {
@@ -157,7 +157,8 @@ class ChangeRefsToLocal extends DirCommand<dynamic> {
   /// Covers both starting points that keep local paths or a feature branch
   /// pinned inside the manifest: `path:` entries and git refs without a
   /// version. The `publish_to: none` that came with them is reverted to the
-  /// backed up original.
+  /// backed up original - no command injects it any more, both modes are
+  /// declared in `pubspec_overrides.yaml` and leave `pubspec.yaml` alone.
   Future<void> _migrateManifest({
     required ProjectNode node,
     required File pubspec,
@@ -193,8 +194,9 @@ class ChangeRefsToLocal extends DirCommand<dynamic> {
     var newContent = restore.content ?? pubspecContent;
 
     if (_hasPublishToNone(newContent) && backupFile.existsSync()) {
-      // The backup is not deleted here: the git feature branch mode still
-      // injects `publish_to: none` and relies on it to find the original.
+      // The backup is not deleted here: `restore-publish-to` (driven by
+      // `gg do publish`) reads it for repos of a ticket that is still in
+      // flight with the injected value.
       final backupMap =
           jsonDecode(backupFile.readAsStringSync()) as Map<String, dynamic>;
       newContent = restorePublishTo(newContent, backupMap);
@@ -240,22 +242,6 @@ class ChangeRefsToLocal extends DirCommand<dynamic> {
   String _relativePathTo({required Directory from, required Directory to}) {
     final relative = p.relative(to.path, from: from.path);
     return p.posix.joinAll(p.split(relative));
-  }
-
-  /// Returns the `dependency_overrides` declared in [yamlMap].
-  Map<String, dynamic> _dependencyOverridesOf(dynamic yamlMap) {
-    if (yamlMap is! Map) {
-      return const <String, dynamic>{};
-    }
-
-    final section = yamlMap['dependency_overrides'];
-    if (section is! Map) {
-      return const <String, dynamic>{};
-    }
-
-    return <String, dynamic>{
-      for (final entry in section.entries) entry.key.toString(): entry.value,
-    };
   }
 
   /// Returns whether [pubspecContent] declares `publish_to: none`.

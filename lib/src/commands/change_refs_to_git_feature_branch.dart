@@ -13,14 +13,18 @@ import 'package:gg_localize_refs/src/backend/file_changes_buffer.dart';
 import 'package:gg_localize_refs/src/backend/languages/project_language.dart';
 import 'package:gg_localize_refs/src/backend/manifest_command_support.dart';
 import 'package:gg_localize_refs/src/backend/process_dependencies.dart';
-import 'package:gg_localize_refs/src/backend/publish_to_utils.dart';
 import 'package:gg_localize_refs/src/backend/pubspec_overrides_io.dart';
 import 'package:gg_localize_refs/src/backend/typescript_npm_spec.dart';
 import 'package:gg_localize_refs/src/backend/utils.dart';
-import 'package:gg_localize_refs/src/backend/yaml_to_string.dart';
 import 'package:gg_log/gg_log.dart';
 
 /// Command that changes workspace dependencies to git references.
+///
+/// For Dart projects the git refs are declared as `dependency_overrides` in
+/// `pubspec_overrides.yaml`; `pubspec.yaml` keeps its published constraints
+/// and is not rewritten - so the package stays publishable and its manifest
+/// never carries a feature branch pin. TypeScript keeps writing the git specs
+/// into `package.json`, because npm has no overrides sibling.
 class ChangeRefsToGitFeatureBranch extends DirCommand<dynamic> {
   /// Creates the command.
   ChangeRefsToGitFeatureBranch({required super.ggLog})
@@ -49,6 +53,8 @@ class ChangeRefsToGitFeatureBranch extends DirCommand<dynamic> {
   }
 
   final ManifestCommandSupport _support = const ManifestCommandSupport();
+
+  final PubspecOverridesIo _overrides = const PubspecOverridesIo();
 
   /// The function used to run processes.
   late Future<ProcessResult> Function(
@@ -112,8 +118,6 @@ class ChangeRefsToGitFeatureBranch extends DirCommand<dynamic> {
     if (node.language.id == ProjectLanguageId.dart) {
       await _modifyDart(
         node: node,
-        pubspec: manifestFile,
-        pubspecContent: manifestContent,
         yamlMap: manifestMap,
         fileChangesBuffer: fileChangesBuffer,
         ggLog: ggLog,
@@ -133,74 +137,43 @@ class ChangeRefsToGitFeatureBranch extends DirCommand<dynamic> {
 
   Future<void> _modifyDart({
     required ProjectNode node,
-    required File pubspec,
-    required String pubspecContent,
     required dynamic yamlMap,
     required FileChangesBuffer fileChangesBuffer,
     required GgLog ggLog,
   }) async {
     final projectDir = node.directory;
-    _support.ensureDartBackupDir(projectDir);
-    final references = _support.referencesFor(node, yamlMap);
+    _support.ensureGitignoreAllowsPubspecOverrides(projectDir);
 
-    // Pinning to a feature branch means leaving local mode: the path overrides
-    // of pubspec_overrides.yaml would keep shadowing the git refs.
-    final overridesEdit = _support.bufferPubspecOverridesRemoval(
-      node: node,
-      fileChangesBuffer: fileChangesBuffer,
-    );
-    if (!overridesEdit.isUnchanged) {
-      ggLog(
-        'Remove the local path overrides of ${node.name} from '
-        '${PubspecOverridesIo.fileName}',
+    // The overrides are written for *every* workspace dependency, also for one
+    // that pubspec.yaml already declares as a git ref: pub does not merge the
+    // two sections, so an entry left out here would resolve against the
+    // published constraint while its siblings sit on the feature branch.
+    final gitUrls = <String, String>{};
+    for (final dependency in node.dependencies.entries) {
+      gitUrls[dependency.key] = await Utils.getGitRemoteUrl(
+        dependency.value.directory,
+        dependency.key,
       );
     }
 
-    if (!_hasNonGitDartDependencies(node: node, references: references)) {
+    final edit = _overrides.addGitOverrides(
+      projectDir: projectDir,
+      gitUrlsByDependency: gitUrls,
+      ref: gitRefOverride!.trim(),
+      inheritedOverrides: _support.dependencyOverridesOf(yamlMap),
+    );
+
+    if (edit.isUnchanged) {
       return;
     }
 
     ggLog('Localize refs of ${node.name}');
 
-    await _support.writeFileCopy(
-      source: pubspec,
-      destination: Utils.dartBackupYamlFile(projectDir),
+    _support.bufferPubspecOverridesEdit(
+      projectDir: projectDir,
+      edit: edit,
+      fileChangesBuffer: fileChangesBuffer,
     );
-
-    final replacedDependencies = _support.buildUpdatedDartBackupDependencies(
-      node: node,
-      references: references,
-      shouldRefreshBackup: _shouldBackupOriginalGitDependency,
-    );
-
-    await _support.saveDependenciesAsJson(
-      replacedDependencies,
-      Utils.dartBackupFile(projectDir).path,
-    );
-
-    var newPubspecContent = pubspecContent;
-    for (final dependency in node.dependencies.entries) {
-      final reference = references[dependency.key];
-      if (reference == null) {
-        continue;
-      }
-
-      final oldDependencyYaml = yamlToString(reference.value);
-      if (_shouldConvertToGit(oldDependencyYaml)) {
-        final newDependencyYaml = await getGitDependencyYaml(
-          dependency.value.directory,
-          dependency.key,
-        );
-        newPubspecContent = node.language.replaceDependencyInContent(
-          manifestContent: newPubspecContent,
-          reference: reference,
-          newValue: newDependencyYaml,
-        );
-      }
-    }
-
-    newPubspecContent = addPublishToNone(newPubspecContent);
-    fileChangesBuffer.add(pubspec, newPubspecContent);
   }
 
   Future<void> _modifyTypeScript({
@@ -258,23 +231,6 @@ class ChangeRefsToGitFeatureBranch extends DirCommand<dynamic> {
     fileChangesBuffer.add(manifestFile, updatedContent);
   }
 
-  /// Returns true when any Dart workspace dependency is not yet a plain git ref
-  bool _hasNonGitDartDependencies({
-    required ProjectNode node,
-    required Map<String, DependencyReference> references,
-  }) {
-    for (final dependency in node.dependencies.entries) {
-      final reference = references[dependency.key];
-      if (reference == null) {
-        continue;
-      }
-      if (_shouldConvertToGit(yamlToString(reference.value))) {
-        return true;
-      }
-    }
-    return false;
-  }
-
   /// Returns true when any TS workspace dependency is not yet a git spec.
   bool _hasNonGitTypeScriptDependencies({
     required ProjectNode node,
@@ -293,58 +249,15 @@ class ChangeRefsToGitFeatureBranch extends DirCommand<dynamic> {
     return false;
   }
 
-  /// Returns whether [dependencyYaml] should be converted to a plain git ref.
-  bool _shouldConvertToGit(String dependencyYaml) {
-    final trimmed = dependencyYaml.trimLeft();
-    if (!trimmed.startsWith('git:')) {
-      return true;
-    }
-
-    return trimmed.contains('version:');
-  }
-
-  /// Returns whether the original dependency should be backed up.
-  bool _shouldBackupOriginalGitDependency(String dependencyYaml) {
-    final trimmed = dependencyYaml.trimLeft();
-    if (!trimmed.startsWith('git:')) {
-      return true;
-    }
-
-    return trimmed.contains('version:');
-  }
-
-  /// Get a dependency Yaml for a git repo.
-  Future<String> getGitDependencyYaml(Directory depDir, String depName) async {
-    final gitInfo = await _resolveGitUrlAndRef(depDir, depName);
-    final url = gitInfo.$1;
-    final ref = gitInfo.$2;
-
-    final gitMap = <String, dynamic>{
-      'git': <String, dynamic>{'url': url, 'ref': ref},
-    };
-
-    return yamlToString(gitMap);
-  }
-
   /// Returns a git spec string usable in package.json for TypeScript.
   Future<String> getGitDependencySpecForTs(
     Directory depDir,
     String depName,
   ) async {
-    final gitInfo = await _resolveGitUrlAndRef(depDir, depName);
-    final url = gitInfo.$1;
-    final ref = gitInfo.$2;
+    final url = await Utils.getGitRemoteUrl(depDir, depName);
+    final ref = gitRefOverride!.trim();
 
     // SCP-shorthand `git@host:path` → `git+ssh://…` (pnpm 11 rejects SCP).
     return '${TypeScriptNpmSpec.toNpmGitBase(url)}#$ref';
-  }
-
-  Future<(String, String)> _resolveGitUrlAndRef(
-    Directory depDir,
-    String depName,
-  ) async {
-    final url = await Utils.getGitRemoteUrl(depDir, depName);
-    final ref = gitRefOverride!.trim();
-    return (url, ref);
   }
 }

@@ -148,19 +148,6 @@ void main() {
         );
       });
 
-      test('dartBackupYamlFile returns backup yaml inside .gg directory', () {
-        final workspace = createWorkspace('utils_dart_backup_yaml_file');
-        final project = Directory(p.join(workspace.path, 'project'));
-        project.createSync(recursive: true);
-
-        final file = Utils.dartBackupYamlFile(project);
-
-        expect(
-          file.path,
-          p.join(project.path, '.gg', 'gg_localize_refs_backup_dart.yaml'),
-        );
-      });
-
       test(
         'dartPublishToBackupFile returns backup json inside .gg directory',
         () {
@@ -190,19 +177,12 @@ void main() {
           p.join(backupDir.path, '.gg_localize_refs_backup.json'),
         ).writeAsStringSync('{"a":"^1.0.0"}');
         File(
-          p.join(backupDir.path, '.gg_localize_refs_backup.yaml'),
-        ).writeAsStringSync('name: test_pkg\n');
-        File(
           p.join(backupDir.path, '.gg_localize_refs_publish_to_backup.json'),
         ).writeAsStringSync('{"publish_to":"none"}');
 
         expect(
           Utils.dartBackupFile(project).readAsStringSync(),
           '{"a":"^1.0.0"}',
-        );
-        expect(
-          Utils.dartBackupYamlFile(project).readAsStringSync(),
-          'name: test_pkg\n',
         );
         expect(
           Utils.dartPublishToBackupFile(project).readAsStringSync(),
@@ -213,7 +193,6 @@ void main() {
           backupDir.listSync().map((e) => p.basename(e.path)).toSet(),
           <String>{
             'gg_localize_refs_backup_dart.json',
-            'gg_localize_refs_backup_dart.yaml',
             'gg_localize_refs_publish_to_backup.json',
           },
         );

@@ -4,7 +4,6 @@
 // Use of this source code is governed by terms that can be
 // found in the LICENSE file in the root of this package.
 
-import 'dart:convert';
 import 'dart:io';
 
 import 'package:args/command_runner.dart';
@@ -295,7 +294,7 @@ void main() {
       });
 
       group('should succeed', () {
-        test('with Dart dependencies converts to git refs', () async {
+        test('with Dart dependencies writes git overrides', () async {
           final dProject1 = Directory(
             p.join(dWorkspaceSucceed.path, 'project1'),
           );
@@ -313,6 +312,10 @@ void main() {
             'git@github.com:user/test2.git',
           ], workingDirectory: dProject2.path);
 
+          final pubspecBefore = File(
+            p.join(dProject1.path, 'pubspec.yaml'),
+          ).readAsStringSync();
+
           final localMessages = <String>[];
           final local = ChangeRefsToGitFeatureBranch(ggLog: localMessages.add);
           await local.get(
@@ -327,35 +330,79 @@ void main() {
           );
           expect(localMessages[1], contains('Localize refs of test1'));
 
-          final resultYaml = File(
-            p.join(dProject1.path, 'pubspec.yaml'),
+          // The git refs live in pubspec_overrides.yaml ...
+          final overrides = File(
+            p.join(dProject1.path, 'pubspec_overrides.yaml'),
           ).readAsStringSync();
-          expect(resultYaml, contains('test2:'));
-          expect(resultYaml, contains('git:'));
-          expect(resultYaml, contains('url: git@github.com:user/test2.git'));
-          expect(resultYaml, contains('ref: feature123'));
-          expect(resultYaml, contains('publish_to: none'));
+          expect(overrides, contains('dependency_overrides:'));
+          expect(overrides, contains('test2:'));
+          expect(overrides, contains('url: git@github.com:user/test2.git'));
+          expect(overrides, contains('ref: feature123'));
 
-          // Local path overrides would shadow the git refs.
+          // ... and pubspec.yaml keeps its published constraints.
           expect(
-            File(p.join(dProject1.path, 'pubspec_overrides.yaml')).existsSync(),
-            isFalse,
+            File(p.join(dProject1.path, 'pubspec.yaml')).readAsStringSync(),
+            pubspecBefore,
           );
         });
 
-        // The fixture already pins the very ref that is requested, so the
-        // assertion below is about the overrides file only - it must not be
-        // read as a statement about re-pointing an existing ref.
-        test('deletes pubspec_overrides.yaml even when all Dart deps are '
-            'already git refs', () async {
+        test('running it twice changes nothing the second time', () async {
+          final dProject1 = Directory(
+            p.join(dWorkspaceSucceed.path, 'project1'),
+          );
+          final dProject2 = Directory(
+            p.join(dWorkspaceSucceed.path, 'project2'),
+          );
+
+          Process.runSync('git', <String>[
+            'init',
+          ], workingDirectory: dProject2.path);
+          Process.runSync('git', <String>[
+            'remote',
+            'add',
+            'origin',
+            'git@github.com:user/test2.git',
+          ], workingDirectory: dProject2.path);
+
+          final local = ChangeRefsToGitFeatureBranch(ggLog: messages.add);
+          await local.get(
+            directory: dProject1,
+            ggLog: messages.add,
+            gitRef: 'feature123',
+          );
+
+          final localMessages = <String>[];
+          await ChangeRefsToGitFeatureBranch(ggLog: localMessages.add).get(
+            directory: dProject1,
+            ggLog: localMessages.add,
+            gitRef: 'feature123',
+          );
+
+          expect(localMessages.join('\n'), contains('No files were changed.'));
+        });
+
+        test('replaces the local path overrides with git refs', () async {
           final dProject1 = Directory(
             p.join(dWorkspaceOverridesPresent.path, 'project1'),
           );
+          final dProject2 = Directory(
+            p.join(dWorkspaceOverridesPresent.path, 'project2'),
+          );
+
+          Process.runSync('git', <String>[
+            'init',
+          ], workingDirectory: dProject2.path);
+          Process.runSync('git', <String>[
+            'remote',
+            'add',
+            'origin',
+            'git@github.com:user/test2.git',
+          ], workingDirectory: dProject2.path);
 
           final overrides = File(
             p.join(dProject1.path, 'pubspec_overrides.yaml'),
           );
-          expect(overrides.existsSync(), isTrue);
+          expect(overrides.readAsStringSync(), contains('path: ../project2'));
 
           final pubspecBefore = File(
             p.join(dProject1.path, 'pubspec.yaml'),
@@ -369,23 +416,17 @@ void main() {
             gitRef: 'feature123',
           );
 
-          expect(overrides.existsSync(), isFalse);
+          final content = overrides.readAsStringSync();
+          expect(content, isNot(contains('path: ../project2')));
+          expect(content, contains('ref: feature123'));
           expect(
             File(p.join(dProject1.path, 'pubspec.yaml')).readAsStringSync(),
             pubspecBefore,
           );
-          expect(
-            localMessages.join('\n'),
-            isNot(contains('No files were changed')),
-          );
-          expect(
-            localMessages.join('\n'),
-            contains('Remove the local path overrides of test1'),
-          );
         });
 
         test(
-          'with Dart git version dependency converts to plain git ref',
+          'overrides a dependency pubspec.yaml already pins to a git ref',
           () async {
             final workspace = createTempDir('git_feature_tag_pattern_ws');
             final project1 = Directory(p.join(workspace.path, 'project1'));
@@ -422,185 +463,26 @@ void main() {
               gitRef: 'feature/tag',
             );
 
-            final resultYaml = File(
-              p.join(project1.path, 'pubspec.yaml'),
+            final overrides = File(
+              p.join(project1.path, 'pubspec_overrides.yaml'),
             ).readAsStringSync();
-            expect(resultYaml, contains('git:'));
-            expect(resultYaml, contains('ref: feature/tag'));
-            expect(resultYaml, isNot(contains('tag_pattern:')));
-            expect(resultYaml, isNot(contains('version: ^2.0.4')));
+            expect(overrides, contains('ref: feature/tag'));
+            expect(overrides, isNot(contains('version: ^2.0.4')));
+
+            // The published constraint of pubspec.yaml stays untouched.
+            expect(
+              File(p.join(project1.path, 'pubspec.yaml')).readAsStringSync(),
+              contains('version: ^2.0.4'),
+            );
 
             deleteDirs(<Directory>[workspace]);
           },
         );
 
-        test(
-          'keeps existing backup version when dependency was a path entry',
-          () async {
-            final workspace = createTempDir('git_feature_keep_path_backup_ws');
-            final project1 = Directory(p.join(workspace.path, 'project1'));
-            final project2 = Directory(p.join(workspace.path, 'project2'));
-            await createDirs(<Directory>[project1, project2]);
-
-            File(p.join(project1.path, 'pubspec.yaml')).writeAsStringSync(
-              'name: project1\n'
-              'version: 1.0.0\n'
-              'dependencies:\n'
-              '  project2:\n'
-              '    path: ../project2\n',
-            );
-            File(p.join(project2.path, 'pubspec.yaml')).writeAsStringSync(
-              'name: project2\n'
-              'version: 1.0.0\n',
-            );
-            File(
-                p.join(
-                  project1.path,
-                  '.gg',
-                  'gg_localize_refs_backup_dart.json',
-                ),
-              )
-              ..createSync(recursive: true)
-              ..writeAsStringSync('{"project2":"^7.0.0"}');
-
-            Process.runSync('git', <String>[
-              'init',
-            ], workingDirectory: project2.path);
-            Process.runSync('git', <String>[
-              'remote',
-              'add',
-              'origin',
-              'git@github.com:user/project2.git',
-            ], workingDirectory: project2.path);
-
-            final local = ChangeRefsToGitFeatureBranch(ggLog: messages.add);
-            await local.get(
-              directory: project1,
-              ggLog: messages.add,
-              gitRef: 'feature/path',
-            );
-
-            final backupJson = File(
-              p.join(project1.path, '.gg', 'gg_localize_refs_backup_dart.json'),
-            ).readAsStringSync();
-            final backupMap = jsonDecode(backupJson) as Map<String, dynamic>;
-
-            expect(backupMap['project2'], '^7.0.0');
-
-            deleteDirs(<Directory>[workspace]);
-          },
-        );
-
-        test(
-          'keeps existing backup version when dependency was plain git ref',
-          () async {
-            final workspace = createTempDir('git_feature_keep_git_backup_ws');
-            final project1 = Directory(p.join(workspace.path, 'project1'));
-            final project2 = Directory(p.join(workspace.path, 'project2'));
-            await createDirs(<Directory>[project1, project2]);
-
-            File(p.join(project1.path, 'pubspec.yaml')).writeAsStringSync(
-              'name: project1\n'
-              'version: 1.0.0\n'
-              'dependencies:\n'
-              '  project2:\n'
-              '    git:\n'
-              '      url: git@github.com:user/project2.git\n'
-              '      ref: old-feature\n',
-            );
-            File(p.join(project2.path, 'pubspec.yaml')).writeAsStringSync(
-              'name: project2\n'
-              'version: 1.0.0\n',
-            );
-            File(
-                p.join(
-                  project1.path,
-                  '.gg',
-                  'gg_localize_refs_backup_dart.json',
-                ),
-              )
-              ..createSync(recursive: true)
-              ..writeAsStringSync('{"project2":"^8.0.0"}');
-
-            Process.runSync('git', <String>[
-              'init',
-            ], workingDirectory: project2.path);
-            Process.runSync('git', <String>[
-              'remote',
-              'add',
-              'origin',
-              'git@github.com:user/project2.git',
-            ], workingDirectory: project2.path);
-
-            final local = ChangeRefsToGitFeatureBranch(ggLog: messages.add);
-            await local.get(
-              directory: project1,
-              ggLog: messages.add,
-              gitRef: 'feature/new',
-            );
-
-            final backupJson = File(
-              p.join(project1.path, '.gg', 'gg_localize_refs_backup_dart.json'),
-            ).readAsStringSync();
-            final backupMap = jsonDecode(backupJson) as Map<String, dynamic>;
-
-            expect(backupMap['project2'], '^8.0.0');
-
-            deleteDirs(<Directory>[workspace]);
-          },
-        );
-
-        test(
-          'stores only version values in backup after converting to git refs',
-          () async {
-            final workspace = createTempDir('git_feature_backup_only_versions');
-            final project1 = Directory(p.join(workspace.path, 'project1'));
-            final project2 = Directory(p.join(workspace.path, 'project2'));
-            await createDirs(<Directory>[project1, project2]);
-
-            File(p.join(project1.path, 'pubspec.yaml')).writeAsStringSync(
-              'name: project1\n'
-              'version: 1.0.0\n'
-              'dependencies:\n'
-              '  project2: ^3.1.0\n',
-            );
-            File(p.join(project2.path, 'pubspec.yaml')).writeAsStringSync(
-              'name: project2\n'
-              'version: 1.0.0\n',
-            );
-
-            Process.runSync('git', <String>[
-              'init',
-            ], workingDirectory: project2.path);
-            Process.runSync('git', <String>[
-              'remote',
-              'add',
-              'origin',
-              'git@github.com:user/project2.git',
-            ], workingDirectory: project2.path);
-
-            final local = ChangeRefsToGitFeatureBranch(ggLog: messages.add);
-            await local.get(
-              directory: project1,
-              ggLog: messages.add,
-              gitRef: 'feature/backup',
-            );
-
-            final backupJson = File(
-              p.join(project1.path, '.gg', 'gg_localize_refs_backup_dart.json'),
-            ).readAsStringSync();
-            final backupMap = jsonDecode(backupJson) as Map<String, dynamic>;
-
-            expect(backupMap['project2'], '^3.1.0');
-            expect(backupJson, isNot(contains('path')));
-            expect(backupJson, isNot(contains('git')));
-
-            deleteDirs(<Directory>[workspace]);
-          },
-        );
-
-        test('does not write publish_to_original into deps backup', () async {
-          final workspace = createTempDir('git_feature_publish_to_no_backup');
+        test('carries the dependency_overrides of pubspec.yaml over', () async {
+          // Pub does not merge the two sections - an inherited override left
+          // behind would silently stop being in effect.
+          final workspace = createTempDir('git_feature_inherited_ws');
           final project1 = Directory(p.join(workspace.path, 'project1'));
           final project2 = Directory(p.join(workspace.path, 'project2'));
           await createDirs(<Directory>[project1, project2]);
@@ -608,11 +490,10 @@ void main() {
           File(p.join(project1.path, 'pubspec.yaml')).writeAsStringSync(
             'name: project1\n'
             'version: 1.0.0\n'
-            'publish_to: none\n'
             'dependencies:\n'
-            '  project2:\n'
-            '    git: git@github.com:user/project2.git\n'
-            '    version: ^2.0.0\n',
+            '  project2: ^1.0.0\n'
+            'dependency_overrides:\n'
+            '  foreign: ^9.0.0\n',
           );
           File(p.join(project2.path, 'pubspec.yaml')).writeAsStringSync(
             'name: project2\n'
@@ -629,22 +510,59 @@ void main() {
             'git@github.com:user/project2.git',
           ], workingDirectory: project2.path);
 
-          final local = ChangeRefsToGitFeatureBranch(ggLog: messages.add);
-          await local.get(
+          await ChangeRefsToGitFeatureBranch(ggLog: messages.add).get(
             directory: project1,
             ggLog: messages.add,
-            gitRef: 'feature/backup-publish-to',
+            gitRef: 'feature/inherited',
           );
 
-          final backupJson = File(
-            p.join(project1.path, '.gg', 'gg_localize_refs_backup_dart.json'),
+          final overrides = File(
+            p.join(project1.path, 'pubspec_overrides.yaml'),
           ).readAsStringSync();
-          final backupMap = jsonDecode(backupJson) as Map<String, dynamic>;
-
-          expect(backupMap.containsKey('publish_to_original'), isFalse);
+          expect(overrides, contains('foreign: ^9.0.0'));
+          expect(overrides, contains('ref: feature/inherited'));
 
           deleteDirs(<Directory>[workspace]);
         });
+
+        test(
+          'removes a pubspec_overrides.yaml entry from .gitignore',
+          () async {
+            // The file has to be committable: it is what makes the ticket
+            // resolve against the feature branch on every checkout.
+            final dProject1 = Directory(
+              p.join(dWorkspaceSucceed.path, 'project1'),
+            );
+            final dProject2 = Directory(
+              p.join(dWorkspaceSucceed.path, 'project2'),
+            );
+
+            File(
+              p.join(dProject1.path, '.gitignore'),
+            ).writeAsStringSync('pubspec_overrides.yaml\n');
+
+            Process.runSync('git', <String>[
+              'init',
+            ], workingDirectory: dProject2.path);
+            Process.runSync('git', <String>[
+              'remote',
+              'add',
+              'origin',
+              'git@github.com:user/test2.git',
+            ], workingDirectory: dProject2.path);
+
+            await ChangeRefsToGitFeatureBranch(ggLog: messages.add).get(
+              directory: dProject1,
+              ggLog: messages.add,
+              gitRef: 'feature123',
+            );
+
+            expect(
+              File(p.join(dProject1.path, '.gitignore')).readAsStringSync(),
+              isNot(contains('pubspec_overrides.yaml')),
+            );
+          },
+        );
 
         test('with TypeScript dependencies converts to git refs', () async {
           final dProject1 = Directory(
