@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+### Changed
+
+- \#gg: changed references to git
+
 ## 3.1.0 - 2026-07-31
 
 ### Changed
