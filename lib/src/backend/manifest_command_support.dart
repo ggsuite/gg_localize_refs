@@ -149,13 +149,17 @@ class ManifestCommandSupport {
   /// written entries survive. Used by `change-refs-to-pub-dev`: both the local
   /// paths and the git feature branch refs would otherwise keep shadowing the
   /// published constraints of `pubspec.yaml`.
+  ///
+  /// The *transitive* dependencies are covered, because that is the set the
+  /// two localizing commands write - a git override for a project the manifest
+  /// does not name would otherwise survive the way back to pub.dev.
   PubspecOverridesEdit bufferPubspecOverridesRemoval({
     required ProjectNode node,
     required FileChangesBuffer fileChangesBuffer,
   }) {
     final edit = const PubspecOverridesIo().removeOwnedOverrides(
       projectDir: node.directory,
-      dependencyNames: node.dependencies.keys,
+      dependencyNames: node.transitiveDependencies.keys,
     );
 
     bufferPubspecOverridesEdit(

@@ -74,6 +74,61 @@ void main() {
       expect(description, contains(dir.path));
     });
 
+    group('ProjectNode.transitiveDependencies', () {
+      ProjectNode node(String name) => ProjectNode(
+        name: name,
+        directory: Directory('/tmp/$name'),
+        language: _FakeLanguage(),
+      );
+
+      test('is empty for a node without dependencies', () {
+        expect(node('a').transitiveDependencies, isEmpty);
+      });
+
+      test('collects the whole chain a -> b -> c', () {
+        final a = node('a');
+        final b = node('b');
+        final c = node('c');
+        a.dependencies['b'] = b;
+        b.dependencies['c'] = c;
+
+        expect(a.transitiveDependencies, <String, ProjectNode>{'b': b, 'c': c});
+
+        // The chain is walked from every node, not only from the root.
+        expect(b.transitiveDependencies, <String, ProjectNode>{'c': c});
+        expect(c.transitiveDependencies, isEmpty);
+      });
+
+      test('visits a diamond only once', () {
+        // a -> b -> d, a -> c -> d
+        final a = node('a');
+        final b = node('b');
+        final c = node('c');
+        final d = node('d');
+        a.dependencies['b'] = b;
+        a.dependencies['c'] = c;
+        b.dependencies['d'] = d;
+        c.dependencies['d'] = d;
+
+        expect(a.transitiveDependencies, <String, ProjectNode>{
+          'b': b,
+          'c': c,
+          'd': d,
+        });
+      });
+
+      test('does not list the node itself', () {
+        // MultiLanguageGraph rejects cycles, so this shape cannot come from a
+        // parsed workspace - the guard keeps the walk terminating anyway.
+        final a = node('a');
+        final b = node('b');
+        a.dependencies['b'] = b;
+        b.dependencies['a'] = a;
+
+        expect(a.transitiveDependencies, <String, ProjectNode>{'b': b});
+      });
+    });
+
     test('DependencyReference stores section, name and value', () {
       const reference = DependencyReference(
         sectionName: 'dependencies',

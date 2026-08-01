@@ -77,6 +77,35 @@ class ProjectNode {
   /// Nodes that depend on this project.
   final Map<String, ProjectNode> dependents = <String, ProjectNode>{};
 
+  /// Every workspace project this one needs, directly or indirectly.
+  ///
+  /// Pub honors `dependency_overrides` only from the **root** package of a
+  /// resolution: an override that a dependency declares for its own
+  /// dependency is ignored. A package therefore has to override the whole
+  /// part of the workspace it reaches, not only what its own manifest names -
+  /// otherwise a project two steps down is resolved from the registry while
+  /// its siblings come from the ticket, and the published version has to
+  /// satisfy the local sources.
+  ///
+  /// The graph is acyclic - `MultiLanguageGraph` rejects cycles - so the walk
+  /// terminates; the visited set additionally collapses a diamond.
+  Map<String, ProjectNode> get transitiveDependencies {
+    final result = <String, ProjectNode>{};
+
+    void visit(ProjectNode node) {
+      for (final entry in node.dependencies.entries) {
+        if (entry.key == name || result.containsKey(entry.key)) {
+          continue;
+        }
+        result[entry.key] = entry.value;
+        visit(entry.value);
+      }
+    }
+
+    visit(this);
+    return result;
+  }
+
   @override
   String toString() {
     return 'ProjectNode{name: $name, directory: ${directory.path}}';

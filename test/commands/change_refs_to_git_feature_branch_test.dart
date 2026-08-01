@@ -381,6 +381,66 @@ void main() {
           expect(localMessages.join('\n'), contains('No files were changed.'));
         });
 
+        test('writes a git ref for a transitive dependency', () async {
+          // project1 -> project2 -> project3. Pub reads dependency_overrides
+          // from the root package only, so project1 has to pin project3 to
+          // the feature branch itself - otherwise it resolves against the
+          // published constraint while its siblings sit on the branch.
+          final workspace = createTempDir('git_feature_transitive_ws');
+          final project1 = Directory(p.join(workspace.path, 'project1'));
+          final project2 = Directory(p.join(workspace.path, 'project2'));
+          final project3 = Directory(p.join(workspace.path, 'project3'));
+          await createDirs(<Directory>[project1, project2, project3]);
+
+          File(p.join(project1.path, 'pubspec.yaml')).writeAsStringSync(
+            'name: project1\n'
+            'version: 1.0.0\n'
+            'dependencies:\n'
+            '  project2: ^1.0.0\n',
+          );
+          File(p.join(project2.path, 'pubspec.yaml')).writeAsStringSync(
+            'name: project2\n'
+            'version: 1.0.0\n'
+            'dependencies:\n'
+            '  project3: ^1.0.0\n',
+          );
+          File(p.join(project3.path, 'pubspec.yaml')).writeAsStringSync(
+            'name: project3\n'
+            'version: 1.0.0\n',
+          );
+
+          for (final MapEntry<Directory, String> entry in <Directory, String>{
+            project2: 'git@github.com:user/project2.git',
+            project3: 'git@github.com:user/project3.git',
+          }.entries) {
+            Process.runSync('git', <String>[
+              'remote',
+              'set-url',
+              'origin',
+              entry.value,
+            ], workingDirectory: entry.key.path);
+          }
+
+          await ChangeRefsToGitFeatureBranch(ggLog: messages.add).get(
+            directory: project1,
+            ggLog: messages.add,
+            gitRef: 'feature/transitive',
+          );
+
+          final overrides = File(
+            p.join(project1.path, 'pubspec_overrides.yaml'),
+          ).readAsStringSync();
+          expect(overrides, contains('project2:'));
+          expect(overrides, contains('project3:'));
+          expect(overrides, contains('url: git@github.com:user/project3.git'));
+          expect(
+            RegExp(r'ref: feature/transitive').allMatches(overrides).length,
+            2,
+          );
+
+          deleteDirs(<Directory>[workspace]);
+        });
+
         test('replaces the local path overrides with git refs', () async {
           final dProject1 = Directory(
             p.join(dWorkspaceOverridesPresent.path, 'project1'),

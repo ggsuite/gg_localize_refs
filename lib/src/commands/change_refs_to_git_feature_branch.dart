@@ -144,12 +144,13 @@ class ChangeRefsToGitFeatureBranch extends DirCommand<dynamic> {
     final projectDir = node.directory;
     _support.ensureGitignoreAllowsPubspecOverrides(projectDir);
 
-    // The overrides are written for *every* workspace dependency, also for one
-    // that pubspec.yaml already declares as a git ref: pub does not merge the
-    // two sections, so an entry left out here would resolve against the
-    // published constraint while its siblings sit on the feature branch.
+    // The overrides are written for every *transitive* workspace dependency,
+    // also for one that pubspec.yaml already declares as a git ref: pub does
+    // not merge the two sections and reads them from the root package only, so
+    // an entry left out here would resolve against the published constraint
+    // while its siblings sit on the feature branch.
     final gitUrls = <String, String>{};
-    for (final dependency in node.dependencies.entries) {
+    for (final dependency in node.transitiveDependencies.entries) {
       gitUrls[dependency.key] = await Utils.getGitRemoteUrl(
         dependency.value.directory,
         dependency.key,
@@ -193,7 +194,7 @@ class ChangeRefsToGitFeatureBranch extends DirCommand<dynamic> {
     ggLog('Localize refs of ${node.name}');
 
     final replacedDependencies = <String, dynamic>{};
-    for (final dependency in node.dependencies.entries) {
+    for (final dependency in node.transitiveDependencies.entries) {
       final reference = references[dependency.key];
       final value = reference?.value?.toString();
       if (value == null) {
@@ -207,7 +208,7 @@ class ChangeRefsToGitFeatureBranch extends DirCommand<dynamic> {
     await _support.writeTypeScriptBackup(node.directory, replacedDependencies);
 
     var updatedContent = manifestContent;
-    for (final dependency in node.dependencies.entries) {
+    for (final dependency in node.transitiveDependencies.entries) {
       final reference = references[dependency.key];
       final value = reference?.value?.toString();
       if (reference == null || value == null) {
@@ -236,7 +237,7 @@ class ChangeRefsToGitFeatureBranch extends DirCommand<dynamic> {
     required ProjectNode node,
     required Map<String, DependencyReference> references,
   }) {
-    for (final dependency in node.dependencies.entries) {
+    for (final dependency in node.transitiveDependencies.entries) {
       final reference = references[dependency.key];
       final value = reference?.value?.toString();
       if (value == null) {
