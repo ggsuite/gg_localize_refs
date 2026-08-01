@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+### Changed
+
+- Make sure package is already published in registry before publishing
+
 ## 3.2.0 - 2026-08-01
 
 ### Changed

@@ -186,10 +186,15 @@ class ManifestCommandSupport {
   }
 
   /// Writes the TypeScript backup file for [projectDirectory].
+  ///
+  /// The backup lives in `.gg`, so the directory and its `.gitignore` entries
+  /// are ensured here the same way the Dart commands do it.
   Future<void> writeTypeScriptBackup(
     Directory projectDirectory,
     Map<String, dynamic> replacedDependencies,
   ) async {
+    ensureDartBackupDir(projectDirectory);
+    ensureGitignoreHasDartBackupEntries(projectDirectory);
     final backupFile = Utils.typeScriptBackupFile(projectDirectory);
     await backupFile.writeAsString(jsonEncode(replacedDependencies));
   }

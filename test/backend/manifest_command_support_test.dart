@@ -385,7 +385,7 @@ void main() {
     });
 
     group('writeTypeScriptBackup()', () {
-      test('writes backup file into project root', () async {
+      test('writes backup file into the .gg directory', () async {
         final workspace = createWorkspace('manifest_support_ts_backup');
         final projectDir = Directory(p.join(workspace.path, 'project'))
           ..createSync(recursive: true);
@@ -395,7 +395,7 @@ void main() {
         });
 
         final file = File(
-          p.join(projectDir.path, '.gg_localize_refs_backup.json'),
+          p.join(projectDir.path, '.gg', 'gg_localize_refs_backup.json'),
         );
         expect(file.existsSync(), isTrue);
         final data =

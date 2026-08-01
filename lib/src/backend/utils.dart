@@ -30,11 +30,25 @@ class Utils {
   }
 
   /// Returns the TypeScript backup file used by this package.
+  ///
+  /// It lives beside the Dart backup in `.gg` so both languages keep their
+  /// bookkeeping in one place. Older checkouts wrote it hidden into the
+  /// project root; that file is moved on first access.
   static File typeScriptBackupFile(Directory directory) {
-    return File(p.join(directory.path, '.gg_localize_refs_backup.json'));
+    final file = _inBackupDir(directory, 'gg_localize_refs_backup.json');
+    final legacyRoot = File(
+      p.join(directory.path, '.gg_localize_refs_backup.json'),
+    );
+
+    if (!file.existsSync() && legacyRoot.existsSync()) {
+      Directory(p.dirname(file.path)).createSync(recursive: true);
+      legacyRoot.renameSync(file.path);
+    }
+
+    return file;
   }
 
-  /// Returns the Dart backup directory used by this package.
+  /// Returns the backup directory used by this package.
   static Directory dartBackupDir(Directory directory) {
     return Directory(p.join(directory.path, '.gg'));
   }
