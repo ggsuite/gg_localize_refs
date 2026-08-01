@@ -97,7 +97,7 @@ void main() {
     });
 
     group('backup path helpers', () {
-      test('typeScriptBackupFile returns backup json inside .gg', () {
+      test('typeScriptBackupFile returns backup file in project root', () {
         final workspace = createWorkspace('utils_ts_backup_file');
         final project = Directory(p.join(workspace.path, 'project'));
         project.createSync(recursive: true);
@@ -106,23 +106,8 @@ void main() {
 
         expect(
           file.path,
-          p.join(project.path, '.gg', 'gg_localize_refs_backup.json'),
-        );
-      });
-
-      test('typeScriptBackupFile moves the legacy root backup into .gg', () {
-        final workspace = createWorkspace('utils_ts_backup_migrate');
-        final project = Directory(p.join(workspace.path, 'project'));
-        project.createSync(recursive: true);
-        final legacy = File(
           p.join(project.path, '.gg_localize_refs_backup.json'),
-        )..writeAsStringSync('{"a": "^1.0.0"}');
-
-        final file = Utils.typeScriptBackupFile(project);
-
-        expect(legacy.existsSync(), isFalse);
-        expect(file.existsSync(), isTrue);
-        expect(file.readAsStringSync(), '{"a": "^1.0.0"}');
+        );
       });
 
       test('dartBackupDir returns .gg directory in project root', () {

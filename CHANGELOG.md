@@ -4,7 +4,7 @@
 
 ### Changed
 
-- Make sure package is already published in registry before publishing
+- Adapt first-publish gate to merge-only mode from main
 
 ## 3.2.0 - 2026-08-01
 

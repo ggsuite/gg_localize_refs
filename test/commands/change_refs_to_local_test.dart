@@ -862,7 +862,7 @@ void main() {
           expect(resultJson, contains('"test2_ts": "link:../project2"'));
 
           final backupJson = File(
-            p.join(dProject1.path, '.gg', 'gg_localize_refs_backup.json'),
+            p.join(dProject1.path, '.gg_localize_refs_backup.json'),
           ).readAsStringSync();
           expect(backupJson, contains('^1.0.0'));
 
@@ -947,7 +947,7 @@ void main() {
           expect(resultJson, contains('"proj2_ts": "link:../project2"'));
 
           final backupJson = File(
-            p.join(project1.path, '.gg', 'gg_localize_refs_backup.json'),
+            p.join(project1.path, '.gg_localize_refs_backup.json'),
           ).readAsStringSync();
           expect(backupJson, contains('^1.0.0'));
 
