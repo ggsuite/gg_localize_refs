@@ -5,6 +5,7 @@
 ### Changed
 
 - \#gg: changed references to git
+- \#gg: changed references to pub.dev
 
 ## 3.1.0 - 2026-07-31
 
