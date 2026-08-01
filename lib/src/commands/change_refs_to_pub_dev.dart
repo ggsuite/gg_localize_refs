@@ -96,7 +96,7 @@ class ChangeRefsToPubDev extends DirCommand<dynamic> {
   }
 
   // ...........................................................................
-  /// Logs the removal of the local path overrides of [node].
+  /// Logs the removal of the overrides of [node].
   void _logOverridesRemoval({
     required ProjectNode node,
     required PubspecOverridesEdit edit,
@@ -107,7 +107,7 @@ class ChangeRefsToPubDev extends DirCommand<dynamic> {
     }
 
     ggLog(
-      'Remove the local path overrides of ${node.name} from '
+      'Remove the dependency overrides of ${node.name} from '
       '${PubspecOverridesIo.fileName}',
     );
   }
@@ -152,8 +152,9 @@ class ChangeRefsToPubDev extends DirCommand<dynamic> {
     required FileChangesBuffer fileChangesBuffer,
     required GgLog ggLog,
   }) async {
-    // Going remote means leaving local mode: the path overrides of
-    // pubspec_overrides.yaml would keep shadowing the restored refs.
+    // Going remote means leaving local and git feature branch mode: the
+    // overrides of pubspec_overrides.yaml would keep shadowing the published
+    // constraints of pubspec.yaml.
     _logOverridesRemoval(
       node: node,
       edit: _support.bufferPubspecOverridesRemoval(

@@ -4,44 +4,6 @@ import 'package:yaml/yaml.dart';
 
 void main() {
   group('yaml_utils', () {
-    group('addPublishToNone', () {
-      test('adds publish_to: none after version if not present', () {
-        const yaml = 'name: test\nversion: 1.0.0\n';
-        final result = addPublishToNone(yaml);
-        expect(result, 'name: test\nversion: 1.0.0\npublish_to: none\n');
-      });
-
-      test('does not add if already present', () {
-        const yaml = 'name: test\nversion: 1.0.0\npublish_to: none\n';
-        final result = addPublishToNone(yaml);
-        expect(result, yaml);
-      });
-
-      test('adds at end if no version', () {
-        const yaml = 'name: test';
-        final result = addPublishToNone(yaml);
-        expect(result, 'name: test\npublish_to: none\n');
-      });
-
-      test('keeps CRLF line endings when inserting after version', () {
-        const yaml = 'name: test\r\nversion: 1.0.0\r\n';
-        final result = addPublishToNone(yaml);
-        expect(result, 'name: test\r\nversion: 1.0.0\r\npublish_to: none\r\n');
-      });
-
-      test('does not add if already present in a CRLF file', () {
-        const yaml = 'name: test\r\nversion: 1.0.0\r\npublish_to: none\r\n';
-        final result = addPublishToNone(yaml);
-        expect(result, yaml);
-      });
-
-      test('adds at end with CRLF if no version', () {
-        const yaml = 'name: test\r\ndescription: x';
-        final result = addPublishToNone(yaml);
-        expect(result, 'name: test\r\ndescription: x\r\npublish_to: none\r\n');
-      });
-    });
-
     group('removePublishToNone', () {
       test('removes publish_to: none if present', () {
         const yaml = 'name: test\nversion: 1.0.0\npublish_to: none\n';

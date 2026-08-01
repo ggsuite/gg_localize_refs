@@ -14,29 +14,6 @@ String _newlineOf(String yamlString) =>
 /// nor `\r` — a `.*\n` pattern silently fails on CRLF files.
 final _publishToLineRegex = RegExp(r'^publish_to:[^\r\n]*', multiLine: true);
 
-/// Adds 'publish_to: none' to the YAML string if not present.
-/// Inserts it after the 'version:' line to maintain a logical order.
-String addPublishToNone(String yamlString) {
-  if (yamlString.contains(
-    RegExp(r'^publish_to:\s*none\s*$', multiLine: true),
-  )) {
-    return yamlString;
-  }
-
-  final nl = _newlineOf(yamlString);
-  final versionRegex = RegExp(r'^version:[^\r\n]*', multiLine: true);
-  final match = versionRegex.firstMatch(yamlString);
-  if (match != null) {
-    return yamlString.replaceFirst(
-      versionRegex,
-      '${match.group(0)}${nl}publish_to: none',
-    );
-  }
-
-  // If no version found, add at the end
-  return '$yamlString${nl}publish_to: none$nl';
-}
-
 /// Removes 'publish_to: none' from the YAML string if present.
 String removePublishToNone(String yamlString) {
   return yamlString.replaceAll(

@@ -135,7 +135,7 @@ class ChangeRefsToLocal extends DirCommand<dynamic> {
             to: dependency.value.directory,
           ),
       },
-      inheritedOverrides: _dependencyOverridesOf(yamlMap),
+      inheritedOverrides: _support.dependencyOverridesOf(yamlMap),
     );
 
     if (edit.isUnchanged) {
@@ -240,22 +240,6 @@ class ChangeRefsToLocal extends DirCommand<dynamic> {
   String _relativePathTo({required Directory from, required Directory to}) {
     final relative = p.relative(to.path, from: from.path);
     return p.posix.joinAll(p.split(relative));
-  }
-
-  /// Returns the `dependency_overrides` declared in [yamlMap].
-  Map<String, dynamic> _dependencyOverridesOf(dynamic yamlMap) {
-    if (yamlMap is! Map) {
-      return const <String, dynamic>{};
-    }
-
-    final section = yamlMap['dependency_overrides'];
-    if (section is! Map) {
-      return const <String, dynamic>{};
-    }
-
-    return <String, dynamic>{
-      for (final entry in section.entries) entry.key.toString(): entry.value,
-    };
   }
 
   /// Returns whether [pubspecContent] declares `publish_to: none`.

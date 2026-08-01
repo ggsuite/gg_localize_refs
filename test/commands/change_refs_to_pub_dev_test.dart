@@ -332,7 +332,7 @@ void main() {
           );
           expect(
             localMessages.join('\n'),
-            contains('Remove the local path overrides of test1'),
+            contains('Remove the dependency overrides of test1'),
           );
         });
 

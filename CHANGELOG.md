@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+### Fixed
+
+- Fix missing git references
+
 ## 3.2.2 - 2026-08-01
 
 ### Changed
