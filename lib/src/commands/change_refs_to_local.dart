@@ -126,10 +126,13 @@ class ChangeRefsToLocal extends DirCommand<dynamic> {
       ggLog: ggLog,
     );
 
+    // The overrides cover the *transitive* workspace dependencies: pub reads
+    // them from the root package only, so a project that is left out here is
+    // resolved from the registry while its siblings come from the workspace.
     final edit = _overrides.addPathOverrides(
       projectDir: projectDir,
       pathsByDependency: <String, String>{
-        for (final dependency in node.dependencies.entries)
+        for (final dependency in node.transitiveDependencies.entries)
           dependency.key: _relativePathTo(
             from: projectDir,
             to: dependency.value.directory,
@@ -274,7 +277,7 @@ class ChangeRefsToLocal extends DirCommand<dynamic> {
     final replacedDependencies = <String, dynamic>{};
     var updatedContent = manifestContent;
 
-    for (final dependency in node.dependencies.entries) {
+    for (final dependency in node.transitiveDependencies.entries) {
       final reference = references[dependency.key];
       if (reference == null) {
         continue;

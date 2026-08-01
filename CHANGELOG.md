@@ -1,5 +1,20 @@
 # Changelog
 
+## 3.3.1 - 2026-08-01
+
+### Changed
+
+- gg_localize_refs: write overrides for transitive local dependencies
+
+## 3.4.0 - 2026-08-01
+
+### Fixed
+
+- Override transitive workspace dependencies too. Pub honors
+`dependency_overrides` only from the root package of a resolution, so a
+project two steps down was resolved from pub.dev while its siblings came
+from the ticket workspace.
+
 ## 3.3.0 - 2026-08-01
 
 ### Fixed

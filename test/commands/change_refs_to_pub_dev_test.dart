@@ -34,6 +34,7 @@ void main() {
   Directory dWorkspaceSucceed = Directory('');
   Directory dWorkspaceSucceedGit = Directory('');
   Directory dWorkspaceOverridesPresent = Directory('');
+  Directory dWorkspaceTransitive = Directory('');
 
   Directory dWorkspaceSucceedTs = Directory('');
   Directory dWorkspaceSucceedGitTs = Directory('');
@@ -63,6 +64,7 @@ void main() {
       'unlocalize_already_unlocalized',
     );
     dWorkspaceOverridesPresent = createTempDir('unlocalize_overrides_present');
+    dWorkspaceTransitive = createTempDir('unlocalize_transitive');
 
     dWorkspaceSucceedTs = createTempDir('unlocalize_ts_succeed');
     dWorkspaceSucceedGitTs = createTempDir('unlocalize_ts_succeed_git');
@@ -100,6 +102,10 @@ void main() {
         join('test', 'sample_folder', 'unlocalize_refs', 'overrides_present'),
       ),
       dWorkspaceOverridesPresent,
+    );
+    copyDirectory(
+      Directory(join('test', 'sample_folder', 'localize_refs', 'transitive')),
+      dWorkspaceTransitive,
     );
 
     copyDirectory(
@@ -144,6 +150,7 @@ void main() {
       dWorkspaceSucceedGit,
       dWorkspaceAlreadyUnlocalized,
       dWorkspaceOverridesPresent,
+      dWorkspaceTransitive,
       dWorkspaceSucceedTs,
       dWorkspaceSucceedGitTs,
       dWorkspaceAlreadyUnlocalizedTs,
@@ -334,6 +341,63 @@ void main() {
             localMessages.join('\n'),
             contains('Remove the dependency overrides of test1'),
           );
+        });
+
+        test('removes the override of a transitive dependency', () async {
+          // test1 -> test2 -> test3. change-refs-to-local writes an entry for
+          // test3 too, so the way back to pub.dev has to drop it - the
+          // manifest of test1 does not name test3 anywhere.
+          final dProject1 = Directory(
+            join(dWorkspaceTransitive.path, 'project1'),
+          );
+
+          final overrides = File(
+            join(dProject1.path, 'pubspec_overrides.yaml'),
+          );
+          overrides.writeAsStringSync(
+            'dependency_overrides:\n'
+            '  test2:\n'
+            '    path: ../project2\n'
+            '  test3:\n'
+            '    path: ../project3\n',
+          );
+
+          await ChangeRefsToPubDev(
+            ggLog: messages.add,
+          ).get(directory: dProject1, ggLog: messages.add);
+
+          expect(overrides.existsSync(), isFalse);
+        });
+
+        test('removes the git override of a transitive dependency', () async {
+          // A git override is only recognized as owned when its key names a
+          // workspace dependency - and test3 is one of test1 only
+          // transitively. Otherwise the feature branch ref of test3 would
+          // survive the switch back to pub.dev.
+          final dProject1 = Directory(
+            join(dWorkspaceTransitive.path, 'project1'),
+          );
+
+          final overrides = File(
+            join(dProject1.path, 'pubspec_overrides.yaml'),
+          );
+          overrides.writeAsStringSync(
+            'dependency_overrides:\n'
+            '  test2:\n'
+            '    git:\n'
+            '      url: git@github.com:user/project2.git\n'
+            '      ref: feature123\n'
+            '  test3:\n'
+            '    git:\n'
+            '      url: git@github.com:user/project3.git\n'
+            '      ref: feature123\n',
+          );
+
+          await ChangeRefsToPubDev(
+            ggLog: messages.add,
+          ).get(directory: dProject1, ggLog: messages.add);
+
+          expect(overrides.existsSync(), isFalse);
         });
 
         test('keeps hand written entries of pubspec_overrides.yaml', () async {

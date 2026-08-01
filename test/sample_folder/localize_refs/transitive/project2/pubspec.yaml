@@ -1,0 +1,4 @@
+name: test2
+version: 1.0.0
+dependencies:
+  test3: ^1.0.0

@@ -30,6 +30,7 @@ void main() {
   Directory dNodeNotFound = Directory('');
   Directory dWorkspaceSucceed = Directory('');
   Directory dWorkspaceAlreadyLocalized = Directory('');
+  Directory dWorkspaceTransitive = Directory('');
 
   Directory dWorkspaceLegacy = Directory('');
   Directory dWorkspaceLegacyPrivate = Directory('');
@@ -60,6 +61,7 @@ void main() {
     dNodeNotFound = createTempDir('node_not_found', 'project1');
     dWorkspaceSucceed = createTempDir('succeed');
     dWorkspaceAlreadyLocalized = createTempDir('already_localized');
+    dWorkspaceTransitive = createTempDir('transitive');
 
     dWorkspaceLegacy = createTempDir('legacy_localized');
     dWorkspaceLegacyPrivate = createTempDir('legacy_localized_private');
@@ -77,6 +79,7 @@ void main() {
       dWorkspaceLegacyNoBackup,
     );
     copyLocalizeScenario('overrides_unrelated', dWorkspaceOverridesUnrelated);
+    copyLocalizeScenario('transitive', dWorkspaceTransitive);
     copyDirectory(
       Directory(
         p.join('test', 'sample_folder', 'unlocalize_refs', 'json_not_found'),
@@ -125,6 +128,7 @@ void main() {
       dWorkspaceLegacyNoBackup,
       dWorkspaceOverridesUnrelated,
       dWorkspaceLegacyNoDepsBackup,
+      dWorkspaceTransitive,
       dWorkspaceSucceedTs,
       dWorkspaceAlreadyLocalizedTs,
     ]);
@@ -233,6 +237,44 @@ void main() {
       });
 
       group('should succeed', () {
+        test('overriding a transitive workspace dependency', () async {
+          // test1 -> test2 -> test3. Pub reads dependency_overrides from the
+          // root package only, so the override test2 declares for test3 is
+          // ignored while building test1: without an entry of its own, test1
+          // would resolve test3 from pub.dev.
+          final dProject1 = Directory(
+            p.join(dWorkspaceTransitive.path, 'project1'),
+          );
+
+          await ChangeRefsToLocal(
+            ggLog: messages.add,
+          ).get(directory: dProject1, ggLog: messages.add);
+
+          final overrides = File(
+            p.join(dProject1.path, 'pubspec_overrides.yaml'),
+          ).readAsStringSync();
+          expect(overrides, contains('path: ../project2'));
+          expect(overrides, contains('path: ../project3'));
+
+          // The direct dependency keeps overriding only what it reaches.
+          final overrides2 = File(
+            p.join(
+              dWorkspaceTransitive.path,
+              'project2',
+              'pubspec_overrides.yaml',
+            ),
+          ).readAsStringSync();
+          expect(overrides2, contains('path: ../project3'));
+          expect(overrides2, isNot(contains('path: ../project1')));
+
+          // pubspec.yaml declares test3 nowhere - the override is the only
+          // place the transitive dependency shows up.
+          expect(
+            File(p.join(dProject1.path, 'pubspec.yaml')).readAsStringSync(),
+            isNot(contains('test3')),
+          );
+        });
+
         test('when pubspec is correct', () async {
           final dProject1 = Directory(
             p.join(dWorkspaceSucceed.path, 'project1'),
