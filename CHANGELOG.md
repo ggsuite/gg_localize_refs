@@ -1,11 +1,16 @@
 # Changelog
 
-## Unreleased
+## 3.2.2 - 2026-08-01
 
 ### Changed
 
+- Fix: Skipping unchanged repos from publishing does not work
 - Make sure package is already published in registry before publishing
 - Adapt first-publish gate to merge-only mode. Make sure package is at least one time published before publishing.
+
+### Fixed
+
+- Fix error with branch names that do only contain numbers
 
 ## 3.2.1 - 2026-08-01
 

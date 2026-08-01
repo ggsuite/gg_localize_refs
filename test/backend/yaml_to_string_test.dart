@@ -1,5 +1,6 @@
 import 'package:gg_localize_refs/src/backend/yaml_to_string.dart';
 import 'package:test/test.dart';
+import 'package:yaml/yaml.dart';
 
 void main() {
   group('yamlToString', () {
@@ -264,6 +265,55 @@ users:
       - user
 ''';
       expect(result, expected);
+    });
+    group('quotes a string that would change type', () {
+      test('a numeric git ref stays a string', () {
+        // A ticket branch named »55« written bare reads back as an int, and
+        // pub rejects the manifest: »The 'ref' field of the description must
+        // be a string«.
+        final result = yamlToString(<String, dynamic>{
+          'git': <String, dynamic>{
+            'url': 'git@github.com:ggsuite/gg_publish.git',
+            'ref': '55',
+          },
+        });
+
+        expect(result, contains("ref: '55'"));
+        // The url has no »: « so it needs no quotes and keeps its plain look.
+        expect(result, contains('url: git@github.com:ggsuite/gg_publish.git'));
+
+        final parsed = loadYaml(result) as YamlMap;
+        expect((parsed['git'] as YamlMap)['ref'], isA<String>());
+        expect((parsed['git'] as YamlMap)['ref'], '55');
+      });
+
+      test('other type-changing scalars survive the round trip', () {
+        for (final value in <String>['3.2', 'true', 'no', 'null', '']) {
+          final result = yamlToString(<String, dynamic>{'ref': value});
+          final parsed = loadYaml(result) as YamlMap;
+          expect(parsed['ref'], value, reason: 'for »$value«');
+        }
+      });
+
+      test('a real number is still written as a number', () {
+        final result = yamlToString(<String, dynamic>{'count': 55});
+        expect(result, 'count: 55\n');
+        expect((loadYaml(result) as YamlMap)['count'], isA<int>());
+      });
+
+      test('an ordinary string keeps its plain form', () {
+        final result = yamlToString(<String, dynamic>{'ref': 'main'});
+        expect(result, 'ref: main\n');
+      });
+
+      test('a ready-made YAML fragment is passed through untouched', () {
+        // Callers hand pre-quoted fragments to this function — quoting them
+        // again would nest the quotes and corrupt the value.
+        final result = yamlToString(<String, dynamic>{
+          'tag_pattern': '"{{version}}"',
+        });
+        expect(result, 'tag_pattern: "{{version}}"\n');
+      });
     });
   });
 }

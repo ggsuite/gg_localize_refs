@@ -453,7 +453,13 @@ void main() {
               'name: project2\n'
               'version: 1.0.0\n',
             );
-            File(p.join(project1.path, '.gg', 'gg_localize_refs_backup.json'))
+            File(
+                p.join(
+                  project1.path,
+                  '.gg',
+                  'gg_localize_refs_backup_dart.json',
+                ),
+              )
               ..createSync(recursive: true)
               ..writeAsStringSync('{"project2":"^7.0.0"}');
 
@@ -475,7 +481,7 @@ void main() {
             );
 
             final backupJson = File(
-              p.join(project1.path, '.gg', 'gg_localize_refs_backup.json'),
+              p.join(project1.path, '.gg', 'gg_localize_refs_backup_dart.json'),
             ).readAsStringSync();
             final backupMap = jsonDecode(backupJson) as Map<String, dynamic>;
 
@@ -506,7 +512,13 @@ void main() {
               'name: project2\n'
               'version: 1.0.0\n',
             );
-            File(p.join(project1.path, '.gg', 'gg_localize_refs_backup.json'))
+            File(
+                p.join(
+                  project1.path,
+                  '.gg',
+                  'gg_localize_refs_backup_dart.json',
+                ),
+              )
               ..createSync(recursive: true)
               ..writeAsStringSync('{"project2":"^8.0.0"}');
 
@@ -528,7 +540,7 @@ void main() {
             );
 
             final backupJson = File(
-              p.join(project1.path, '.gg', 'gg_localize_refs_backup.json'),
+              p.join(project1.path, '.gg', 'gg_localize_refs_backup_dart.json'),
             ).readAsStringSync();
             final backupMap = jsonDecode(backupJson) as Map<String, dynamic>;
 
@@ -575,7 +587,7 @@ void main() {
             );
 
             final backupJson = File(
-              p.join(project1.path, '.gg', 'gg_localize_refs_backup.json'),
+              p.join(project1.path, '.gg', 'gg_localize_refs_backup_dart.json'),
             ).readAsStringSync();
             final backupMap = jsonDecode(backupJson) as Map<String, dynamic>;
 
@@ -625,7 +637,7 @@ void main() {
           );
 
           final backupJson = File(
-            p.join(project1.path, '.gg', 'gg_localize_refs_backup.json'),
+            p.join(project1.path, '.gg', 'gg_localize_refs_backup_dart.json'),
           ).readAsStringSync();
           final backupMap = jsonDecode(backupJson) as Map<String, dynamic>;
 

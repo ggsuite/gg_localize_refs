@@ -30,44 +30,76 @@ class Utils {
   }
 
   /// Returns the TypeScript backup file used by this package.
-  static File typeScriptBackupFile(Directory directory) {
-    return File(p.join(directory.path, '.gg_localize_refs_backup.json'));
-  }
+  ///
+  /// It lives beside the Dart backup in `.gg`, under its own `_ts` name so
+  /// the two never collide in a cross-language bridge. Older checkouts wrote
+  /// it hidden into the project root; that file is moved on first access.
+  static File typeScriptBackupFile(Directory directory) => _inBackupDir(
+    directory,
+    'gg_localize_refs_backup_ts.json',
+    legacyPaths: const <String>['.gg_localize_refs_backup.json'],
+  );
 
-  /// Returns the Dart backup directory used by this package.
+  /// Returns the backup directory used by this package.
   static Directory dartBackupDir(Directory directory) {
     return Directory(p.join(directory.path, '.gg'));
   }
 
   /// Returns the Dart backup file used by this package.
-  static File dartBackupFile(Directory directory) {
-    return _inBackupDir(directory, 'gg_localize_refs_backup.json');
-  }
+  static File dartBackupFile(Directory directory) => _inBackupDir(
+    directory,
+    'gg_localize_refs_backup_dart.json',
+    legacyPaths: const <String>[
+      '.gg/gg_localize_refs_backup.json',
+      '.gg/.gg_localize_refs_backup.json',
+    ],
+  );
 
   /// Returns the Dart backup copy of pubspec.yaml.
-  static File dartBackupYamlFile(Directory directory) {
-    return _inBackupDir(directory, 'gg_localize_refs_backup.yaml');
-  }
+  static File dartBackupYamlFile(Directory directory) => _inBackupDir(
+    directory,
+    'gg_localize_refs_backup_dart.yaml',
+    legacyPaths: const <String>[
+      '.gg/gg_localize_refs_backup.yaml',
+      '.gg/.gg_localize_refs_backup.yaml',
+    ],
+  );
 
   /// Returns the backup file that stores the original `publish_to` value.
   static File dartPublishToBackupFile(Directory directory) {
     return _inBackupDir(directory, 'gg_localize_refs_publish_to_backup.json');
   }
 
-  /// Returns `<directory>/.gg/<name>`, migrating the dot-prefixed name an
-  /// earlier version wrote.
+  /// Returns `<directory>/.gg/<name>`, migrating a file an earlier version
+  /// wrote under one of [legacyPaths] (repo-relative) to that location.
   ///
-  /// The files inside `.gg` are no longer hidden. A checkout made before that
-  /// change still carries `.<name>`; renaming it on first access keeps the
-  /// legacy dependency and `publish_to` backups readable instead of silently
-  /// falling back to "no backup found".
-  static File _inBackupDir(Directory directory, String name) {
+  /// Two renames happened over time: the files inside `.gg` are no longer
+  /// hidden, and the dependency backups carry a `_dart`/`_ts` suffix so the
+  /// two languages cannot overwrite each other. Migrating on first access
+  /// keeps an older checkout's backups readable instead of silently falling
+  /// back to "no backup found". [legacyPaths] defaults to the dot-prefixed
+  /// name inside `.gg`.
+  static File _inBackupDir(
+    Directory directory,
+    String name, {
+    List<String>? legacyPaths,
+  }) {
     final backupDir = dartBackupDir(directory);
     final file = File(p.join(backupDir.path, name));
-    final legacy = File(p.join(backupDir.path, '.$name'));
+    if (file.existsSync()) {
+      return file;
+    }
 
-    if (!file.existsSync() && legacy.existsSync()) {
-      legacy.renameSync(file.path);
+    final candidates = legacyPaths ?? <String>['.gg/.$name'];
+    for (final candidate in candidates) {
+      final legacy = File(
+        p.join(directory.path, p.joinAll(candidate.split('/'))),
+      );
+      if (legacy.existsSync()) {
+        backupDir.createSync(recursive: true);
+        legacy.renameSync(file.path);
+        break;
+      }
     }
 
     return file;

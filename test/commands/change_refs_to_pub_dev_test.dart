@@ -395,7 +395,7 @@ void main() {
           expect(localMessages[1], contains('No files were changed'));
         });
 
-        test('when .gg_localize_refs_backup.json does not exist', () async {
+        test('when gg_localize_refs_backup_dart.json does not exist', () async {
           final localMessages = <String>[];
 
           final dProject1 = Directory(join(dJsonNotFound.path, 'project1'));
@@ -437,7 +437,9 @@ void main() {
               'version: 1.0.0\n'
               'publish_to: none\n',
             );
-            File(join(project1.path, '.gg', 'gg_localize_refs_backup.json'))
+            File(
+                join(project1.path, '.gg', 'gg_localize_refs_backup_dart.json'),
+              )
               ..createSync(recursive: true)
               ..writeAsStringSync('{"project2":"^2.0.4"}');
 
@@ -488,7 +490,9 @@ void main() {
               'name: project2\n'
               'version: 1.0.0\n',
             );
-            File(join(project1.path, '.gg', 'gg_localize_refs_backup.json'))
+            File(
+                join(project1.path, '.gg', 'gg_localize_refs_backup_dart.json'),
+              )
               ..createSync(recursive: true)
               ..writeAsStringSync('{"project2":"^2.0.4"}');
 
@@ -526,7 +530,7 @@ void main() {
             'name: project2\n'
             'version: 1.0.0\n',
           );
-          File(join(project1.path, '.gg', 'gg_localize_refs_backup.json'))
+          File(join(project1.path, '.gg', 'gg_localize_refs_backup_dart.json'))
             ..createSync(recursive: true)
             ..writeAsStringSync('{"project2":"^2.0.4"}');
 
@@ -563,7 +567,9 @@ void main() {
               'version: 1.0.0\n'
               'publish_to: none\n',
             );
-            File(join(project1.path, '.gg', 'gg_localize_refs_backup.json'))
+            File(
+                join(project1.path, '.gg', 'gg_localize_refs_backup_dart.json'),
+              )
               ..createSync(recursive: true)
               ..writeAsStringSync('{"project2":{"version":"^5.0.0"}}');
 
@@ -657,7 +663,7 @@ void main() {
         });
 
         test(
-          'TypeScript: when .gg_localize_refs_backup.json does not exist',
+          'TypeScript: when gg_localize_refs_backup_ts.json does not exist',
           () async {
             final localMessages = <String>[];
 
@@ -810,7 +816,7 @@ void main() {
         'name: project2\n'
         'version: 1.0.0\n',
       );
-      File(join(project1.path, '.gg', 'gg_localize_refs_backup.json'))
+      File(join(project1.path, '.gg', 'gg_localize_refs_backup_dart.json'))
         ..createSync(recursive: true)
         ..writeAsStringSync('{"project2":"^3.1.4"}');
 
