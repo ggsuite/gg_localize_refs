@@ -204,10 +204,11 @@ packages:
   gg_publish:
     dependency: "direct main"
     description:
-      path: "../gg_publish"
-      relative: true
-    source: path
-    version: "3.9.3"
+      name: gg_publish
+      sha256: "7c99e05a30f6e39aab973e27c60177797278e8fc71a537cc5d5cbc115d93e42b"
+      url: "https://pub.dev"
+    source: hosted
+    version: "3.9.4"
   gg_status_printer:
     dependency: transitive
     description:
