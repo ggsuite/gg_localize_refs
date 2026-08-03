@@ -1,4 +1,8 @@
 {
+  // The Dart extension watches pubspec.yaml / pubspec_overrides.yaml with a
+  // FileSystemWatcher, which fires on gg's own CLI writes too and then
+  // rewrites the tracked pubspec.lock under the running command.
+  "dart.runPubGetOnPubspecChanges": "never",
   "dartImport.fixOnSave": true,
   "editor.formatOnSave": true,
   "editor.codeActionsOnSave": {
