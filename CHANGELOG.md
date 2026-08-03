@@ -1,10 +1,14 @@
 # Changelog
 
-## 3.3.1 - 2026-08-01
+## 3.3.2 - 2026-08-03
 
 ### Changed
 
-- gg_localize_refs: write overrides for transitive local dependencies
+- Prevent pubspec.lock interrupting publishing
+
+### Fixed
+
+- Fix issues with pubspec.lock
 
 ## 3.4.0 - 2026-08-01
 
@@ -14,6 +18,12 @@
 `dependency_overrides` only from the root package of a resolution, so a
 project two steps down was resolved from pub.dev while its siblings came
 from the ticket workspace.
+
+## 3.3.1 - 2026-08-01
+
+### Changed
+
+- gg_localize_refs: write overrides for transitive local dependencies
 
 ## 3.3.0 - 2026-08-01
 
