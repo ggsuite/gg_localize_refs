@@ -288,6 +288,64 @@ void main() {
       });
     });
 
+    group('bufferPnpmWorkspaceEdit()', () {
+      test('queues a write edit as a content change', () {
+        final workspace = createWorkspace('manifest_support_pnpm_write');
+        final projectDir = Directory(p.join(workspace.path, 'project'))
+          ..createSync(recursive: true);
+
+        final buffer = FileChangesBuffer();
+        support.bufferPnpmWorkspaceEdit(
+          projectDir: projectDir,
+          edit: const PubspecOverridesEdit.write('overrides:\n'),
+          fileChangesBuffer: buffer,
+        );
+
+        expect(buffer.deletions, isEmpty);
+        expect(buffer.files, hasLength(1));
+        expect(
+          buffer.files.single.file.path,
+          p.join(projectDir.path, 'pnpm-workspace.yaml'),
+        );
+        expect(buffer.files.single.content, 'overrides:\n');
+      });
+
+      test('queues a delete edit as a deletion', () {
+        final workspace = createWorkspace('manifest_support_pnpm_delete');
+        final projectDir = Directory(p.join(workspace.path, 'project'))
+          ..createSync(recursive: true);
+
+        final buffer = FileChangesBuffer();
+        support.bufferPnpmWorkspaceEdit(
+          projectDir: projectDir,
+          edit: const PubspecOverridesEdit.delete(),
+          fileChangesBuffer: buffer,
+        );
+
+        expect(buffer.files, isEmpty);
+        expect(buffer.deletions, hasLength(1));
+        expect(
+          buffer.deletions.single.path,
+          p.join(projectDir.path, 'pnpm-workspace.yaml'),
+        );
+      });
+
+      test('queues nothing for an unchanged edit', () {
+        final workspace = createWorkspace('manifest_support_pnpm_noop');
+        final projectDir = Directory(p.join(workspace.path, 'project'))
+          ..createSync(recursive: true);
+
+        final buffer = FileChangesBuffer();
+        support.bufferPnpmWorkspaceEdit(
+          projectDir: projectDir,
+          edit: const PubspecOverridesEdit.unchanged(),
+          fileChangesBuffer: buffer,
+        );
+
+        expect(buffer.isEmpty, isTrue);
+      });
+    });
+
     group('bufferPubspecOverridesRemoval()', () {
       test('queues the deletion for a dependency of the node', () {
         final workspace = createWorkspace('manifest_support_remove_overrides');

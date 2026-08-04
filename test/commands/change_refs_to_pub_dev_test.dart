@@ -40,6 +40,8 @@ void main() {
   Directory dWorkspaceSucceedGitTs = Directory('');
   Directory dWorkspaceAlreadyUnlocalizedTs = Directory('');
   Directory dJsonNotFoundTs = Directory('');
+  Directory dWorkspacePnpmOverridesPresent = Directory('');
+  Directory dWorkspacePnpmUserSettings = Directory('');
 
   setUp(() async {
     messages.clear();
@@ -137,6 +139,35 @@ void main() {
       ),
       dJsonNotFoundTs,
     );
+
+    dWorkspacePnpmOverridesPresent = createTempDir(
+      'unlocalize_ts_pnpm_overrides_present',
+    );
+    dWorkspacePnpmUserSettings = createTempDir(
+      'unlocalize_ts_pnpm_user_settings',
+    );
+    copyDirectory(
+      Directory(
+        join(
+          'test',
+          'sample_folder_ts',
+          'unlocalize_refs',
+          'pnpm_overrides_present',
+        ),
+      ),
+      dWorkspacePnpmOverridesPresent,
+    );
+    copyDirectory(
+      Directory(
+        join(
+          'test',
+          'sample_folder_ts',
+          'unlocalize_refs',
+          'pnpm_user_settings',
+        ),
+      ),
+      dWorkspacePnpmUserSettings,
+    );
   });
 
   tearDown(() {
@@ -155,6 +186,8 @@ void main() {
       dWorkspaceSucceedGitTs,
       dWorkspaceAlreadyUnlocalizedTs,
       dJsonNotFoundTs,
+      dWorkspacePnpmOverridesPresent,
+      dWorkspacePnpmUserSettings,
     ]);
   });
 
@@ -752,6 +785,61 @@ void main() {
           },
         );
 
+        test('TypeScript pnpm: deletes a pnpm-workspace.yaml this package '
+            'created and leaves package.json alone', () async {
+          final dProject1 = Directory(
+            join(dWorkspacePnpmOverridesPresent.path, 'project1'),
+          );
+          final manifestBefore = File(
+            join(dProject1.path, 'package.json'),
+          ).readAsStringSync();
+
+          final localMessages = <String>[];
+          final local = ChangeRefsToPubDev(ggLog: localMessages.add);
+          await local.get(directory: dProject1, ggLog: localMessages.add);
+
+          expect(
+            localMessages.join('\n'),
+            contains(
+              'Remove the dependency overrides of test1_ts from '
+              'pnpm-workspace.yaml',
+            ),
+          );
+
+          // The gg-created settings file is gone entirely …
+          expect(
+            File(join(dProject1.path, 'pnpm-workspace.yaml')).existsSync(),
+            isFalse,
+          );
+
+          // … and the manifest never carried localized refs to begin with.
+          final manifestAfter = File(
+            join(dProject1.path, 'package.json'),
+          ).readAsStringSync();
+          expect(manifestAfter, manifestBefore);
+        });
+
+        test('TypeScript pnpm: keeps a user settings file and only drops '
+            'the owned overrides', () async {
+          final dProject1 = Directory(
+            join(dWorkspacePnpmUserSettings.path, 'project1'),
+          );
+
+          final localMessages = <String>[];
+          final local = ChangeRefsToPubDev(ggLog: localMessages.add);
+          await local.get(directory: dProject1, ggLog: localMessages.add);
+
+          final overrides = File(
+            join(dProject1.path, 'pnpm-workspace.yaml'),
+          ).readAsStringSync();
+
+          // The user's settings and hand written pin survive; the owned
+          // link: override is gone.
+          expect(overrides, contains('allowBuilds'));
+          expect(overrides, contains('some_lib: ^2.0.0'));
+          expect(overrides, isNot(contains('link:')));
+        });
+
         test(
           'TypeScript: handles package.json without dependency sections',
           () async {
@@ -904,6 +992,49 @@ void main() {
       expect(restore.content, contains('project2: ^3.1.4'));
       expect(restore.content, isNot(contains('path:')));
       expect(restore.content, isNot(contains('git:')));
+
+      deleteDirs(<Directory>[workspace]);
+    });
+  });
+
+  group('restoreTypeScriptRefs()', () {
+    test('restores the backed up spec verbatim when remote specs are not '
+        'rebuilt', () async {
+      final workspace = createTempDir('restore_ts_refs_verbatim');
+      final project1 = Directory(join(workspace.path, 'project1'));
+      final project2 = Directory(join(workspace.path, 'project2'));
+      await createDirs(<Directory>[project1, project2]);
+
+      const manifest =
+          '{"name":"proj1_ts","version":"1.0.0",'
+          '"dependencies":{"proj2_ts":"link:../project2"}}';
+      File(join(project1.path, 'package.json')).writeAsStringSync(manifest);
+      File(
+        join(project2.path, 'package.json'),
+      ).writeAsStringSync('{"name":"proj2_ts","version":"1.0.0"}');
+      File(join(project1.path, '.gg', 'gg_localize_refs_backup_ts.json'))
+        ..createSync(recursive: true)
+        ..writeAsStringSync('{"proj2_ts":"^3.1.4"}');
+
+      final language = TypeScriptProjectLanguage();
+      final node = await language.createNode(project1);
+      node.dependencies['proj2_ts'] = await language.createNode(project2);
+
+      final unlocal = ChangeRefsToPubDev(ggLog: messages.add);
+      final restore = await unlocal.restoreTypeScriptRefs(
+        node: node,
+        manifestContent: manifest,
+        references: language.listDependencyReferences(
+          language.parseManifestContent(manifest),
+        ),
+        rebuildRemoteSpecs: false,
+      );
+
+      expect(restore.hadLocalizedRefs, isTrue);
+      expect(restore.backupMissing, isFalse);
+      // No IsOnPubDev, no git remote: the saved spec is used as it is.
+      expect(restore.content, contains('"proj2_ts": "^3.1.4"'));
+      expect(restore.content, isNot(contains('link:')));
 
       deleteDirs(<Directory>[workspace]);
     });

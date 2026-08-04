@@ -13,6 +13,7 @@ import 'package:gg_localize_refs/src/backend/file_changes_buffer.dart';
 import 'package:gg_localize_refs/src/backend/languages/project_language.dart';
 import 'package:gg_localize_refs/src/backend/manifest_command_support.dart';
 import 'package:gg_localize_refs/src/backend/package_json_io.dart';
+import 'package:gg_localize_refs/src/backend/pnpm_workspace_io.dart';
 import 'package:gg_localize_refs/src/backend/process_dependencies.dart';
 import 'package:gg_localize_refs/src/backend/pubspec_overrides_io.dart';
 import 'package:gg_localize_refs/src/backend/typescript_npm_spec.dart';
@@ -54,6 +55,38 @@ class DartRefsRestore {
 }
 
 // #############################################################################
+/// The outcome of restoring the localized TypeScript refs of one project.
+///
+/// Restoring is separated from logging and from writing so that
+/// `change-refs-to-local` and `change-refs-to-git-feature-branch` can reuse
+/// it to migrate a project that was localized by an earlier version of this
+/// package — back then the `link:`/git specs were written into
+/// `package.json` itself instead of the overrides of `pnpm-workspace.yaml`.
+class TypeScriptRefsRestore {
+  /// Creates a restore result.
+  const TypeScriptRefsRestore({
+    required this.hadLocalizedRefs,
+    required this.backupMissing,
+    required this.content,
+  });
+
+  /// Nothing was localized, so there was nothing to restore.
+  const TypeScriptRefsRestore.nothingLocalized()
+    : hadLocalizedRefs = false,
+      backupMissing = false,
+      content = null;
+
+  /// Whether `package.json` still contained localized refs.
+  final bool hadLocalizedRefs;
+
+  /// Whether the dependency backup needed for restoring is missing.
+  final bool backupMissing;
+
+  /// The restored `package.json` content, or null when nothing was restored.
+  final String? content;
+}
+
+// #############################################################################
 /// Command that reverts localized references back to remote dependencies.
 class ChangeRefsToPubDev extends DirCommand<dynamic> {
   /// Creates the command.
@@ -68,6 +101,8 @@ class ChangeRefsToPubDev extends DirCommand<dynamic> {
   final IsOnPubDev isOnPubDev;
 
   final ManifestCommandSupport _support = const ManifestCommandSupport();
+
+  final PnpmWorkspaceIo _pnpmWorkspace = const PnpmWorkspaceIo();
 
   // ...........................................................................
   @override
@@ -273,14 +308,40 @@ class ChangeRefsToPubDev extends DirCommand<dynamic> {
   }) async {
     final references = _support.referencesFor(node, manifestMap);
 
-    if (!_hasLocalizedDependencies(node: node, references: references)) {
+    // Going remote means leaving local and git feature branch mode: the
+    // overrides of pnpm-workspace.yaml would keep shadowing the published
+    // constraints of package.json. Removed before the early-out below,
+    // because a repo in the new model has a pristine manifest — a check on
+    // it alone would leave the overrides in place.
+    final overridesEdit = _pnpmWorkspace.removeOwnedOverrides(
+      projectDir: node.directory,
+      dependencyNames: node.transitiveDependencies.keys,
+    );
+    _support.bufferPnpmWorkspaceEdit(
+      projectDir: node.directory,
+      edit: overridesEdit,
+      fileChangesBuffer: fileChangesBuffer,
+    );
+    if (!overridesEdit.isUnchanged) {
+      ggLog(
+        'Remove the dependency overrides of ${node.name} from '
+        '${PnpmWorkspaceIo.fileName}',
+      );
+    }
+
+    final restore = await restoreTypeScriptRefs(
+      node: node,
+      manifestContent: manifestContent,
+      references: references,
+    );
+
+    if (!restore.hadLocalizedRefs) {
       return;
     }
 
     ggLog('Unlocalize refs of ${node.name}');
 
-    final backupFile = Utils.typeScriptBackupFile(node.directory);
-    if (!backupFile.existsSync()) {
+    if (restore.backupMissing) {
       ggLog(
         yellow(
           'The automatic change of dependencies could not be performed. '
@@ -290,6 +351,44 @@ class ChangeRefsToPubDev extends DirCommand<dynamic> {
         ),
       );
       return;
+    }
+
+    fileChangesBuffer.add(manifestFile, restore.content!);
+  }
+
+  // ...........................................................................
+  /// Restores every localized workspace dependency of [node] in
+  /// [manifestContent] back to the remote ref it was declared with.
+  ///
+  /// Pure with respect to the file system: it reads the dependency backup
+  /// but writes nothing, so the caller decides how to log and when to apply
+  /// the result. [references] are the dependency references of the manifest
+  /// that [manifestContent] was read from. Only the manifest is covered —
+  /// the overrides of `pnpm-workspace.yaml` are removed separately.
+  ///
+  /// With [rebuildRemoteSpecs] a dependency is rebuilt into the spec its
+  /// published form needs (git specs normalized, private packages turned
+  /// into `git+…#semver:` refs). Pass false to restore the backed up spec
+  /// verbatim: the migration path uses this, because rebuilding reads the
+  /// dependency's git remote and would abort in a checkout without an
+  /// `origin`.
+  Future<TypeScriptRefsRestore> restoreTypeScriptRefs({
+    required ProjectNode node,
+    required String manifestContent,
+    required Map<String, DependencyReference> references,
+    bool rebuildRemoteSpecs = true,
+  }) async {
+    if (!_hasLocalizedDependencies(node: node, references: references)) {
+      return const TypeScriptRefsRestore.nothingLocalized();
+    }
+
+    final backupFile = Utils.typeScriptBackupFile(node.directory);
+    if (!backupFile.existsSync()) {
+      return const TypeScriptRefsRestore(
+        hadLocalizedRefs: true,
+        backupMissing: true,
+        content: null,
+      );
     }
 
     final savedDependencies = Utils.readDependenciesFromJson(backupFile.path);
@@ -308,15 +407,21 @@ class ChangeRefsToPubDev extends DirCommand<dynamic> {
         newContent = node.language.replaceDependencyInContent(
           manifestContent: newContent,
           reference: reference,
-          newValue: await _buildTypeScriptRemoteDependency(
-            dependencyNode: dependency.value,
-            savedDependency: saved,
-          ),
+          newValue: rebuildRemoteSpecs
+              ? await _buildTypeScriptRemoteDependency(
+                  dependencyNode: dependency.value,
+                  savedDependency: saved,
+                )
+              : saved.toString(),
         );
       }
     }
 
-    fileChangesBuffer.add(manifestFile, newContent);
+    return TypeScriptRefsRestore(
+      hadLocalizedRefs: true,
+      backupMissing: false,
+      content: newContent,
+    );
   }
 
   /// Returns true when any workspace dependency is still localized.

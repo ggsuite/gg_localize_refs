@@ -1,5 +1,11 @@
 # Changelog
 
+## 3.5.0 - 2026-08-04
+
+### Changed
+
+- Use overrides in package.json
+
 ## 3.4.0 - 2026-08-04
 
 ### Changed

@@ -1,0 +1,5 @@
+# Local experiment - keep me
+allowBuilds:
+  esbuild: true
+overrides:
+  some_third_party: link:../../vendor/some_third_party

@@ -34,5 +34,18 @@ finds one, because a file that is gitignored *and* checked in makes
 Leaving local mode removes the overrides this tool wrote — hand written entries
 in that file survive.
 
-TypeScript/JavaScript projects have no equivalent file, so their `link:` specs
-are written into `package.json` as before.
+pnpm-managed TypeScript/JavaScript projects get the same architecture:
+`package.json` keeps its published constraints and the `link:` specs (or the
+`git+…#ref` pins of git feature branch mode) go into the `overrides` section
+of `pnpm-workspace.yaml` — pnpm's settings file, which pnpm reads for the
+whole resolution and never ships with a published tarball. Like
+`pubspec_overrides.yaml` it is committed and merged into: settings such as
+`allowBuilds` and hand written overrides survive, and the file is deleted
+again only when this tool created it.
+
+npm's own top-level `overrides` field of `package.json` cannot express this:
+npm refuses an override that conflicts with a direct dependency
+(`EOVERRIDE`), and pnpm ignores that field entirely (pnpm ≥ 11 also ignores
+`pnpm.overrides` inside `package.json`). A TypeScript project **not** managed
+by pnpm therefore keeps the legacy behavior: its `link:` specs are written
+into `package.json` directly, with the original specs backed up.

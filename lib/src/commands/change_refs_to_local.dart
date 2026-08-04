@@ -13,6 +13,7 @@ import 'package:gg_console_colors/gg_console_colors.dart';
 import 'package:gg_localize_refs/src/backend/file_changes_buffer.dart';
 import 'package:gg_localize_refs/src/backend/languages/project_language.dart';
 import 'package:gg_localize_refs/src/backend/manifest_command_support.dart';
+import 'package:gg_localize_refs/src/backend/pnpm_workspace_io.dart';
 import 'package:gg_localize_refs/src/backend/process_dependencies.dart';
 import 'package:gg_localize_refs/src/backend/publish_to_utils.dart';
 import 'package:gg_localize_refs/src/backend/pubspec_overrides_io.dart';
@@ -26,8 +27,13 @@ import 'package:path/path.dart' as p;
 ///
 /// For Dart projects the local paths are declared as `dependency_overrides` in
 /// `pubspec_overrides.yaml`; `pubspec.yaml` keeps the published constraints and
-/// is not rewritten. A project that an earlier version of this package
-/// localized inside `pubspec.yaml` is migrated on the way.
+/// is not rewritten. pnpm-managed TypeScript projects get the same treatment:
+/// `link:` overrides go into the `overrides` of `pnpm-workspace.yaml` and
+/// `package.json` keeps its published constraints. A project that an earlier
+/// version of this package localized inside its manifest is migrated on the
+/// way. TypeScript projects not managed by pnpm keep the legacy in-manifest
+/// `link:` rewrite — npm's own `overrides` field cannot redirect a direct
+/// dependency (`EOVERRIDE`).
 class ChangeRefsToLocal extends DirCommand<dynamic> {
   /// Constructor.
   ///
@@ -46,6 +52,8 @@ class ChangeRefsToLocal extends DirCommand<dynamic> {
   final ManifestCommandSupport _support = const ManifestCommandSupport();
 
   final PubspecOverridesIo _overrides = const PubspecOverridesIo();
+
+  final PnpmWorkspaceIo _pnpmWorkspace = const PnpmWorkspaceIo();
 
   final ChangeRefsToPubDev _changeRefsToPubDev;
 
@@ -265,6 +273,121 @@ class ChangeRefsToLocal extends DirCommand<dynamic> {
   }) async {
     final references = _support.referencesFor(node, manifestMap);
 
+    if (!PnpmWorkspaceIo.isPnpmManaged(node.directory)) {
+      await _modifyTypeScriptLegacy(
+        node: node,
+        manifestFile: manifestFile,
+        manifestContent: manifestContent,
+        references: references,
+        fileChangesBuffer: fileChangesBuffer,
+        ggLog: ggLog,
+      );
+      return;
+    }
+
+    await _migrateTypeScriptManifest(
+      node: node,
+      manifestFile: manifestFile,
+      manifestContent: manifestContent,
+      references: references,
+      fileChangesBuffer: fileChangesBuffer,
+      ggLog: ggLog,
+    );
+
+    // The overrides cover the *transitive* workspace dependencies: pnpm
+    // reads them from the root project only, so a project that is left out
+    // here is resolved from the registry while its siblings come from the
+    // workspace.
+    //
+    // A `link:` (a live symlink to the sibling source dir), not `file:`
+    // (which pnpm snapshots into its store at install time): a snapshot
+    // goes stale the moment the dependency is rebuilt — e.g. a bridge whose
+    // `dist/` is generated — so a consumer would resolve an out-of-date
+    // copy. `link:` mirrors Dart's `path:` live-link semantics.
+    final edit = _pnpmWorkspace.addLinkOverrides(
+      projectDir: node.directory,
+      pathsByDependency: <String, String>{
+        for (final dependency in node.transitiveDependencies.entries)
+          dependency.key: _relativePathTo(
+            from: node.directory,
+            to: dependency.value.directory,
+          ),
+      },
+    );
+
+    if (edit.isUnchanged) {
+      return;
+    }
+
+    ggLog('Localize refs of ${node.name}');
+
+    _support.bufferPnpmWorkspaceEdit(
+      projectDir: node.directory,
+      edit: edit,
+      fileChangesBuffer: fileChangesBuffer,
+    );
+  }
+
+  /// Undoes a localization an earlier version of this package wrote into
+  /// `package.json`, so the manifest is left with its published refs only.
+  ///
+  /// Covers both starting points that keep local paths or a feature branch
+  /// pinned inside the manifest: `link:`/`file:` specs and `git+` refs. The
+  /// backed up specs are restored **verbatim** — rebuilding remote specs
+  /// reads each dependency's git remote and would abort the whole command
+  /// in a checkout without an `origin` remote. The redirection itself moves
+  /// into the overrides of `pnpm-workspace.yaml`, which the caller writes
+  /// right after this migration.
+  Future<void> _migrateTypeScriptManifest({
+    required ProjectNode node,
+    required File manifestFile,
+    required String manifestContent,
+    required Map<String, DependencyReference> references,
+    required FileChangesBuffer fileChangesBuffer,
+    required GgLog ggLog,
+  }) async {
+    final restore = await _changeRefsToPubDev.restoreTypeScriptRefs(
+      node: node,
+      manifestContent: manifestContent,
+      references: references,
+      rebuildRemoteSpecs: false,
+    );
+
+    if (restore.backupMissing) {
+      ggLog(
+        yellow(
+          'The refs of ${node.name} are localized inside '
+          '${red(p.join(node.directory.path, 'package.json'))} and cannot be '
+          'migrated automatically, because the dependency backup is missing. '
+          'Please restore the original dependencies manually.',
+        ),
+      );
+      return;
+    }
+
+    if (restore.content == null || restore.content == manifestContent) {
+      return;
+    }
+
+    ggLog('Migrate refs of ${node.name} out of package.json');
+    fileChangesBuffer.add(manifestFile, restore.content!);
+  }
+
+  /// Localizes a TypeScript project that is not managed by pnpm.
+  ///
+  /// npm has no overrides sibling that can redirect a *direct* dependency —
+  /// its own top-level `overrides` field refuses exactly that (`EOVERRIDE`)
+  /// — so the `link:` specs are written straight into the dependency
+  /// sections of `package.json`, with the original specs backed up for
+  /// `change-refs-to-pub-dev`.
+  Future<void> _modifyTypeScriptLegacy({
+    required ProjectNode node,
+    required File manifestFile,
+    required String manifestContent,
+    required Map<String, DependencyReference> references,
+    required FileChangesBuffer fileChangesBuffer,
+    required GgLog ggLog,
+  }) async {
     if (!_support.hasNonLocalTypeScriptDependencies(
       node: node,
       references: references,
@@ -293,11 +416,6 @@ class ChangeRefsToLocal extends DirCommand<dynamic> {
           .relative(dependency.value.directory.path, from: node.directory.path)
           .replaceAll('\\', '/');
 
-      // Use pnpm's `link:` (a live symlink to the sibling source dir), not
-      // `file:` (which pnpm snapshots into its store at install time). A
-      // snapshot goes stale the moment the dependency is rebuilt — e.g. a
-      // bridge whose `dist/` is generated — so a consumer would resolve an
-      // out-of-date copy. `link:` mirrors Dart's `path:` live-link semantics.
       updatedContent = node.language.replaceDependencyInContent(
         manifestContent: updatedContent,
         reference: reference,
