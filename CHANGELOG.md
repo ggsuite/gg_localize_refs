@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 3.4.0 - 2026-08-04
 
 ### Changed
 
@@ -24,15 +24,10 @@
 ### Fixed
 
 - Fix issues with pubspec.lock
-
-## 3.4.0 - 2026-08-01
-
-### Fixed
-
 - Override transitive workspace dependencies too. Pub honors
-  `dependency_overrides` only from the root package of a resolution, so a
-  project two steps down was resolved from pub.dev while its siblings came
-  from the ticket workspace.
+`dependency_overrides` only from the root package of a resolution, so a
+project two steps down was resolved from pub.dev while its siblings came
+from the ticket workspace.
 
 ## 3.3.1 - 2026-08-01
 
@@ -90,26 +85,26 @@
 ### Changed
 
 - BREAKING: change-refs-to-local writes the local paths as
-  dependency_overrides into pubspec_overrides.yaml and does not edit
-  pubspec.yaml anymore, so a localized package keeps its published constraints
+dependency_overrides into pubspec_overrides.yaml and does not edit
+pubspec.yaml anymore, so a localized package keeps its published constraints
 - BREAKING: change-refs-to-local does not inject publish_to: none anymore -
-  pubspec.yaml stays publishable while the refs are localized
+pubspec.yaml stays publishable while the refs are localized
 - change-refs-to-git-feature-branch and change-refs-to-pub-dev remove
-  the local path overrides, so exactly one of the three modes is ever active
+the local path overrides, so exactly one of the three modes is ever active
 - change-refs-to-local migrates a workspace that an earlier version localized
-  inside pubspec.yaml: the dependency backup is restored, an injected
-  publish_to: none is reverted, and the paths move to pubspec_overrides.yaml
+inside pubspec.yaml: the dependency backup is restored, an injected
+publish_to: none is reverted, and the paths move to pubspec_overrides.yaml
 - pubspec_overrides.yaml is committed - it holds relative paths only, so a
-  shared ticket workspace keeps resolving against the sibling checkouts;
-  change-refs-to-local removes a stale .gitignore entry for it, because
-  gitignored plus checked in makes dart pub publish fail
+shared ticket workspace keeps resolving against the sibling checkouts;
+change-refs-to-local removes a stale .gitignore entry for it, because
+gitignored plus checked in makes dart pub publish fail
 - change-refs-to-local drops an override of a dependency that left
-  pubspec.yaml, and one whose sibling checkout is gone - pub cannot resolve
-  either, and the second kind also blocked deleting the file
+pubspec.yaml, and one whose sibling checkout is gone - pub cannot resolve
+either, and the second kind also blocked deleting the file
 - dependency_overrides declared in pubspec.yaml are carried over into
-  pubspec_overrides.yaml, because pub replaces that section instead of merging
+pubspec_overrides.yaml, because pub replaces that section instead of merging
 - change-refs-to-local writes no dependency backup anymore - pubspec.yaml
-  remains the single source of truth for the remote refs
+remains the single source of truth for the remote refs
 - TypeScript projects are unchanged: package.json keeps carrying the link: specs
 - Use pubspec_override.yaml instead of editing pubspec.yaml files
 - Commit pubspec_overrides.yaml to share it with others
