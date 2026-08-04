@@ -1,5 +1,13 @@
 # Changelog
 
+## 3.4.0 - 2026-08-04
+
+### Changed
+
+- Rename .master to .ocean with automatic migration at next start
+- Rename ocean workspace -> ocean
+- Update version
+
 ## 3.3.3 - 2026-08-04
 
 ### Changed
@@ -16,11 +24,6 @@
 ### Fixed
 
 - Fix issues with pubspec.lock
-
-## 3.4.0 - 2026-08-01
-
-### Fixed
-
 - Override transitive workspace dependencies too. Pub honors
 `dependency_overrides` only from the root package of a resolution, so a
 project two steps down was resolved from pub.dev while its siblings came
