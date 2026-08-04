@@ -170,12 +170,13 @@ packages:
     source: hosted
     version: "1.0.6"
   gg_lang:
-    dependency: "direct overridden"
+    dependency: transitive
     description:
-      path: "../gg_lang"
-      relative: true
-    source: path
-    version: "0.3.4"
+      name: gg_lang
+      sha256: "99cc285100285ba8fc65c6f5a61afd176fbfd07856cfd2df4725f8f14e314d3e"
+      url: "https://pub.dev"
+    source: hosted
+    version: "0.4.0"
   gg_log:
     dependency: "direct main"
     description:
@@ -203,10 +204,11 @@ packages:
   gg_publish:
     dependency: "direct main"
     description:
-      path: "../gg_publish"
-      relative: true
-    source: path
-    version: "3.9.5"
+      name: gg_publish
+      sha256: fabf6a79847b757fc1eaf0bf60e836ddbdd32f3885c5ba7745c8ba8a64d589a5
+      url: "https://pub.dev"
+    source: hosted
+    version: "3.10.0"
   gg_status_printer:
     dependency: transitive
     description:
@@ -216,12 +218,13 @@ packages:
     source: hosted
     version: "1.4.2"
   gg_version:
-    dependency: "direct overridden"
+    dependency: transitive
     description:
-      path: "../gg_version"
-      relative: true
-    source: path
-    version: "4.5.2"
+      name: gg_version
+      sha256: adeed5dd3cc9bda898fc13aa97f6b91e3e9c416e767b4508d35c8905bbfc954c
+      url: "https://pub.dev"
+    source: hosted
+    version: "4.6.0"
   glob:
     dependency: transitive
     description:
