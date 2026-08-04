@@ -6,7 +6,5 @@
 dependency_overrides:
   gg_publish:
     path: ../gg_publish
-  gg_lang:
-    path: ../gg_lang
   gg_version:
     path: ../gg_version

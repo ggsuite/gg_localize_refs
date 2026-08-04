@@ -170,12 +170,13 @@ packages:
     source: hosted
     version: "1.0.6"
   gg_lang:
-    dependency: "direct overridden"
+    dependency: transitive
     description:
-      path: "../gg_lang"
-      relative: true
-    source: path
-    version: "0.3.2"
+      name: gg_lang
+      sha256: "5e796716d119b946c8811de243bd62d4a9e6d959250e0a69d512f74613c043cf"
+      url: "https://pub.dev"
+    source: hosted
+    version: "0.3.3"
   gg_log:
     dependency: "direct main"
     description:
