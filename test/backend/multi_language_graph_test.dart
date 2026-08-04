@@ -406,7 +406,7 @@ void main() {
         );
       });
 
-      test('recognizes the ocean workspace by its folder name', () async {
+      test('recognizes the ocean by its folder name', () async {
         final parent = createWorkspace('mlg_orgs_ocean');
         final ocean = Directory(p.join(parent.path, '.ocean'))..createSync();
         for (final entry in <String, String>{

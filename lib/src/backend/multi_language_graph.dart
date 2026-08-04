@@ -139,7 +139,7 @@ class MultiLanguageGraph {
   /// its repositories in a folder named after the organization a repository
   /// belongs to (`<workspace>/<org>/<repo>`); then the grandparent is the
   /// workspace root. Both gg workspaces are recognized by a marker they always
-  /// carry — the ocean workspace by its folder name (`.ocean`, or the legacy
+  /// carry — the ocean by its folder name (`.ocean`, or the legacy
   /// `.master`), a ticket workspace by its `.ticket` file — so a plain folder
   /// of sibling checkouts outside a gg workspace keeps resolving to the
   /// parent.
@@ -174,7 +174,7 @@ class MultiLanguageGraph {
     return result..sort((a, b) => a.path.compareTo(b.path));
   }
 
-  /// The name of the ocean workspace of a gg workspace.
+  /// The name of the ocean of a gg workspace.
   static const String _oceanFolderName = '.ocean';
 
   /// The former name of [_oceanFolderName]. Still recognized so a workspace
