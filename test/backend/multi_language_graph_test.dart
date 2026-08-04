@@ -406,14 +406,14 @@ void main() {
         );
       });
 
-      test('recognizes the master workspace by its folder name', () async {
-        final parent = createWorkspace('mlg_orgs_master');
-        final master = Directory(p.join(parent.path, '.master'))..createSync();
+      test('recognizes the ocean workspace by its folder name', () async {
+        final parent = createWorkspace('mlg_orgs_ocean');
+        final ocean = Directory(p.join(parent.path, '.ocean'))..createSync();
         for (final entry in <String, String>{
           'org_a': 'project1',
           'org_b': 'project2',
         }.entries) {
-          final dir = Directory(p.join(master.path, entry.key, entry.value))
+          final dir = Directory(p.join(ocean.path, entry.key, entry.value))
             ..createSync(recursive: true);
           copyDirectory(
             Directory(
@@ -433,11 +433,48 @@ void main() {
             await MultiLanguageGraph(
               languages: <ProjectLanguage>[DartProjectLanguage()],
             ).buildGraph(
-              directory: Directory(p.join(master.path, 'org_a', 'project1')),
+              directory: Directory(p.join(ocean.path, 'org_a', 'project1')),
             );
 
         expect(result.allNodes.keys, containsAll(<String>['test1', 'test2']));
       });
+
+      test(
+        'recognizes a legacy ».master« workspace by its folder name',
+        () async {
+          final parent = createWorkspace('mlg_orgs_legacy_master');
+          final legacy = Directory(p.join(parent.path, '.master'))
+            ..createSync();
+          for (final entry in <String, String>{
+            'org_a': 'project1',
+            'org_b': 'project2',
+          }.entries) {
+            final dir = Directory(p.join(legacy.path, entry.key, entry.value))
+              ..createSync(recursive: true);
+            copyDirectory(
+              Directory(
+                p.join(
+                  'test',
+                  'sample_folder',
+                  'process_dependencies',
+                  'succeed',
+                  entry.value,
+                ),
+              ),
+              dir,
+            );
+          }
+
+          final result =
+              await MultiLanguageGraph(
+                languages: <ProjectLanguage>[DartProjectLanguage()],
+              ).buildGraph(
+                directory: Directory(p.join(legacy.path, 'org_a', 'project1')),
+              );
+
+          expect(result.allNodes.keys, containsAll(<String>['test1', 'test2']));
+        },
+      );
 
       test('keeps a plain folder of siblings scoped to its parent', () async {
         // Without a workspace marker the parent stays the workspace root, so
