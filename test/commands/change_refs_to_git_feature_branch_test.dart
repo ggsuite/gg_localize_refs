@@ -667,6 +667,185 @@ void main() {
           );
         });
 
+        test('TypeScript pnpm: writes git overrides into '
+            'pnpm-workspace.yaml and leaves package.json untouched', () async {
+          final workspace = createTempDir('git_feature_ts_pnpm_ws');
+          copyDirectory(
+            Directory(
+              p.join(
+                'test',
+                'sample_folder_ts',
+                'localize_refs',
+                'pnpm_succeed',
+              ),
+            ),
+            workspace,
+          );
+          final dProject1 = Directory(p.join(workspace.path, 'project1'));
+          final dProject2 = Directory(p.join(workspace.path, 'project2'));
+
+          Process.runSync('git', <String>[
+            'init',
+          ], workingDirectory: dProject2.path);
+          Process.runSync('git', <String>[
+            'remote',
+            'add',
+            'origin',
+            'git@github.com:user/test2_ts.git',
+          ], workingDirectory: dProject2.path);
+
+          final manifestBefore = File(
+            p.join(dProject1.path, 'package.json'),
+          ).readAsStringSync();
+
+          final localMessages = <String>[];
+          final local = ChangeRefsToGitFeatureBranch(ggLog: localMessages.add);
+          await local.get(
+            directory: dProject1,
+            ggLog: localMessages.add,
+            gitRef: 'feature123',
+          );
+
+          expect(localMessages[1], contains('Localize refs of test1_ts'));
+
+          // The manifest keeps its published constraints.
+          final manifestAfter = File(
+            p.join(dProject1.path, 'package.json'),
+          ).readAsStringSync();
+          expect(manifestAfter, manifestBefore);
+
+          // The feature branch pin sits in the overrides, SCP shorthand
+          // normalized to the npm `git+ssh://…` form.
+          final overrides = File(
+            p.join(dProject1.path, 'pnpm-workspace.yaml'),
+          ).readAsStringSync();
+          expect(
+            overrides,
+            contains(
+              'test2_ts: '
+              'git+ssh://git@github.com/user/test2_ts.git#feature123',
+            ),
+          );
+
+          // A second run changes nothing.
+          final againMessages = <String>[];
+          await ChangeRefsToGitFeatureBranch(ggLog: againMessages.add).get(
+            directory: dProject1,
+            ggLog: againMessages.add,
+            gitRef: 'feature123',
+          );
+          expect(againMessages[1], contains('No files were changed.'));
+
+          deleteDirs(<Directory>[workspace]);
+        });
+
+        test('TypeScript pnpm: migrates a manifest an earlier version '
+            'pinned in place', () async {
+          final workspace = createTempDir('git_feature_ts_pnpm_legacy_ws');
+          copyDirectory(
+            Directory(
+              p.join(
+                'test',
+                'sample_folder_ts',
+                'localize_refs',
+                'pnpm_legacy_localized',
+              ),
+            ),
+            workspace,
+          );
+          final dProject1 = Directory(p.join(workspace.path, 'project1'));
+          final dProject2 = Directory(p.join(workspace.path, 'project2'));
+
+          Process.runSync('git', <String>[
+            'init',
+          ], workingDirectory: dProject2.path);
+          Process.runSync('git', <String>[
+            'remote',
+            'add',
+            'origin',
+            'git@github.com:user/test2_ts.git',
+          ], workingDirectory: dProject2.path);
+
+          final localMessages = <String>[];
+          final local = ChangeRefsToGitFeatureBranch(ggLog: localMessages.add);
+          await local.get(
+            directory: dProject1,
+            ggLog: localMessages.add,
+            gitRef: 'feature123',
+          );
+
+          expect(
+            localMessages.join('\n'),
+            contains('Migrate refs of test1_ts out of package.json'),
+          );
+
+          // The backed up constraint is back in the manifest …
+          final manifest = File(
+            p.join(dProject1.path, 'package.json'),
+          ).readAsStringSync();
+          expect(manifest, contains('"test2_ts": "^1.0.0"'));
+          expect(manifest, isNot(contains('link:')));
+
+          // … and the pin moved into the overrides.
+          final overrides = File(
+            p.join(dProject1.path, 'pnpm-workspace.yaml'),
+          ).readAsStringSync();
+          expect(overrides, contains('#feature123'));
+
+          deleteDirs(<Directory>[workspace]);
+        });
+
+        test('TypeScript pnpm: warns when the migration backup is missing '
+            'but still writes the overrides', () async {
+          final workspace = createTempDir('git_feature_ts_pnpm_nobackup_ws');
+          copyDirectory(
+            Directory(
+              p.join(
+                'test',
+                'sample_folder_ts',
+                'localize_refs',
+                'pnpm_legacy_localized',
+              ),
+            ),
+            workspace,
+          );
+          final dProject1 = Directory(p.join(workspace.path, 'project1'));
+          final dProject2 = Directory(p.join(workspace.path, 'project2'));
+          File(
+            p.join(dProject1.path, '.gg', 'gg_localize_refs_backup_ts.json'),
+          ).deleteSync();
+
+          Process.runSync('git', <String>[
+            'init',
+          ], workingDirectory: dProject2.path);
+          Process.runSync('git', <String>[
+            'remote',
+            'add',
+            'origin',
+            'git@github.com:user/test2_ts.git',
+          ], workingDirectory: dProject2.path);
+
+          final localMessages = <String>[];
+          final local = ChangeRefsToGitFeatureBranch(ggLog: localMessages.add);
+          await local.get(
+            directory: dProject1,
+            ggLog: localMessages.add,
+            gitRef: 'feature123',
+          );
+
+          expect(
+            localMessages.join('\n'),
+            contains('cannot be migrated automatically'),
+          );
+
+          final overrides = File(
+            p.join(dProject1.path, 'pnpm-workspace.yaml'),
+          ).readAsStringSync();
+          expect(overrides, contains('#feature123'));
+
+          deleteDirs(<Directory>[workspace]);
+        });
+
         test(
           'when already localized TypeScript dependency stays unchanged',
           () async {

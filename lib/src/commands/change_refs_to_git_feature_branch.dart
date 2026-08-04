@@ -12,26 +12,39 @@ import 'package:gg_console_colors/gg_console_colors.dart';
 import 'package:gg_localize_refs/src/backend/file_changes_buffer.dart';
 import 'package:gg_localize_refs/src/backend/languages/project_language.dart';
 import 'package:gg_localize_refs/src/backend/manifest_command_support.dart';
+import 'package:gg_localize_refs/src/backend/pnpm_workspace_io.dart';
 import 'package:gg_localize_refs/src/backend/process_dependencies.dart';
 import 'package:gg_localize_refs/src/backend/pubspec_overrides_io.dart';
 import 'package:gg_localize_refs/src/backend/typescript_npm_spec.dart';
 import 'package:gg_localize_refs/src/backend/utils.dart';
+import 'package:gg_localize_refs/src/commands/change_refs_to_pub_dev.dart';
 import 'package:gg_log/gg_log.dart';
+import 'package:path/path.dart' as p;
 
 /// Command that changes workspace dependencies to git references.
 ///
 /// For Dart projects the git refs are declared as `dependency_overrides` in
 /// `pubspec_overrides.yaml`; `pubspec.yaml` keeps its published constraints
 /// and is not rewritten - so the package stays publishable and its manifest
-/// never carries a feature branch pin. TypeScript keeps writing the git specs
-/// into `package.json`, because npm has no overrides sibling.
+/// never carries a feature branch pin. pnpm-managed TypeScript projects get
+/// the same treatment via the `overrides` of `pnpm-workspace.yaml`; only a
+/// TypeScript project not managed by pnpm keeps writing the git specs into
+/// `package.json`, because npm has no overrides sibling that can redirect a
+/// direct dependency.
 class ChangeRefsToGitFeatureBranch extends DirCommand<dynamic> {
   /// Creates the command.
-  ChangeRefsToGitFeatureBranch({required super.ggLog})
-    : super(
-        name: 'change-refs-to-git-feature-branch',
-        description: 'Changes dependencies to git dependencies.',
-      ) {
+  ///
+  /// [changeRefsToPubDev] is used to restore `package.json` when a project is
+  /// still localized the old way; inject it to keep the migration offline.
+  ChangeRefsToGitFeatureBranch({
+    required super.ggLog,
+    ChangeRefsToPubDev? changeRefsToPubDev,
+  }) : _changeRefsToPubDev =
+           changeRefsToPubDev ?? ChangeRefsToPubDev(ggLog: ggLog),
+       super(
+         name: 'change-refs-to-git-feature-branch',
+         description: 'Changes dependencies to git dependencies.',
+       ) {
     argParser.addOption(
       'git-ref',
       help: 'Git ref (branch, tag, or commit) to use for git dependencies.',
@@ -55,6 +68,10 @@ class ChangeRefsToGitFeatureBranch extends DirCommand<dynamic> {
   final ManifestCommandSupport _support = const ManifestCommandSupport();
 
   final PubspecOverridesIo _overrides = const PubspecOverridesIo();
+
+  final PnpmWorkspaceIo _pnpmWorkspace = const PnpmWorkspaceIo();
+
+  final ChangeRefsToPubDev _changeRefsToPubDev;
 
   /// The function used to run processes.
   late Future<ProcessResult> Function(
@@ -187,6 +204,109 @@ class ChangeRefsToGitFeatureBranch extends DirCommand<dynamic> {
   }) async {
     final references = _support.referencesFor(node, manifestMap);
 
+    if (!PnpmWorkspaceIo.isPnpmManaged(node.directory)) {
+      await _modifyTypeScriptLegacy(
+        node: node,
+        manifestFile: manifestFile,
+        manifestContent: manifestContent,
+        references: references,
+        fileChangesBuffer: fileChangesBuffer,
+        ggLog: ggLog,
+      );
+      return;
+    }
+
+    await _migrateTypeScriptManifest(
+      node: node,
+      manifestFile: manifestFile,
+      manifestContent: manifestContent,
+      references: references,
+      fileChangesBuffer: fileChangesBuffer,
+      ggLog: ggLog,
+    );
+
+    // The overrides are written for every *transitive* workspace dependency,
+    // also for one that package.json already declares as a git ref: pnpm
+    // does not merge sections and reads the overrides from the root project
+    // only, so an entry left out here would resolve against the published
+    // constraint while its siblings sit on the feature branch.
+    final gitSpecs = <String, String>{};
+    for (final dependency in node.transitiveDependencies.entries) {
+      gitSpecs[dependency.key] = await getGitDependencySpecForTs(
+        dependency.value.directory,
+        dependency.key,
+      );
+    }
+
+    final edit = _pnpmWorkspace.addGitOverrides(
+      projectDir: node.directory,
+      gitSpecsByDependency: gitSpecs,
+    );
+
+    if (edit.isUnchanged) {
+      return;
+    }
+
+    ggLog('Localize refs of ${node.name}');
+
+    _support.bufferPnpmWorkspaceEdit(
+      projectDir: node.directory,
+      edit: edit,
+      fileChangesBuffer: fileChangesBuffer,
+    );
+  }
+
+  /// Undoes a localization an earlier version of this package wrote into
+  /// `package.json` — the backed up specs are restored **verbatim**, the
+  /// feature branch pin moves into the overrides of `pnpm-workspace.yaml`
+  /// the caller writes right after this migration.
+  Future<void> _migrateTypeScriptManifest({
+    required ProjectNode node,
+    required File manifestFile,
+    required String manifestContent,
+    required Map<String, DependencyReference> references,
+    required FileChangesBuffer fileChangesBuffer,
+    required GgLog ggLog,
+  }) async {
+    final restore = await _changeRefsToPubDev.restoreTypeScriptRefs(
+      node: node,
+      manifestContent: manifestContent,
+      references: references,
+      rebuildRemoteSpecs: false,
+    );
+
+    if (restore.backupMissing) {
+      ggLog(
+        yellow(
+          'The refs of ${node.name} are localized inside '
+          '${p.join(node.directory.path, 'package.json')} and cannot be '
+          'migrated automatically, because the dependency backup is missing. '
+          'Please restore the original dependencies manually.',
+        ),
+      );
+      return;
+    }
+
+    if (restore.content == null || restore.content == manifestContent) {
+      return;
+    }
+
+    ggLog('Migrate refs of ${node.name} out of package.json');
+    fileChangesBuffer.add(manifestFile, restore.content!);
+  }
+
+  /// Pins the workspace dependencies of a TypeScript project that is not
+  /// managed by pnpm — the git specs are written straight into the
+  /// dependency sections of `package.json`, with the original specs backed
+  /// up for `change-refs-to-pub-dev`.
+  Future<void> _modifyTypeScriptLegacy({
+    required ProjectNode node,
+    required File manifestFile,
+    required String manifestContent,
+    required Map<String, DependencyReference> references,
+    required FileChangesBuffer fileChangesBuffer,
+    required GgLog ggLog,
+  }) async {
     if (!_hasNonGitTypeScriptDependencies(node: node, references: references)) {
       return;
     }

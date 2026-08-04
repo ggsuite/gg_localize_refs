@@ -10,7 +10,8 @@ import 'package:path/path.dart' as p;
 import 'package:yaml/yaml.dart';
 import 'package:yaml_edit/yaml_edit.dart';
 
-/// The outcome of computing an edit for a `pubspec_overrides.yaml` file.
+/// The outcome of computing an edit for an overrides file —
+/// `pubspec_overrides.yaml` (Dart) or `pnpm-workspace.yaml` (TypeScript).
 ///
 /// The three states are mutually exclusive: the file stays as it is, it gets
 /// [content] written to it, or it is deleted. Edits are computed without

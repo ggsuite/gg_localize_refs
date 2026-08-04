@@ -13,6 +13,7 @@ import 'package:gg_localize_refs/src/backend/file_changes_buffer.dart';
 import 'package:gg_localize_refs/src/backend/languages/dart_language.dart';
 import 'package:gg_localize_refs/src/backend/languages/project_language.dart';
 import 'package:gg_localize_refs/src/backend/languages/typescript_language.dart';
+import 'package:gg_localize_refs/src/backend/pnpm_workspace_io.dart';
 import 'package:gg_localize_refs/src/backend/process_dependencies.dart';
 import 'package:gg_localize_refs/src/commands/change_refs_to_local.dart';
 import 'package:path/path.dart' as p;
@@ -40,11 +41,23 @@ void main() {
 
   Directory dWorkspaceSucceedTs = Directory('');
   Directory dWorkspaceAlreadyLocalizedTs = Directory('');
+  Directory dWorkspacePnpmSucceed = Directory('');
+  Directory dWorkspacePnpmAlreadyLocalized = Directory('');
+  Directory dWorkspacePnpmLegacy = Directory('');
+  Directory dWorkspacePnpmOverridesUnrelated = Directory('');
 
   /// Copies the Dart scenario [name] of `localize_refs` into [target].
   void copyLocalizeScenario(String name, Directory target) {
     copyDirectory(
       Directory(p.join('test', 'sample_folder', 'localize_refs', name)),
+      target,
+    );
+  }
+
+  /// Copies the TypeScript scenario [name] of `localize_refs` into [target].
+  void copyLocalizeScenarioTs(String name, Directory target) {
+    copyDirectory(
+      Directory(p.join('test', 'sample_folder_ts', 'localize_refs', name)),
       target,
     );
   }
@@ -71,6 +84,23 @@ void main() {
 
     dWorkspaceSucceedTs = createTempDir('ts_succeed');
     dWorkspaceAlreadyLocalizedTs = createTempDir('ts_already_localized');
+    dWorkspacePnpmSucceed = createTempDir('ts_pnpm_succeed');
+    dWorkspacePnpmAlreadyLocalized = createTempDir('ts_pnpm_already_localized');
+    dWorkspacePnpmLegacy = createTempDir('ts_pnpm_legacy');
+    dWorkspacePnpmOverridesUnrelated = createTempDir(
+      'ts_pnpm_overrides_unrelated',
+    );
+
+    copyLocalizeScenarioTs('pnpm_succeed', dWorkspacePnpmSucceed);
+    copyLocalizeScenarioTs(
+      'pnpm_already_localized',
+      dWorkspacePnpmAlreadyLocalized,
+    );
+    copyLocalizeScenarioTs('pnpm_legacy_localized', dWorkspacePnpmLegacy);
+    copyLocalizeScenarioTs(
+      'pnpm_overrides_unrelated',
+      dWorkspacePnpmOverridesUnrelated,
+    );
 
     copyLocalizeScenario('legacy_localized', dWorkspaceLegacy);
     copyLocalizeScenario('legacy_localized_private', dWorkspaceLegacyPrivate);
@@ -131,6 +161,10 @@ void main() {
       dWorkspaceTransitive,
       dWorkspaceSucceedTs,
       dWorkspaceAlreadyLocalizedTs,
+      dWorkspacePnpmSucceed,
+      dWorkspacePnpmAlreadyLocalized,
+      dWorkspacePnpmLegacy,
+      dWorkspacePnpmOverridesUnrelated,
     ]);
   });
 
@@ -1018,6 +1052,139 @@ void main() {
           expect(backupJson, contains('^1.0.0'));
 
           deleteDirs(<Directory>[workspace]);
+        });
+
+        test('TypeScript pnpm: writes overrides into pnpm-workspace.yaml '
+            'and leaves package.json untouched', () async {
+          final dProject1 = Directory(
+            p.join(dWorkspacePnpmSucceed.path, 'project1'),
+          );
+          final manifestBefore = File(
+            p.join(dProject1.path, 'package.json'),
+          ).readAsStringSync();
+
+          final localMessages = <String>[];
+          final local = ChangeRefsToLocal(ggLog: localMessages.add);
+          await local.get(directory: dProject1, ggLog: localMessages.add);
+
+          expect(localMessages[1], contains('Localize refs of test1_ts'));
+
+          // The manifest keeps its published constraints.
+          final manifestAfter = File(
+            p.join(dProject1.path, 'package.json'),
+          ).readAsStringSync();
+          expect(manifestAfter, manifestBefore);
+          expect(manifestAfter, contains('^1.0.0'));
+
+          // The redirection sits in the overrides of pnpm-workspace.yaml.
+          final overrides = File(
+            p.join(dProject1.path, 'pnpm-workspace.yaml'),
+          ).readAsStringSync();
+          expect(overrides, startsWith(PnpmWorkspaceIo.headerComment));
+          expect(overrides, contains('test2_ts: link:../project2'));
+
+          // Nothing was replaced, so there is nothing to back up.
+          expect(
+            File(
+              p.join(dProject1.path, '.gg', 'gg_localize_refs_backup_ts.json'),
+            ).existsSync(),
+            isFalse,
+          );
+        });
+
+        test('TypeScript pnpm: when already localized', () async {
+          final dProject1 = Directory(
+            p.join(dWorkspacePnpmAlreadyLocalized.path, 'project1'),
+          );
+
+          final localMessages = <String>[];
+          final local = ChangeRefsToLocal(ggLog: localMessages.add);
+          await local.get(directory: dProject1, ggLog: localMessages.add);
+
+          expect(localMessages[1], contains('No files were changed.'));
+        });
+
+        test('TypeScript pnpm: migrates a manifest an earlier version '
+            'localized in place', () async {
+          final dProject1 = Directory(
+            p.join(dWorkspacePnpmLegacy.path, 'project1'),
+          );
+
+          final localMessages = <String>[];
+          final local = ChangeRefsToLocal(ggLog: localMessages.add);
+          await local.get(directory: dProject1, ggLog: localMessages.add);
+
+          expect(
+            localMessages.join('\n'),
+            contains('Migrate refs of test1_ts out of package.json'),
+          );
+
+          // The backed up constraints are back in the manifest …
+          final manifest = File(
+            p.join(dProject1.path, 'package.json'),
+          ).readAsStringSync();
+          expect(manifest, contains('"test2_ts": "^1.0.0"'));
+          expect(manifest, isNot(contains('link:')));
+
+          // … and the redirection moved into the overrides.
+          final overrides = File(
+            p.join(dProject1.path, 'pnpm-workspace.yaml'),
+          ).readAsStringSync();
+          expect(overrides, contains('test2_ts: link:../project2'));
+        });
+
+        test('TypeScript pnpm: warns when the migration backup is missing '
+            'but still writes the overrides', () async {
+          final dProject1 = Directory(
+            p.join(dWorkspacePnpmLegacy.path, 'project1'),
+          );
+          File(
+            p.join(dProject1.path, '.gg', 'gg_localize_refs_backup_ts.json'),
+          ).deleteSync();
+
+          final localMessages = <String>[];
+          final local = ChangeRefsToLocal(ggLog: localMessages.add);
+          await local.get(directory: dProject1, ggLog: localMessages.add);
+
+          expect(
+            localMessages.join('\n'),
+            contains('cannot be migrated automatically'),
+          );
+
+          // The manifest keeps its localized specs …
+          final manifest = File(
+            p.join(dProject1.path, 'package.json'),
+          ).readAsStringSync();
+          expect(manifest, contains('link:../project2'));
+
+          // … but the overrides are written anyway, so the workspace works.
+          final overrides = File(
+            p.join(dProject1.path, 'pnpm-workspace.yaml'),
+          ).readAsStringSync();
+          expect(overrides, contains('test2_ts: link:../project2'));
+        });
+
+        test('TypeScript pnpm: merges into a hand written '
+            'pnpm-workspace.yaml', () async {
+          final dProject1 = Directory(
+            p.join(dWorkspacePnpmOverridesUnrelated.path, 'project1'),
+          );
+
+          final localMessages = <String>[];
+          final local = ChangeRefsToLocal(ggLog: localMessages.add);
+          await local.get(directory: dProject1, ggLog: localMessages.add);
+
+          final overrides = File(
+            p.join(dProject1.path, 'pnpm-workspace.yaml'),
+          ).readAsStringSync();
+
+          expect(overrides, contains('# Local experiment - keep me'));
+          expect(overrides, contains('allowBuilds'));
+          expect(
+            overrides,
+            contains('some_third_party: link:../../vendor/some_third_party'),
+          );
+          expect(overrides, contains('test2_ts: link:../project2'));
         });
       });
     });

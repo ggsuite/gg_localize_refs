@@ -9,6 +9,7 @@ import 'dart:io';
 
 import 'package:gg_localize_refs/src/backend/file_changes_buffer.dart';
 import 'package:gg_localize_refs/src/backend/languages/project_language.dart';
+import 'package:gg_localize_refs/src/backend/pnpm_workspace_io.dart';
 import 'package:gg_localize_refs/src/backend/pubspec_overrides_io.dart';
 import 'package:gg_localize_refs/src/backend/typescript_npm_spec.dart';
 import 'package:gg_localize_refs/src/backend/utils.dart';
@@ -169,6 +170,25 @@ class ManifestCommandSupport {
     );
 
     return edit;
+  }
+
+  /// Queues [edit] for the `pnpm-workspace.yaml` of [projectDir].
+  void bufferPnpmWorkspaceEdit({
+    required Directory projectDir,
+    required PubspecOverridesEdit edit,
+    required FileChangesBuffer fileChangesBuffer,
+  }) {
+    if (edit.isUnchanged) {
+      return;
+    }
+
+    final overridesFile = const PnpmWorkspaceIo().file(projectDir);
+    if (edit.deleteFile) {
+      fileChangesBuffer.addDeletion(overridesFile);
+      return;
+    }
+
+    fileChangesBuffer.add(overridesFile, edit.content!);
   }
 
   /// Writes the TypeScript backup file for [projectDirectory].
