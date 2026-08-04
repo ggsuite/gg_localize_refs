@@ -19,3 +19,5 @@ build
 !.gg/ticket.json
 .gg/gg-publish.json
 .gg/.gg-publish.json
+.gg/pubspec_overrides_backup.yaml
+.gg/pnpm_workspace_backup.yaml
