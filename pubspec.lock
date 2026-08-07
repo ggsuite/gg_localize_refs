@@ -123,18 +123,16 @@ packages:
   gg_capture_print:
     dependency: "direct dev"
     description:
-      name: gg_capture_print
-      sha256: a1a4856a7ea2b11482ad5233febab72e541b4545af2c1229a425605b8036983c
-      url: "https://pub.dev"
-    source: hosted
-    version: "1.0.9"
+      path: "../gg_capture_print"
+      relative: true
+    source: path
+    version: "1.0.10"
   gg_console_colors:
     dependency: "direct main"
     description:
-      name: gg_console_colors
-      sha256: "937a99228fb60796f53b24dcbe580cbc17ef0c1ceed6877df58a881d3d8d930b"
-      url: "https://pub.dev"
-    source: hosted
+      path: "../gg_console_colors"
+      relative: true
+    source: path
     version: "2.3.0"
   gg_git:
     dependency: "direct main"
@@ -144,12 +142,11 @@ packages:
     source: path
     version: "3.2.2"
   gg_hash:
-    dependency: transitive
+    dependency: "direct overridden"
     description:
-      name: gg_hash
-      sha256: "33bfca21684213c93b329c05d91c4233678b159a68415b287e796da4701c0e1a"
-      url: "https://pub.dev"
-    source: hosted
+      path: "../gg_hash"
+      relative: true
+    source: path
     version: "1.1.0"
   gg_is_flutter:
     dependency: "direct overridden"
@@ -159,20 +156,18 @@ packages:
     source: path
     version: "1.0.8"
   gg_is_github:
-    dependency: transitive
+    dependency: "direct overridden"
     description:
-      name: gg_is_github
-      sha256: b980cd4e3e6354e9b0a81b676f2b2b2d91ceeeea562bc35f1b9595fded40e0d8
-      url: "https://pub.dev"
-    source: hosted
-    version: "1.0.6"
+      path: "../gg_is_github"
+      relative: true
+    source: path
+    version: "1.0.7"
   gg_lang:
-    dependency: transitive
+    dependency: "direct overridden"
     description:
-      name: gg_lang
-      sha256: "99cc285100285ba8fc65c6f5a61afd176fbfd07856cfd2df4725f8f14e314d3e"
-      url: "https://pub.dev"
-    source: hosted
+      path: "../gg_lang"
+      relative: true
+    source: path
     version: "0.4.0"
   gg_log:
     dependency: "direct main"
@@ -184,11 +179,10 @@ packages:
   gg_process:
     dependency: "direct main"
     description:
-      name: gg_process
-      sha256: a81c1a0b8905eacb80c78e5cf6a096327220823ab5a61fdd2ebdcb5ad5ad157c
-      url: "https://pub.dev"
-    source: hosted
-    version: "1.1.6"
+      path: "../gg_process"
+      relative: true
+    source: path
+    version: "1.1.7"
   gg_project_root:
     dependency: "direct main"
     description:
