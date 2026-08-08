@@ -1,5 +1,19 @@
 # Changelog
 
+## Unreleased
+
+### Changed
+
+- Allow to publish hybrid packages
+
+### Fixed
+
+- `get-ref-version` looks a dependency up in **every** manifest of a repository
+instead of only the one `Utils.findLanguage` picks. That one is Dart whenever a
+`pubspec.yaml` exists, so an npm dependency of a hybrid came back as "not
+found" and its version was never propagated during a publish. `set-ref-version`
+already worked this way.
+
 ## 4.0.0 - 2026-08-08
 
 ## 3.5.0 - 2026-08-04

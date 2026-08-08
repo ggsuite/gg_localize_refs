@@ -8,6 +8,9 @@ import 'dart:io';
 
 import 'package:gg_args/gg_args.dart';
 import 'package:gg_console_colors/gg_console_colors.dart';
+import 'package:gg_localize_refs/src/backend/languages/dart_language.dart';
+import 'package:gg_localize_refs/src/backend/languages/project_language.dart';
+import 'package:gg_localize_refs/src/backend/languages/typescript_language.dart';
 import 'package:gg_localize_refs/src/backend/utils.dart';
 import 'package:gg_log/gg_log.dart';
 
@@ -40,21 +43,40 @@ class GetRefVersion extends DirCommand<dynamic> {
     }
 
     try {
-      final language = Utils.findLanguage(directory);
-      final manifest = await language.readManifest(directory);
+      // A cross-language hybrid carries both a pubspec.yaml and a
+      // package.json. Look the dependency up in EVERY manifest of the repo,
+      // not just the one Utils.findLanguage would pick — that one is Dart
+      // whenever a pubspec exists, so an npm dependency of a hybrid came back
+      // as »not found« and its version was never propagated. Mirrors what
+      // SetRefVersion already does; a single-language repo is unaffected.
+      final languages = <ProjectLanguage>[
+        DartProjectLanguage(),
+        TypeScriptProjectLanguage(),
+      ].where((l) => l.isProjectRoot(directory)).toList();
 
-      final reference = language.findDependency(
-        manifest.parsed,
-        dependencyName,
-      );
-      if (reference == null) {
-        ggLog?.call(yellow('Dependency $dependencyName not found.'));
-        return null;
+      if (languages.isEmpty) {
+        // Reproduce the original "manifest not found" error.
+        Utils.findLanguage(directory);
       }
 
-      final result = language.stringifyDependencyForReading(reference.value);
-      ggLog?.call(result);
-      return result;
+      for (final language in languages) {
+        final manifest = await language.readManifest(directory);
+
+        final reference = language.findDependency(
+          manifest.parsed,
+          dependencyName,
+        );
+        if (reference == null) {
+          continue;
+        }
+
+        final result = language.stringifyDependencyForReading(reference.value);
+        ggLog?.call(result);
+        return result;
+      }
+
+      ggLog?.call(yellow('Dependency $dependencyName not found.'));
+      return null;
     } catch (e) {
       throw Exception(red('An error occurred: $e'));
     }
