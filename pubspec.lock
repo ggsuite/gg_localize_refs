@@ -117,10 +117,10 @@ packages:
     dependency: "direct main"
     description:
       name: gg_args
-      sha256: "222878732924c6228b62db2d19c9b9220b591ba812ce8d0e10e5e72258e5c9d2"
+      sha256: fc48c151593a0fbf3d0407811e8d6260507997ee5ef52e525d3c12999aa519aa
       url: "https://pub.dev"
     source: hosted
-    version: "2.2.0"
+    version: "3.0.0"
   gg_capture_print:
     dependency: "direct dev"
     description:
@@ -141,10 +141,10 @@ packages:
     dependency: "direct main"
     description:
       name: gg_git
-      sha256: "24186fc47fb915f8528bac4c2e7770fcba42f0ff1e76365ce987e607c8aaf173"
+      sha256: "404804189bab23a636e94921d679d2fdc83af2b2aaeeb3e66eec1a0501dd4d35"
       url: "https://pub.dev"
     source: hosted
-    version: "3.2.2"
+    version: "4.0.0"
   gg_hash:
     dependency: transitive
     description:
@@ -157,10 +157,10 @@ packages:
     dependency: transitive
     description:
       name: gg_is_flutter
-      sha256: fff69b13b6d3e6bcf4f5c3048dcc0ebf461dec80ed0e8400cdda10f88b54d368
+      sha256: b165263b09b9a933753578406c7fe14305509e5a08b70b2d11e6fddf87b10d2e
       url: "https://pub.dev"
     source: hosted
-    version: "1.0.7"
+    version: "2.0.0"
   gg_is_github:
     dependency: transitive
     description:
@@ -197,18 +197,18 @@ packages:
     dependency: "direct main"
     description:
       name: gg_project_root
-      sha256: "31f2e2e8bef4594a84ae331c05252439ea1596f589a001fd3378be6b499584b4"
+      sha256: d78c1d72123003d3533baf57a798b0453cfc15a8b8e5e8919cee90976445889d
       url: "https://pub.dev"
     source: hosted
-    version: "1.0.4"
+    version: "2.0.0"
   gg_publish:
     dependency: "direct main"
     description:
       name: gg_publish
-      sha256: c918f7933340d910505ed75d2aac20d2f45c9494c76cfb1e7fe0805d7bf0d3cf
+      sha256: a8014a98b5423b28a65337d1e289805ae611821e4548284af7f12b9dc969a6ef
       url: "https://pub.dev"
     source: hosted
-    version: "3.10.2"
+    version: "4.0.0"
   gg_status_printer:
     dependency: transitive
     description:
@@ -221,10 +221,10 @@ packages:
     dependency: transitive
     description:
       name: gg_version
-      sha256: bb0c4b86c73803780cfa766bf2784c62dbdc214e0bd02e3068bb627d241c9e4b
+      sha256: "47261c547445a15514c0e2565065928f4469b7283ad151da0fee8a199403dbb4"
       url: "https://pub.dev"
     source: hosted
-    version: "4.6.1"
+    version: "5.0.0"
   glob:
     dependency: transitive
     description:
