@@ -5,6 +5,7 @@
 ### Changed
 
 - Move gg commit conventions from gg_git to gg_one_core
+- Improve commit behavior
 
 ## 4.1.0 - 2026-08-09
 
