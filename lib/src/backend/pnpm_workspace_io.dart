@@ -272,6 +272,12 @@ class PnpmWorkspaceIo {
   /// name keeps a hand written git pin for a foreign package alive). A hand
   /// written override such as a version constraint is left alone.
   ///
+  /// With [restrictToNames] the sweep of the other owned entries is skipped:
+  /// only the overrides of [dependencyNames] are removed. A caller that
+  /// retires a single dependency — `gg do rm repo`, which drops the repo
+  /// that just left the ticket — must not take the still-linked siblings of
+  /// the remaining repos with it, and those are owned link overrides too.
+  ///
   /// An empty `overrides` section is dropped entirely. The file is deleted
   /// only when this package created it — recognized by [headerComment] —
   /// and nothing else is left in it; an existing settings file keeps its
@@ -279,6 +285,7 @@ class PnpmWorkspaceIo {
   PubspecOverridesEdit removeOwnedOverrides({
     required Directory projectDir,
     required Iterable<String> dependencyNames,
+    bool restrictToNames = false,
   }) {
     final overridesFile = file(projectDir);
     if (!overridesFile.existsSync()) {
@@ -298,15 +305,16 @@ class PnpmWorkspaceIo {
       for (final entry in section.entries)
         if (_isLinkOverride(entry.value) &&
                 (names.contains(entry.key.toString()) ||
-                    isOwnedLinkOverride(
-                      projectDir: projectDir,
-                      name: entry.key.toString(),
-                      value: entry.value,
-                    ) ||
-                    _isDeadLinkOverride(
-                      projectDir: projectDir,
-                      value: entry.value,
-                    )) ||
+                    (!restrictToNames &&
+                        (isOwnedLinkOverride(
+                              projectDir: projectDir,
+                              name: entry.key.toString(),
+                              value: entry.value,
+                            ) ||
+                            _isDeadLinkOverride(
+                              projectDir: projectDir,
+                              value: entry.value,
+                            )))) ||
             (names.contains(entry.key.toString()) &&
                 entry.value is String &&
                 TypeScriptNpmSpec.isGitSpec(entry.value as String)))
