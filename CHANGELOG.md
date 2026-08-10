@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 4.2.1 - 2026-08-10
 
 ### Removed
 
