@@ -1,5 +1,11 @@
 # Changelog
 
+## 4.2.1 - 2026-08-10
+
+### Removed
+
+- Merge .ticket with ticket.json. Remove usage of .ticket
+
 ## 4.2.0 - 2026-08-09
 
 ### Changed

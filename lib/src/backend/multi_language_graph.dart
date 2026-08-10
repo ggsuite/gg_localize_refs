@@ -140,9 +140,9 @@ class MultiLanguageGraph {
   /// belongs to (`<workspace>/<org>/<repo>`); then the grandparent is the
   /// workspace root. Both gg workspaces are recognized by a marker they always
   /// carry — the ocean by its folder name (`.ocean`, or the legacy
-  /// `.master`), a ticket workspace by its `.ticket` file — so a plain folder
-  /// of sibling checkouts outside a gg workspace keeps resolving to the
-  /// parent.
+  /// `.master`), a ticket workspace by its `ticket.json` file — so a plain
+  /// folder of sibling checkouts outside a gg workspace keeps resolving to
+  /// the parent.
   Directory workspaceRootOf(Directory projectRoot) {
     final parent = projectRoot.parent.absolute;
     if (_isWorkspaceRoot(parent)) {
@@ -182,7 +182,7 @@ class MultiLanguageGraph {
   static const String _legacyMasterFolderName = '.master';
 
   /// The marker file a gg ticket workspace carries in its root.
-  static const String _ticketFileName = '.ticket';
+  static const String _ticketFileName = 'ticket.json';
 
   /// Returns true when [dir] is the root of a gg workspace.
   bool _isWorkspaceRoot(Directory dir) =>
