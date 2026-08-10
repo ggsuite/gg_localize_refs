@@ -332,7 +332,7 @@ void main() {
     group('organization folders', () {
       // Builds `<workspace>/<org>/<project>` for every entry of [byOrg] and
       // returns the workspace. [marker] is the file that identifies the
-      // workspace root ('.ticket'), or null for a plain folder.
+      // workspace root ('ticket.json'), or null for a plain folder.
       Directory createOrgWorkspace(
         String suffix,
         Map<String, List<String>> byOrg, {
@@ -369,7 +369,7 @@ void main() {
           <String, List<String>>{
             'org_a': <String>['project1', 'project2'],
           },
-          marker: '.ticket',
+          marker: 'ticket.json',
         );
         final project1 = Directory(p.join(workspace.path, 'org_a', 'project1'));
 
@@ -388,7 +388,7 @@ void main() {
             'org_a': <String>['project1'],
             'org_b': <String>['project2'],
           },
-          marker: '.ticket',
+          marker: 'ticket.json',
         );
         final project1 = Directory(p.join(workspace.path, 'org_a', 'project1'));
 
@@ -501,7 +501,7 @@ void main() {
           <String, List<String>>{
             'org_a': <String>['project1', 'project2'],
           },
-          marker: '.ticket',
+          marker: 'ticket.json',
         );
         // A package inside a project must not become a workspace sibling.
         final example = Directory(

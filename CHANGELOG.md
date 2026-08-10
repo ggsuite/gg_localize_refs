@@ -1,5 +1,42 @@
 # Changelog
 
+## 4.2.3 - 2026-08-10
+
+### Fixed
+
+- Various fixes
+
+## 4.2.2 - 2026-08-10
+
+## 4.2.1 - 2026-08-10
+
+### Removed
+
+- Merge .ticket with ticket.json. Remove usage of .ticket
+
+## 4.2.0 - 2026-08-09
+
+### Changed
+
+- Move gg commit conventions from gg_git to gg_one_core
+- Improve commit behavior
+
+## 4.1.0 - 2026-08-09
+
+### Changed
+
+- Allow to publish hybrid packages
+
+### Fixed
+
+- `get-ref-version` looks a dependency up in **every** manifest of a repository
+instead of only the one `Utils.findLanguage` picks. That one is Dart whenever a
+`pubspec.yaml` exists, so an npm dependency of a hybrid came back as "not
+found" and its version was never propagated during a publish. `set-ref-version`
+already worked this way.
+
+## 4.0.0 - 2026-08-08
+
 ## 3.5.0 - 2026-08-04
 
 ### Changed

@@ -385,6 +385,28 @@ void main() {
         expect(edit.content, contains('foreign_git'));
       });
 
+      test('restrictToNames keeps every override not named', () {
+        writeSiblingManifest();
+        workspaceYaml().writeAsStringSync(
+          'overrides:\n'
+          '  dep_a: link:../dep_a\n'
+          '  gone: link:../gone\n'
+          '  dep_b: link:../dep_b\n',
+        );
+
+        final edit = io.removeOwnedOverrides(
+          projectDir: project,
+          dependencyNames: const <String>['dep_b'],
+          restrictToNames: true,
+        );
+
+        // Only dep_b goes: dep_a is a live sibling link and gone is a dead
+        // one — the caller retires a single dependency and owns neither.
+        expect(edit.content, isNot(contains('dep_b')));
+        expect(edit.content, contains('dep_a: link:../dep_a'));
+        expect(edit.content, contains('gone: link:../gone'));
+      });
+
       test('removes the git override of a workspace dependency', () {
         workspaceYaml().writeAsStringSync(
           'allowBuilds:\n  esbuild: true\n'

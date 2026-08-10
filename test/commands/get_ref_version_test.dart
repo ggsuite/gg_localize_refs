@@ -323,6 +323,63 @@ void main() {
         expect(messages.last, contains('not found'));
       });
 
+      test('finds an npm dependency of a hybrid', () async {
+        // A hybrid carries both manifests. Utils.findLanguage picks Dart
+        // whenever a pubspec exists, so the npm dependency used to come back
+        // as »not found« and its version was never propagated.
+        final d = Directory(join(dWorkspace.path, 'hybrid'));
+        await createDirs(<Directory>[d]);
+        File(join(d.path, 'pubspec.yaml')).writeAsStringSync(
+          'name: hybrid\nversion: 1.0.0\ndependencies:\n  dart_dep: ^1.0.0\n',
+        );
+        File(join(d.path, 'package.json')).writeAsStringSync(
+          '{"name":"@org/hybrid","version":"1.0.0","dependencies":'
+          '{"@org/npm-dep":"^2.0.0"}}',
+        );
+
+        messages.clear();
+        await runner.run(<String>[
+          'get-ref-version',
+          '--input',
+          d.path,
+          '--ref',
+          '@org/npm-dep',
+        ]);
+        expect(messages.last.trim(), '^2.0.0');
+
+        // The Dart side keeps working.
+        messages.clear();
+        await runner.run(<String>[
+          'get-ref-version',
+          '--input',
+          d.path,
+          '--ref',
+          'dart_dep',
+        ]);
+        expect(messages.last.trim(), '^1.0.0');
+      });
+
+      test('reports a dependency that is in neither manifest', () async {
+        final d = Directory(join(dWorkspace.path, 'hybrid2'));
+        await createDirs(<Directory>[d]);
+        File(
+          join(d.path, 'pubspec.yaml'),
+        ).writeAsStringSync('name: hybrid2\nversion: 1.0.0\n');
+        File(join(d.path, 'package.json')).writeAsStringSync(
+          '{"name":"@org/hybrid2","version":"1.0.0","dependencies":{}}',
+        );
+
+        messages.clear();
+        await runner.run(<String>[
+          'get-ref-version',
+          '--input',
+          d.path,
+          '--ref',
+          'nowhere',
+        ]);
+        expect(messages.last, contains('not found'));
+      });
+
       test(
         'throws package.json not found message when no manifest exists',
         () async {
