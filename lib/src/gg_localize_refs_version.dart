@@ -9,4 +9,4 @@
 // coverage:ignore-file
 
 /// The version of the `gg_localize_refs` package.
-const String ggLocalizeRefsVersion = '4.2.3';
+const String ggLocalizeRefsVersion = '4.2.4';

@@ -8,6 +8,7 @@ import 'dart:io';
 
 import 'package:gg_console_colors/gg_console_colors.dart';
 import 'package:gg_log/gg_log.dart';
+import 'package:gg_process/gg_process.dart';
 import 'package:path/path.dart' as p;
 
 import 'package:gg_localize_refs/src/backend/languages/project_language.dart';
@@ -95,7 +96,7 @@ class MultiLanguageGraph {
     if (rootNode == null) {
       throw Exception(
         'The node for the package '
-        '${rootDir.path.split(Platform.pathSeparator).last} was not found.',
+        '${rootDir.path.split(ggPlatform.pathSeparator).last} was not found.',
       );
     }
 

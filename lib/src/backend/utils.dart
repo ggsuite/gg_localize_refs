@@ -10,6 +10,7 @@ import 'dart:io';
 import 'package:gg_localize_refs/src/backend/languages/dart_language.dart';
 import 'package:gg_localize_refs/src/backend/languages/project_language.dart';
 import 'package:gg_localize_refs/src/backend/languages/typescript_language.dart';
+import 'package:gg_process/gg_process.dart';
 import 'package:path/path.dart' as p;
 
 /// Resolves the project language and common manifest related file paths.
@@ -100,7 +101,7 @@ class Utils {
     Directory directory,
     String dependencyName,
   ) async {
-    final result = await Process.run('git', <String>[
+    final result = await ggRunProcess('git', <String>[
       'remote',
       'get-url',
       'origin',

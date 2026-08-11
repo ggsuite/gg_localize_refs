@@ -19,6 +19,7 @@ import 'package:gg_localize_refs/src/backend/typescript_npm_spec.dart';
 import 'package:gg_localize_refs/src/backend/utils.dart';
 import 'package:gg_localize_refs/src/commands/change_refs_to_pub_dev.dart';
 import 'package:gg_log/gg_log.dart';
+import 'package:gg_process/gg_process.dart';
 import 'package:path/path.dart' as p;
 
 /// Command that changes workspace dependencies to git references.
@@ -56,7 +57,7 @@ class ChangeRefsToGitFeatureBranch extends DirCommand<dynamic> {
           List<String> arguments, {
           String? workingDirectory,
         }) {
-          return Process.run(
+          return ggRunProcess(
             executable,
             arguments,
             workingDirectory: workingDirectory,
