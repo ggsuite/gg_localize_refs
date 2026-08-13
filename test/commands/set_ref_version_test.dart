@@ -54,9 +54,8 @@ void main() {
         // per-language loop must still update package.json.
         final d = Directory(join(dWorkspace.path, 'bridge'));
         await createDirs(<Directory>[d]);
-        File(
-          join(d.path, 'pubspec.yaml'),
-        ).writeAsStringSync('name: bridge_dart\nversion: 1.0.0\n');
+        File(join(d.path, 'pubspec.yaml'))
+            .writeAsStringSync('name: bridge_dart\nversion: 1.0.0\n');
         File(join(d.path, 'package.json')).writeAsStringSync(
           '{"name":"bridge","version":"1.0.0",'
           '"dependencies":{"foo":"^1.0.0"}}',
@@ -109,9 +108,8 @@ void main() {
       });
 
       test('when pubspec.yaml cannot be parsed', () async {
-        File(
-          join(dParseError.path, 'pubspec.yaml'),
-        ).writeAsStringSync('invalid yaml');
+        File(join(dParseError.path, 'pubspec.yaml'))
+            .writeAsStringSync('invalid yaml');
         await expectLater(
           runner.run(<String>[
             'set-ref-version',
@@ -139,9 +137,8 @@ void main() {
         File(join(d1.path, 'pubspec.yaml')).writeAsStringSync(
           'name: a1\nversion: 1.0.0\ndependencies:\n  a2: ^1.0.0',
         );
-        File(
-          join(d2.path, 'pubspec.yaml'),
-        ).writeAsStringSync('name: a2\nversion: 1.0.0');
+        File(join(d2.path, 'pubspec.yaml'))
+            .writeAsStringSync('name: a2\nversion: 1.0.0');
 
         await expectLater(
           runner.run(<String>[
@@ -285,9 +282,8 @@ void main() {
           File(join(d1.path, 'pubspec.yaml')).writeAsStringSync(
             'name: b1\nversion: 1.0.0\ndependencies:\n  b2: ^1.0.0',
           );
-          File(
-            join(d2.path, 'pubspec.yaml'),
-          ).writeAsStringSync('name: b2\nversion: 1.0.0');
+          File(join(d2.path, 'pubspec.yaml'))
+              .writeAsStringSync('name: b2\nversion: 1.0.0');
 
           await runner.run(<String>[
             'set-ref-version',
@@ -298,9 +294,8 @@ void main() {
             '--version',
             '^2.0.0',
           ]);
-          final content = File(
-            join(d1.path, 'pubspec.yaml'),
-          ).readAsStringSync();
+          final content = File(join(d1.path, 'pubspec.yaml'))
+              .readAsStringSync();
           expect(content, contains('b2: ^2.0.0'));
         },
       );
@@ -335,9 +330,8 @@ void main() {
             '--version',
             '^3.0.0',
           ]);
-          final content = File(
-            join(d1.path, 'pubspec.yaml'),
-          ).readAsStringSync();
+          final content = File(join(d1.path, 'pubspec.yaml'))
+              .readAsStringSync();
           expect(content, contains('c2:'));
           expect(content, contains('git:'));
           expect(content, contains('version: ^3.0.0'));
@@ -354,9 +348,8 @@ void main() {
           '    git:\n      url: git@github.com:user/d2.git\n'
           '      ref: main',
         );
-        File(
-          join(d2.path, 'pubspec.yaml'),
-        ).writeAsStringSync('name: d2\nversion: 1.0.0');
+        File(join(d2.path, 'pubspec.yaml'))
+            .writeAsStringSync('name: d2\nversion: 1.0.0');
 
         await runner.run(<String>[
           'set-ref-version',
@@ -382,9 +375,8 @@ void main() {
           '    git: git@github.com:user/d2b.git\n'
           '    version: ^1.0.0\n',
         );
-        File(
-          join(d2.path, 'pubspec.yaml'),
-        ).writeAsStringSync('name: d2b\nversion: 1.0.0\npublish_to: none\n');
+        File(join(d2.path, 'pubspec.yaml'))
+            .writeAsStringSync('name: d2b\nversion: 1.0.0\npublish_to: none\n');
 
         Process.runSync('git', <String>['init'], workingDirectory: d2.path);
         Process.runSync('git', <String>[
@@ -421,9 +413,8 @@ void main() {
           '      tag_pattern: "{{version}}"\n'
           '    version: ^1.0.0\n',
         );
-        File(
-          join(d2.path, 'pubspec.yaml'),
-        ).writeAsStringSync('name: d2c\nversion: 1.0.0\npublish_to: none\n');
+        File(join(d2.path, 'pubspec.yaml'))
+            .writeAsStringSync('name: d2c\nversion: 1.0.0\npublish_to: none\n');
 
         Process.runSync('git', <String>['init'], workingDirectory: d2.path);
         Process.runSync('git', <String>[
@@ -455,9 +446,8 @@ void main() {
         File(join(d1.path, 'pubspec.yaml')).writeAsStringSync(
           'name: e1\nversion: 1.0.0\ndependencies:\n  e2:\n    path: ../e2',
         );
-        File(
-          join(d2.path, 'pubspec.yaml'),
-        ).writeAsStringSync('name: e2\nversion: 1.0.0');
+        File(join(d2.path, 'pubspec.yaml'))
+            .writeAsStringSync('name: e2\nversion: 1.0.0');
 
         await runner.run(<String>[
           'set-ref-version',
@@ -480,9 +470,8 @@ void main() {
         File(join(d1.path, 'pubspec.yaml')).writeAsStringSync(
           'name: f1\nversion: 1.0.0\ndev_dependencies:\n  f2: ^1.0.0',
         );
-        File(
-          join(d2.path, 'pubspec.yaml'),
-        ).writeAsStringSync('name: f2\nversion: 1.0.0');
+        File(join(d2.path, 'pubspec.yaml'))
+            .writeAsStringSync('name: f2\nversion: 1.0.0');
 
         await runner.run(<String>[
           'set-ref-version',
@@ -504,9 +493,8 @@ void main() {
         File(join(d1.path, 'pubspec.yaml')).writeAsStringSync(
           'name: g1\nversion: 1.0.0\ndependencies:\n  g2: ^1.0.0',
         );
-        File(
-          join(d2.path, 'pubspec.yaml'),
-        ).writeAsStringSync('name: g2\nversion: 1.0.0');
+        File(join(d2.path, 'pubspec.yaml'))
+            .writeAsStringSync('name: g2\nversion: 1.0.0');
         messages.clear();
         await runner.run(<String>[
           'set-ref-version',
@@ -531,9 +519,8 @@ void main() {
             'name: op_exact_1\nversion: 1.0.0\n'
             'dependencies:\n  op_exact_2: 1.0.0',
           );
-          File(
-            join(d2.path, 'pubspec.yaml'),
-          ).writeAsStringSync('name: op_exact_2\nversion: 1.0.0');
+          File(join(d2.path, 'pubspec.yaml'))
+              .writeAsStringSync('name: op_exact_2\nversion: 1.0.0');
 
           await runner.run(<String>[
             'set-ref-version',
@@ -544,9 +531,8 @@ void main() {
             '--version',
             '2.0.0',
           ]);
-          final content = File(
-            join(d1.path, 'pubspec.yaml'),
-          ).readAsStringSync();
+          final content = File(join(d1.path, 'pubspec.yaml'))
+              .readAsStringSync();
           expect(content, contains('op_exact_2: 2.0.0'));
           expect(content, isNot(contains('op_exact_2: ^2.0.0')));
           expect(content, isNot(contains('op_exact_2: ~2.0.0')));
@@ -560,9 +546,8 @@ void main() {
             'name: op_caret_1\nversion: 1.0.0\n'
             'dependencies:\n  op_caret_2: ^1.0.0',
           );
-          File(
-            join(d2.path, 'pubspec.yaml'),
-          ).writeAsStringSync('name: op_caret_2\nversion: 1.0.0');
+          File(join(d2.path, 'pubspec.yaml'))
+              .writeAsStringSync('name: op_caret_2\nversion: 1.0.0');
 
           await runner.run(<String>[
             'set-ref-version',
@@ -573,9 +558,8 @@ void main() {
             '--version',
             '2.0.0',
           ]);
-          final content = File(
-            join(d1.path, 'pubspec.yaml'),
-          ).readAsStringSync();
+          final content = File(join(d1.path, 'pubspec.yaml'))
+              .readAsStringSync();
           expect(content, contains('op_caret_2: ^2.0.0'));
         });
 
@@ -610,9 +594,8 @@ void main() {
             '--version',
             '3.0.0',
           ]);
-          final content = File(
-            join(d1.path, 'pubspec.yaml'),
-          ).readAsStringSync();
+          final content = File(join(d1.path, 'pubspec.yaml'))
+              .readAsStringSync();
           expect(content, contains('git:'));
           expect(content, contains('version: ^3.0.0'));
         });
@@ -725,9 +708,8 @@ void main() {
             '^9.9.9',
           ]);
 
-          final content = File(
-            join(consumer.path, 'package.json'),
-          ).readAsStringSync();
+          final content = File(join(consumer.path, 'package.json'))
+              .readAsStringSync();
           expect(
             content,
             contains(
@@ -766,9 +748,8 @@ void main() {
             '1.2.3',
           ]);
 
-          final content = File(
-            join(consumer.path, 'package.json'),
-          ).readAsStringSync();
+          final content = File(join(consumer.path, 'package.json'))
+              .readAsStringSync();
           expect(
             content,
             contains(
@@ -806,9 +787,8 @@ void main() {
           '^0.0.2',
         ]);
 
-        final content = File(
-          join(consumer.path, 'package.json'),
-        ).readAsStringSync();
+        final content = File(join(consumer.path, 'package.json'))
+            .readAsStringSync();
         expect(
           content,
           contains(
@@ -844,9 +824,8 @@ void main() {
           '^2.0.0',
         ]);
 
-        final content = File(
-          join(consumer.path, 'package.json'),
-        ).readAsStringSync();
+        final content = File(join(consumer.path, 'package.json'))
+            .readAsStringSync();
         // Only the spec shape matters here, not the temp-dir origin path.
         expect(content, contains('"@scope/priv_dep": "git+'));
         expect(content, contains('#semver:^2.0.0'));
@@ -859,9 +838,8 @@ void main() {
           final dep = Directory(join(dWorkspace.path, 'pub_dep'));
           final consumer = Directory(join(dWorkspace.path, 'consumer_pub'));
           await createDirs(<Directory>[dep, consumer]);
-          File(
-            join(dep.path, 'package.json'),
-          ).writeAsStringSync('{"name":"@scope/pub_dep","version":"1.0.0"}');
+          File(join(dep.path, 'package.json'))
+              .writeAsStringSync('{"name":"@scope/pub_dep","version":"1.0.0"}');
           File(join(consumer.path, 'package.json')).writeAsStringSync(
             '{"name":"consumer_pub","dependencies":'
             '{"@scope/pub_dep": "git+https://example.com/scope/pub_dep.git"}}',
@@ -877,9 +855,8 @@ void main() {
             '^1.0.0',
           ]);
 
-          final content = File(
-            join(consumer.path, 'package.json'),
-          ).readAsStringSync();
+          final content = File(join(consumer.path, 'package.json'))
+              .readAsStringSync();
           expect(content, contains('"@scope/pub_dep": "^1.0.0"'));
         },
       );

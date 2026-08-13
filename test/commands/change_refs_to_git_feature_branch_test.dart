@@ -192,9 +192,8 @@ void main() {
         });
 
         test('when pubspec.yaml cannot be parsed', () async {
-          File(
-            p.join(dParseError.path, 'pubspec.yaml'),
-          ).writeAsStringSync('invalid yaml');
+          File(p.join(dParseError.path, 'pubspec.yaml'))
+              .writeAsStringSync('invalid yaml');
 
           await expectLater(
             runner.run(<String>[
@@ -312,9 +311,8 @@ void main() {
             'git@github.com:user/test2.git',
           ], workingDirectory: dProject2.path);
 
-          final pubspecBefore = File(
-            p.join(dProject1.path, 'pubspec.yaml'),
-          ).readAsStringSync();
+          final pubspecBefore = File(p.join(dProject1.path, 'pubspec.yaml'))
+              .readAsStringSync();
 
           final localMessages = <String>[];
           final local = ChangeRefsToGitFeatureBranch(ggLog: localMessages.add);
@@ -464,9 +462,8 @@ void main() {
           );
           expect(overrides.readAsStringSync(), contains('path: ../project2'));
 
-          final pubspecBefore = File(
-            p.join(dProject1.path, 'pubspec.yaml'),
-          ).readAsStringSync();
+          final pubspecBefore = File(p.join(dProject1.path, 'pubspec.yaml'))
+              .readAsStringSync();
 
           final localMessages = <String>[];
           final local = ChangeRefsToGitFeatureBranch(ggLog: localMessages.add);
@@ -597,9 +594,8 @@ void main() {
               p.join(dWorkspaceSucceed.path, 'project2'),
             );
 
-            File(
-              p.join(dProject1.path, '.gitignore'),
-            ).writeAsStringSync('pubspec_overrides.yaml\n');
+            File(p.join(dProject1.path, '.gitignore'))
+                .writeAsStringSync('pubspec_overrides.yaml\n');
 
             Process.runSync('git', <String>[
               'init',
@@ -656,9 +652,8 @@ void main() {
           );
           expect(localMessages[1], contains('Localize refs of test1_ts'));
 
-          final resultJson = File(
-            p.join(dProject1.path, 'package.json'),
-          ).readAsStringSync();
+          final resultJson = File(p.join(dProject1.path, 'package.json'))
+              .readAsStringSync();
           expect(resultJson, contains('test2_ts'));
           // SCP shorthand must be normalized to npm `git+ssh://…` form.
           expect(
@@ -694,9 +689,8 @@ void main() {
             'git@github.com:user/test2_ts.git',
           ], workingDirectory: dProject2.path);
 
-          final manifestBefore = File(
-            p.join(dProject1.path, 'package.json'),
-          ).readAsStringSync();
+          final manifestBefore = File(p.join(dProject1.path, 'package.json'))
+              .readAsStringSync();
 
           final localMessages = <String>[];
           final local = ChangeRefsToGitFeatureBranch(ggLog: localMessages.add);
@@ -709,16 +703,14 @@ void main() {
           expect(localMessages[1], contains('Localize refs of test1_ts'));
 
           // The manifest keeps its published constraints.
-          final manifestAfter = File(
-            p.join(dProject1.path, 'package.json'),
-          ).readAsStringSync();
+          final manifestAfter = File(p.join(dProject1.path, 'package.json'))
+              .readAsStringSync();
           expect(manifestAfter, manifestBefore);
 
           // The feature branch pin sits in the overrides, SCP shorthand
           // normalized to the npm `git+ssh://…` form.
-          final overrides = File(
-            p.join(dProject1.path, 'pnpm-workspace.yaml'),
-          ).readAsStringSync();
+          final overrides = File(p.join(dProject1.path, 'pnpm-workspace.yaml'))
+              .readAsStringSync();
           expect(
             overrides,
             contains(
@@ -780,16 +772,14 @@ void main() {
           );
 
           // The backed up constraint is back in the manifest …
-          final manifest = File(
-            p.join(dProject1.path, 'package.json'),
-          ).readAsStringSync();
+          final manifest = File(p.join(dProject1.path, 'package.json'))
+              .readAsStringSync();
           expect(manifest, contains('"test2_ts": "^1.0.0"'));
           expect(manifest, isNot(contains('link:')));
 
           // … and the pin moved into the overrides.
-          final overrides = File(
-            p.join(dProject1.path, 'pnpm-workspace.yaml'),
-          ).readAsStringSync();
+          final overrides = File(p.join(dProject1.path, 'pnpm-workspace.yaml'))
+              .readAsStringSync();
           expect(overrides, contains('#feature123'));
 
           deleteDirs(<Directory>[workspace]);
@@ -811,9 +801,8 @@ void main() {
           );
           final dProject1 = Directory(p.join(workspace.path, 'project1'));
           final dProject2 = Directory(p.join(workspace.path, 'project2'));
-          File(
-            p.join(dProject1.path, '.gg', 'gg_localize_refs_backup_ts.json'),
-          ).deleteSync();
+          File(p.join(dProject1.path, '.gg', 'gg_localize_refs_backup_ts.json'))
+              .deleteSync();
 
           Process.runSync('git', <String>[
             'init',
@@ -838,9 +827,8 @@ void main() {
             contains('cannot be migrated automatically'),
           );
 
-          final overrides = File(
-            p.join(dProject1.path, 'pnpm-workspace.yaml'),
-          ).readAsStringSync();
+          final overrides = File(p.join(dProject1.path, 'pnpm-workspace.yaml'))
+              .readAsStringSync();
           expect(overrides, contains('#feature123'));
 
           deleteDirs(<Directory>[workspace]);
@@ -859,9 +847,8 @@ void main() {
               '"dependencies":{"proj2_ts":'
               '"git+git@github.com:user/proj2_ts.git#feature123"}}',
             );
-            File(
-              p.join(project2.path, 'package.json'),
-            ).writeAsStringSync('{"name":"proj2_ts","version":"1.0.0"}');
+            File(p.join(project2.path, 'package.json'))
+                .writeAsStringSync('{"name":"proj2_ts","version":"1.0.0"}');
 
             final localMessages = <String>[];
             final local = ChangeRefsToGitFeatureBranch(
@@ -889,9 +876,8 @@ void main() {
             final pkgDir = Directory(p.join(root.path, 'project_no_deps'));
             await createDirs(<Directory>[pkgDir]);
 
-            File(
-              p.join(pkgDir.path, 'package.json'),
-            ).writeAsStringSync('{"name":"nodeps","version":"1.0.0"}');
+            File(p.join(pkgDir.path, 'package.json'))
+                .writeAsStringSync('{"name":"nodeps","version":"1.0.0"}');
 
             final language = TypeScriptProjectLanguage();
             final node = await language.createNode(pkgDir);
@@ -928,9 +914,8 @@ void main() {
               '{"name":"proj1_ts_git","version":"1.0.0",'
               '"devDependencies":{"proj2_ts":"^1.0.0"}}',
             );
-            File(
-              p.join(project2.path, 'package.json'),
-            ).writeAsStringSync('{"name":"proj2_ts","version":"1.0.0"}');
+            File(p.join(project2.path, 'package.json'))
+                .writeAsStringSync('{"name":"proj2_ts","version":"1.0.0"}');
 
             Process.runSync('git', <String>[
               'init',
@@ -950,9 +935,8 @@ void main() {
               project1.path,
             ]);
 
-            final resultJson = File(
-              p.join(project1.path, 'package.json'),
-            ).readAsStringSync();
+            final resultJson = File(p.join(project1.path, 'package.json'))
+                .readAsStringSync();
             expect(resultJson, contains('proj2_ts'));
             expect(resultJson, contains('git+'));
             expect(resultJson, contains('#feature/dev-only'));

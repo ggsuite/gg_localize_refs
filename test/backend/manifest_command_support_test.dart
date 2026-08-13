@@ -354,13 +354,12 @@ void main() {
         final dependencyDir = Directory(p.join(workspace.path, 'dep'))
           ..createSync(recursive: true);
 
-        File(
-          p.join(projectDir.path, 'pubspec_overrides.yaml'),
-        ).writeAsStringSync(
-          'dependency_overrides:\n'
-          '  dep:\n'
-          '    path: ../dep\n',
-        );
+        File(p.join(projectDir.path, 'pubspec_overrides.yaml'))
+            .writeAsStringSync(
+              'dependency_overrides:\n'
+              '  dep:\n'
+              '    path: ../dep\n',
+            );
 
         final language = DartProjectLanguage();
         final node = createNode(

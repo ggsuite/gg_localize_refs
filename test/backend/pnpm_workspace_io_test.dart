@@ -21,9 +21,8 @@ void main() {
   File workspaceYaml() => File(p.join(project.path, 'pnpm-workspace.yaml'));
 
   void writeSiblingManifest([String name = 'dep_a']) {
-    File(
-      p.join(sibling.path, 'package.json'),
-    ).writeAsStringSync('{"name":"$name","version":"1.0.0"}');
+    File(p.join(sibling.path, 'package.json'))
+        .writeAsStringSync('{"name":"$name","version":"1.0.0"}');
   }
 
   setUp(() {
@@ -58,16 +57,14 @@ void main() {
       });
 
       test('returns false for a yarn packageManager field', () {
-        File(
-          p.join(project.path, 'package.json'),
-        ).writeAsStringSync('{"name":"x","packageManager":"yarn@4.0.0"}');
+        File(p.join(project.path, 'package.json'))
+            .writeAsStringSync('{"name":"x","packageManager":"yarn@4.0.0"}');
         expect(PnpmWorkspaceIo.isPnpmManaged(project), isFalse);
       });
 
       test('returns false without any pnpm marker', () {
-        File(
-          p.join(project.path, 'package.json'),
-        ).writeAsStringSync('{"name":"x"}');
+        File(p.join(project.path, 'package.json'))
+            .writeAsStringSync('{"name":"x"}');
         expect(PnpmWorkspaceIo.isPnpmManaged(project), isFalse);
       });
 
@@ -76,9 +73,8 @@ void main() {
       });
 
       test('returns false for an unparsable package.json', () {
-        File(
-          p.join(project.path, 'package.json'),
-        ).writeAsStringSync('not json');
+        File(p.join(project.path, 'package.json'))
+            .writeAsStringSync('not json');
         expect(PnpmWorkspaceIo.isPnpmManaged(project), isFalse);
       });
 
@@ -557,9 +553,8 @@ void main() {
       });
 
       test('rejects a link whose sibling manifest is unparsable', () {
-        File(
-          p.join(sibling.path, 'package.json'),
-        ).writeAsStringSync('not json');
+        File(p.join(sibling.path, 'package.json'))
+            .writeAsStringSync('not json');
 
         expect(
           io.isOwnedLinkOverride(

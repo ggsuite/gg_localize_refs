@@ -4,7 +4,7 @@ version: 4.2.4
 repository: https://github.com/ggsuite/gg_localize_refs.git
 
 environment:
-  sdk: ">=3.8.0 <4.0.0"
+  sdk: ">=3.13.0 <4.0.0"
 
 dependencies:
   args: ^2.7.0
@@ -18,7 +18,7 @@ dependencies:
   gg_project_root: ^2.0.1
   pubspec_parse: ^1.5.0
   gg_git: ^4.1.2
-  gg_publish: ^4.3.2
+  gg_publish: ^4.3.3
 dev_dependencies:
   gg_capture_print: ^1.0.10
   lints: ^6.1.0

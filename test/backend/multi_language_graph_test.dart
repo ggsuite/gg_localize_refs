@@ -203,12 +203,10 @@ void main() {
       final p2 = Directory(p.join(workspace.path, 'pkg2'));
       await createDirs(<Directory>[p1, p2]);
 
-      File(
-        p.join(p1.path, 'pubspec.yaml'),
-      ).writeAsStringSync('name: shared\nversion: 1.0.0\n');
-      File(
-        p.join(p2.path, 'pubspec.yaml'),
-      ).writeAsStringSync('name: shared\nversion: 2.0.0\n');
+      File(p.join(p1.path, 'pubspec.yaml'))
+          .writeAsStringSync('name: shared\nversion: 1.0.0\n');
+      File(p.join(p2.path, 'pubspec.yaml'))
+          .writeAsStringSync('name: shared\nversion: 2.0.0\n');
 
       final graph = MultiLanguageGraph(
         languages: <ProjectLanguage>[DartProjectLanguage()],
@@ -264,12 +262,10 @@ void main() {
       final workspace = createWorkspace(suffix);
       final bridge = Directory(p.join(workspace.path, 'bridge'));
       bridge.createSync(recursive: true);
-      File(
-        p.join(bridge.path, 'pubspec.yaml'),
-      ).writeAsStringSync('name: bridge_dart\nversion: 1.0.0\n');
-      File(
-        p.join(bridge.path, 'package.json'),
-      ).writeAsStringSync('{"name":"bridge","version":"1.0.0"}');
+      File(p.join(bridge.path, 'pubspec.yaml'))
+          .writeAsStringSync('name: bridge_dart\nversion: 1.0.0\n');
+      File(p.join(bridge.path, 'package.json'))
+          .writeAsStringSync('{"name":"bridge","version":"1.0.0"}');
       File(p.join(bridge.path, 'tsconfig.json')).writeAsStringSync('{}');
       return bridge;
     }
@@ -295,9 +291,8 @@ void main() {
         final workspace = createWorkspace('mlg_dart_root');
         final project = Directory(p.join(workspace.path, 'project'));
         await createDirs(<Directory>[project]);
-        File(
-          p.join(project.path, 'pubspec.yaml'),
-        ).writeAsStringSync('name: only_dart\nversion: 1.0.0\n');
+        File(p.join(project.path, 'pubspec.yaml'))
+            .writeAsStringSync('name: only_dart\nversion: 1.0.0\n');
 
         final root = await dualGraph().findRootAndLanguages(project);
 
@@ -507,9 +502,8 @@ void main() {
         final example = Directory(
           p.join(workspace.path, 'org_a', 'project2', 'example'),
         )..createSync(recursive: true);
-        File(
-          p.join(example.path, 'pubspec.yaml'),
-        ).writeAsStringSync('name: test2_example\nversion: 1.0.0\n');
+        File(p.join(example.path, 'pubspec.yaml'))
+            .writeAsStringSync('name: test2_example\nversion: 1.0.0\n');
 
         final result =
             await MultiLanguageGraph(

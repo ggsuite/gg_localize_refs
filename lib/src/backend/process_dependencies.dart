@@ -16,15 +16,14 @@ import 'package:gg_log/gg_log.dart';
 import 'package:pubspec_parse/pubspec_parse.dart';
 
 /// Signature of a function that modifies a project manifest.
-typedef ModifyManifest =
-    Future<void> Function(
-      ProjectNode node,
-      File manifestFile,
-      String manifestContent,
-      dynamic manifestMap,
-      FileChangesBuffer fileChangesBuffer,
-      GgLog ggLog,
-    );
+typedef ModifyManifest = Future<void> Function(
+  ProjectNode node,
+  File manifestFile,
+  String manifestContent,
+  dynamic manifestMap,
+  FileChangesBuffer fileChangesBuffer,
+  GgLog ggLog,
+);
 
 /// Process the project
 Future<void> processProject({

@@ -73,9 +73,8 @@ void main() {
       });
 
       test('when pubspec.yaml cannot be parsed', () async {
-        File(
-          join(dParseError.path, 'pubspec.yaml'),
-        ).writeAsStringSync('invalid yaml');
+        File(join(dParseError.path, 'pubspec.yaml'))
+            .writeAsStringSync('invalid yaml');
         await initGit(dParseError);
         await expectLater(
           runner.run(<String>[
@@ -98,9 +97,8 @@ void main() {
       test('when --ref is missing', () async {
         final d = Directory(join(dWorkspace.path, 'missing_ref'));
         await createDirs(<Directory>[d]);
-        File(
-          join(d.path, 'pubspec.yaml'),
-        ).writeAsStringSync('name: a\nversion: 1.0.0');
+        File(join(d.path, 'pubspec.yaml'))
+            .writeAsStringSync('name: a\nversion: 1.0.0');
         await expectLater(
           runner.run(<String>['get-ref-version', '--input', d.path]),
           throwsA(
@@ -123,9 +121,8 @@ void main() {
           'name: p1\nversion: 1.0.0\n'
           'dependencies:\n  p2: ^1.2.3',
         );
-        File(
-          join(d2.path, 'pubspec.yaml'),
-        ).writeAsStringSync('name: p2\nversion: 1.0.0');
+        File(join(d2.path, 'pubspec.yaml'))
+            .writeAsStringSync('name: p2\nversion: 1.0.0');
         messages.clear();
         await runner.run(<String>[
           'get-ref-version',
@@ -146,9 +143,8 @@ void main() {
           'name: p3\nversion: 1.0.0\n'
           'dev_dependencies:\n  p4: ^2.0.0',
         );
-        File(
-          join(d2.path, 'pubspec.yaml'),
-        ).writeAsStringSync('name: p4\nversion: 1.0.0');
+        File(join(d2.path, 'pubspec.yaml'))
+            .writeAsStringSync('name: p4\nversion: 1.0.0');
         messages.clear();
         await runner.run(<String>[
           'get-ref-version',
@@ -169,9 +165,8 @@ void main() {
           '  p6:\n    git:\n      url: git@github.com:user/p6.git\n'
           '      ref: main',
         );
-        File(
-          join(d2.path, 'pubspec.yaml'),
-        ).writeAsStringSync('name: p6\nversion: 1.0.0');
+        File(join(d2.path, 'pubspec.yaml'))
+            .writeAsStringSync('name: p6\nversion: 1.0.0');
         messages.clear();
         await runner.run(<String>[
           'get-ref-version',
@@ -196,9 +191,8 @@ void main() {
           '    git: git@github.com:user/p6b.git\n'
           '    version: ^2.0.1\n',
         );
-        File(
-          join(d2.path, 'pubspec.yaml'),
-        ).writeAsStringSync('name: p6b\nversion: 1.0.0');
+        File(join(d2.path, 'pubspec.yaml'))
+            .writeAsStringSync('name: p6b\nversion: 1.0.0');
         messages.clear();
         await runner.run(<String>[
           'get-ref-version',
@@ -218,9 +212,8 @@ void main() {
           'name: p7\nversion: 1.0.0\n'
           'dependencies:\n  p8:\n    path: ../p8',
         );
-        File(
-          join(d2.path, 'pubspec.yaml'),
-        ).writeAsStringSync('name: p8\nversion: 1.0.0');
+        File(join(d2.path, 'pubspec.yaml'))
+            .writeAsStringSync('name: p8\nversion: 1.0.0');
         messages.clear();
         await runner.run(<String>[
           'get-ref-version',
@@ -362,9 +355,8 @@ void main() {
       test('reports a dependency that is in neither manifest', () async {
         final d = Directory(join(dWorkspace.path, 'hybrid2'));
         await createDirs(<Directory>[d]);
-        File(
-          join(d.path, 'pubspec.yaml'),
-        ).writeAsStringSync('name: hybrid2\nversion: 1.0.0\n');
+        File(join(d.path, 'pubspec.yaml'))
+            .writeAsStringSync('name: hybrid2\nversion: 1.0.0\n');
         File(join(d.path, 'package.json')).writeAsStringSync(
           '{"name":"@org/hybrid2","version":"1.0.0","dependencies":{}}',
         );
