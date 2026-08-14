@@ -117,114 +117,114 @@ packages:
     dependency: "direct main"
     description:
       name: gg_args
-      sha256: "9b7e1d7a235b16c3ce198cac36429f563208f8b6785b297da0aca48102c9fbd5"
+      sha256: "99f885af29fc49bc2a302ca7cbfbda96f9d35efc3ae9885122ba076bd5d45d8a"
       url: "https://pub.dev"
     source: hosted
-    version: "3.0.1"
+    version: "3.1.0"
   gg_capture_print:
     dependency: "direct dev"
     description:
       name: gg_capture_print
-      sha256: "8bb2016a9522e04a90b0d6df4678ce38aad05c6a9fa75d8b483ccbeee94663a5"
+      sha256: ba6a19c2d7aad636cb306e556ceddb5646ed37380d18ebe9e894586e3e42c5cf
       url: "https://pub.dev"
     source: hosted
-    version: "1.0.10"
+    version: "1.1.0"
   gg_console_colors:
     dependency: "direct main"
     description:
       name: gg_console_colors
-      sha256: "72907fbc75815c07d99a810738913c681b8a3179cf6b998130367150e367879e"
+      sha256: "35d4607f068e726ddbdd3e1ca2db215aa6497bd01ef72eb626c620ce58cb1888"
       url: "https://pub.dev"
     source: hosted
-    version: "2.3.1"
+    version: "2.4.0"
   gg_git:
     dependency: "direct main"
     description:
       name: gg_git
-      sha256: fc46f114ccfb39ca5036a96f21adf75d61651d7ecd20f34f64e8a4c36bff1e07
+      sha256: c92f66d4ec0cddfe9bc646860efaffb93fd3e637f005f26f9e3dddec04e835cd
       url: "https://pub.dev"
     source: hosted
-    version: "4.1.2"
+    version: "4.2.0"
   gg_hash:
     dependency: transitive
     description:
       name: gg_hash
-      sha256: "472fa084f59eac6503dd8701e91e30e055b3c86030d516dfdaec19a8aa7cab02"
+      sha256: befbed905239350d5a93ffbad39bf0225ae483aaea5ff4318bb1dbf5406d91e6
       url: "https://pub.dev"
     source: hosted
-    version: "1.1.1"
+    version: "1.2.0"
   gg_is_flutter:
     dependency: transitive
     description:
       name: gg_is_flutter
-      sha256: e42e7697c5bd725b86b0920fffda905767c839b06ceb6407ffcaf09ba67a428b
+      sha256: "3a6c62e3d9c9450036c08d0466bd9d68026c53ae3c4582076bac183d46f19dd7"
       url: "https://pub.dev"
     source: hosted
-    version: "2.0.1"
+    version: "2.1.0"
   gg_is_github:
     dependency: transitive
     description:
       name: gg_is_github
-      sha256: dd98aac6ec6b7c7f27a1093fdf1406762e7dbc6cc3f8245c8eaade33fed8c70d
+      sha256: b831382b1f05bb902185940f3c6000d6570c9508f287a539b4433d5e3b76d378
       url: "https://pub.dev"
     source: hosted
-    version: "1.0.7"
+    version: "1.1.0"
   gg_lang:
     dependency: transitive
     description:
       name: gg_lang
-      sha256: a5837a810421b1337d0f665876d2f551e05765d8464dd5e4ee9afcc1cd898e8f
+      sha256: "087fc18ede77a85fa568dbc6d3e1102e52f1f79eb02f6b9054ec2d0d4bd4623c"
       url: "https://pub.dev"
     source: hosted
-    version: "0.5.1"
+    version: "0.6.0"
   gg_log:
     dependency: "direct main"
     description:
       name: gg_log
-      sha256: "02f9a361ff9054de66c6eb21a7b173c1b989f68a22bab4af10267f17a12763d2"
+      sha256: ce3e914a4b276b5462b23dca28d63b3648985f6f2744c5d957faa31ee15ab544
       url: "https://pub.dev"
     source: hosted
-    version: "1.0.7"
+    version: "1.1.0"
   gg_process:
     dependency: "direct main"
     description:
       name: gg_process
-      sha256: "2e955e598dcd07c6564a7c308cc6a38c18e0fe959ba64dc6c0880674f93c15a6"
+      sha256: e94a32b4cbbba4e100f0eaec66083d67814ef79d6c0a3a84e11d7c5456350427
       url: "https://pub.dev"
     source: hosted
-    version: "1.1.7"
+    version: "1.2.0"
   gg_project_root:
     dependency: "direct main"
     description:
       name: gg_project_root
-      sha256: "54c99c176ce0d0f92a1eb03f4160a41dc911fa2c542dd1679990bfd4969f4023"
+      sha256: d8a7532a4e91e74659ede7260391fa6238d7530602227d7e3e96466d9706f778
       url: "https://pub.dev"
     source: hosted
-    version: "2.0.1"
+    version: "2.1.0"
   gg_publish:
     dependency: "direct main"
     description:
       name: gg_publish
-      sha256: "61d3b21de0761c36d497a1022b430d910c242a4a2ecd0ca50965602f84c01be5"
+      sha256: "85f276912679b210c808b860df32bbaf5853d932143349d5b56ded8cff59a032"
       url: "https://pub.dev"
     source: hosted
-    version: "4.3.3"
+    version: "4.4.0"
   gg_status_printer:
     dependency: transitive
     description:
       name: gg_status_printer
-      sha256: "39fe2e107fcdd6b4c1c222a7c1879486c0c5b4cf1c23be293602fca46dbb7b85"
+      sha256: b33d9d8c21fad3ff86bb988677a89d327471e86ad34fa155695b07c7387644b5
       url: "https://pub.dev"
     source: hosted
-    version: "1.4.3"
+    version: "1.5.0"
   gg_version:
     dependency: transitive
     description:
       name: gg_version
-      sha256: d992007880eb1844c3c90680404ef12b97ab1ba856096b8635c79e09dad2a1ea
+      sha256: "306d38bf812159eaca316cffb569ecf3356ff64982fe828b83fbcfc3f5235db1"
       url: "https://pub.dev"
     source: hosted
-    version: "5.2.2"
+    version: "5.3.0"
   glob:
     dependency: transitive
     description:
