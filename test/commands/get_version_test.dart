@@ -1,5 +1,5 @@
 // @license
-// Copyright (c) 2025 Göran Hegenberg. All Rights Reserved.
+// Copyright (c) ggsuite
 //
 // Use of this source code is governed by terms that can be
 // found in the LICENSE file in the root of this package.
@@ -67,9 +67,8 @@ void main() {
       });
 
       test('when pubspec.yaml cannot be parsed', () async {
-        File(
-          join(dParseError.path, 'pubspec.yaml'),
-        ).writeAsStringSync('invalid yaml');
+        File(join(dParseError.path, 'pubspec.yaml'))
+            .writeAsStringSync('invalid yaml');
         await initGit(dParseError);
         await expectLater(
           runner.run(<String>['get-version', '--input', dParseError.path]),
@@ -89,12 +88,10 @@ void main() {
         final d1 = Directory(join(dWorkspace.path, 'v1'));
         final d2 = Directory(join(dWorkspace.path, 'v2'));
         await createDirs(<Directory>[d1, d2]);
-        File(
-          join(d1.path, 'pubspec.yaml'),
-        ).writeAsStringSync('name: v1\nversion: 1.2.3');
-        File(
-          join(d2.path, 'pubspec.yaml'),
-        ).writeAsStringSync('name: v2\nversion: 1.0.0');
+        File(join(d1.path, 'pubspec.yaml'))
+            .writeAsStringSync('name: v1\nversion: 1.2.3');
+        File(join(d2.path, 'pubspec.yaml'))
+            .writeAsStringSync('name: v2\nversion: 1.0.0');
         messages.clear();
         await runner.run(<String>['get-version', '--input', d1.path]);
         expect(messages.first, contains('Running get-version in'));
@@ -113,9 +110,8 @@ void main() {
       test('reads version from package.json', () async {
         final d = Directory(join(dWorkspace.path, 'ts1'));
         await createDirs(<Directory>[d]);
-        File(
-          join(d.path, 'package.json'),
-        ).writeAsStringSync('{"name":"ts1","version":"2.3.4"}');
+        File(join(d.path, 'package.json'))
+            .writeAsStringSync('{"name":"ts1","version":"2.3.4"}');
         messages.clear();
         await runner.run(<String>['get-version', '--input', d.path]);
         expect(messages.first, contains('Running get-version in'));

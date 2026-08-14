@@ -41,15 +41,14 @@ void main() {
           await expectLater(
             processProject(
               directory: dNoProjectRootError,
-              modifyFunction:
-                  (
-                    ProjectNode node,
-                    File manifestFile,
-                    String manifestContent,
-                    dynamic manifestMap,
-                    FileChangesBuffer fileChangesBuffer,
-                    GgLog ggLog,
-                  ) async {},
+              modifyFunction: (
+                ProjectNode node,
+                File manifestFile,
+                String manifestContent,
+                dynamic manifestMap,
+                FileChangesBuffer fileChangesBuffer,
+                GgLog ggLog,
+              ) async {},
               fileChangesBuffer: FileChangesBuffer(),
               ggLog: messages.add,
             ),
@@ -157,23 +156,21 @@ void main() {
           'dev_dependencies:\n'
           '  p2: ^1.0.0\n',
         );
-        File(
-          join(p2.path, 'pubspec.yaml'),
-        ).writeAsStringSync('name: p2\nversion: 1.0.0\n');
+        File(join(p2.path, 'pubspec.yaml'))
+            .writeAsStringSync('name: p2\nversion: 1.0.0\n');
 
         final messages = <String>[];
 
         await processProject(
           directory: p1,
-          modifyFunction:
-              (
-                ProjectNode node,
-                File manifestFile,
-                String manifestContent,
-                dynamic manifestMap,
-                FileChangesBuffer fileChangesBuffer,
-                GgLog ggLog,
-              ) async {},
+          modifyFunction: (
+            ProjectNode node,
+            File manifestFile,
+            String manifestContent,
+            dynamic manifestMap,
+            FileChangesBuffer fileChangesBuffer,
+            GgLog ggLog,
+          ) async {},
           fileChangesBuffer: FileChangesBuffer(),
           ggLog: messages.add,
         );
@@ -193,23 +190,21 @@ void main() {
             '{"name":"p1_ts","version":"1.0.0",'
             '"devDependencies":{"p2_ts":"^1.0.0"}}',
           );
-          File(
-            join(p2.path, 'package.json'),
-          ).writeAsStringSync('{"name":"p2_ts","version":"1.0.0"}');
+          File(join(p2.path, 'package.json'))
+              .writeAsStringSync('{"name":"p2_ts","version":"1.0.0"}');
 
           final messages = <String>[];
 
           await processProject(
             directory: p1,
-            modifyFunction:
-                (
-                  ProjectNode node,
-                  File manifestFile,
-                  String manifestContent,
-                  dynamic manifestMap,
-                  FileChangesBuffer fileChangesBuffer,
-                  GgLog ggLog,
-                ) async {},
+            modifyFunction: (
+              ProjectNode node,
+              File manifestFile,
+              String manifestContent,
+              dynamic manifestMap,
+              FileChangesBuffer fileChangesBuffer,
+              GgLog ggLog,
+            ) async {},
             fileChangesBuffer: FileChangesBuffer(),
             ggLog: messages.add,
           );
@@ -239,12 +234,10 @@ void main() {
           '"dependencies":{"ts_dep":"^1.0.0"}}',
         );
         File(join(bridge.path, 'tsconfig.json')).writeAsStringSync('{}');
-        File(
-          join(dartDep.path, 'pubspec.yaml'),
-        ).writeAsStringSync('name: dart_dep\nversion: 1.0.0\n');
-        File(
-          join(tsDep.path, 'package.json'),
-        ).writeAsStringSync('{"name":"ts_dep","version":"1.0.0"}');
+        File(join(dartDep.path, 'pubspec.yaml'))
+            .writeAsStringSync('name: dart_dep\nversion: 1.0.0\n');
+        File(join(tsDep.path, 'package.json'))
+            .writeAsStringSync('{"name":"ts_dep","version":"1.0.0"}');
         File(join(tsDep.path, 'tsconfig.json')).writeAsStringSync('{}');
 
         final visited = <String>[];
@@ -328,9 +321,8 @@ void main() {
             'name: p1\nversion: 1.0.0\n'
             'dependencies:\n  p2: ^1.0.0',
           );
-          File(
-            join(p2.path, 'pubspec.yaml'),
-          ).writeAsStringSync('name: p2\nversion: 1.0.0');
+          File(join(p2.path, 'pubspec.yaml'))
+              .writeAsStringSync('name: p2\nversion: 1.0.0');
 
           final graph = MultiLanguageGraph(
             languages: <ProjectLanguage>[DartProjectLanguage()],
@@ -355,9 +347,8 @@ void main() {
             'name: p1\nversion: 1.0.0\n'
             'dependencies:\n  p2: ^1.0.0',
           );
-          File(
-            join(p2.path, 'pubspec.yaml'),
-          ).writeAsStringSync('name: p2\nversion: 1.0.0');
+          File(join(p2.path, 'pubspec.yaml'))
+              .writeAsStringSync('name: p2\nversion: 1.0.0');
 
           final graph = MultiLanguageGraph(
             languages: <ProjectLanguage>[DartProjectLanguage()],

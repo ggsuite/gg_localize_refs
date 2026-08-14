@@ -1,6 +1,5 @@
 // @license
-// Copyright (c) 2019 - 2024 Dr. Gabriel Gatzsche. All Rights
-// Reserved.
+// Copyright (c) ggsuite
 //
 // Use of this source code is governed by terms that can be
 // found in the LICENSE file in the root of this package.
@@ -39,9 +38,8 @@ void main() {
 
     test('isProjectRoot returns true when pubspec.yaml exists', () {
       final dir = createTempProject('dart_lang_is_root_true');
-      File(
-        '${dir.path}/pubspec.yaml',
-      ).writeAsStringSync('name: test_pkg\nversion: 1.0.0');
+      File('${dir.path}/pubspec.yaml')
+          .writeAsStringSync('name: test_pkg\nversion: 1.0.0');
 
       expect(language.isProjectRoot(dir), isTrue);
     });
@@ -56,9 +54,8 @@ void main() {
       'createNode parses pubspec.yaml and sets name and directory',
       () async {
         final dir = createTempProject('dart_lang_create_node');
-        File(
-          '${dir.path}/pubspec.yaml',
-        ).writeAsStringSync('name: my_package\nversion: 1.0.0');
+        File('${dir.path}/pubspec.yaml')
+            .writeAsStringSync('name: my_package\nversion: 1.0.0');
 
         final node = await language.createNode(dir);
 
@@ -109,9 +106,8 @@ void main() {
       final dir = createTempProject('dart_lang_read_deps_invalid');
 
       // First write a valid pubspec so that createNode succeeds.
-      File(
-        '${dir.path}/pubspec.yaml',
-      ).writeAsStringSync('name: pkg\nversion: 1.0.0\n');
+      File('${dir.path}/pubspec.yaml')
+          .writeAsStringSync('name: pkg\nversion: 1.0.0\n');
       final node = await language.createNode(dir);
 
       // Now overwrite with invalid content so readDeclaredDependencies fails.

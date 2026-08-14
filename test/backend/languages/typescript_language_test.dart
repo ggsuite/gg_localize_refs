@@ -1,6 +1,5 @@
 // @license
-// Copyright (c) 2019 - 2024 Dr. Gabriel Gatzsche. All Rights
-// Reserved.
+// Copyright (c) ggsuite
 //
 // Use of this source code is governed by terms that can be
 // found in the LICENSE file in the root of this package.
@@ -40,9 +39,8 @@ void main() {
 
     test('isProjectRoot returns true when package.json exists', () {
       final dir = createTempProject('ts_lang_is_root_true');
-      File(
-        '${dir.path}/package.json',
-      ).writeAsStringSync('{"name":"pkg","version":"1.0.0"}');
+      File('${dir.path}/package.json')
+          .writeAsStringSync('{"name":"pkg","version":"1.0.0"}');
 
       expect(language.isProjectRoot(dir), isTrue);
     });
@@ -57,9 +55,8 @@ void main() {
       'createNode parses package.json and sets name and directory',
       () async {
         final dir = createTempProject('ts_lang_create_node');
-        File(
-          '${dir.path}/package.json',
-        ).writeAsStringSync('{"name":"my_ts_pkg","version":"1.0.0"}');
+        File('${dir.path}/package.json')
+            .writeAsStringSync('{"name":"my_ts_pkg","version":"1.0.0"}');
 
         final node = await language.createNode(dir);
 

@@ -1,5 +1,5 @@
 // @license
-// Copyright (c) 2019 - 2024 Dr. Gabriel Gatzsche. All Rights Reserved.
+// Copyright (c) ggsuite
 //
 // Use of this source code is governed by terms that can be
 // found in the LICENSE file in the root of this package.
@@ -14,9 +14,9 @@ void main() {
   group('.vscode/launch.json', () {
     test('pathes in launch.json', () {
       const String launchJsonPath = '.vscode/launch.json';
-      final String launchJson = File(
-        launchJsonPath,
-      ).readAsStringSync().replaceAll(RegExp(r'//.*'), '');
+      final String launchJson = File(launchJsonPath)
+          .readAsStringSync()
+          .replaceAll(RegExp(r'//.*'), '');
 
       final parsedLaunchJson = jsonDecode(launchJson) as Map<String, dynamic>;
 

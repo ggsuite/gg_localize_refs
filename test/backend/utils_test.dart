@@ -1,5 +1,5 @@
 // @license
-// Copyright (c) 2025 Göran Hegenberg. All Rights Reserved.
+// Copyright (c) ggsuite
 //
 // Use of this source code is governed by terms that can be
 // found in the LICENSE file in the root of this package.
@@ -38,9 +38,8 @@ void main() {
         final workspace = createWorkspace('utils_find_language_dart');
         final project = Directory(p.join(workspace.path, 'project'));
         project.createSync(recursive: true);
-        File(
-          p.join(project.path, 'pubspec.yaml'),
-        ).writeAsStringSync('name: test_pkg\nversion: 1.0.0\n');
+        File(p.join(project.path, 'pubspec.yaml'))
+            .writeAsStringSync('name: test_pkg\nversion: 1.0.0\n');
 
         final language = Utils.findLanguage(project);
 
@@ -52,9 +51,8 @@ void main() {
         final workspace = createWorkspace('utils_find_language_ts');
         final project = Directory(p.join(workspace.path, 'project'));
         project.createSync(recursive: true);
-        File(
-          p.join(project.path, 'package.json'),
-        ).writeAsStringSync('{"name":"test_pkg","version":"1.0.0"}');
+        File(p.join(project.path, 'package.json'))
+            .writeAsStringSync('{"name":"test_pkg","version":"1.0.0"}');
 
         final language = Utils.findLanguage(project);
 
@@ -66,12 +64,10 @@ void main() {
         final workspace = createWorkspace('utils_find_language_both');
         final project = Directory(p.join(workspace.path, 'project'));
         project.createSync(recursive: true);
-        File(
-          p.join(project.path, 'pubspec.yaml'),
-        ).writeAsStringSync('name: test_pkg\nversion: 1.0.0\n');
-        File(
-          p.join(project.path, 'package.json'),
-        ).writeAsStringSync('{"name":"test_pkg","version":"1.0.0"}');
+        File(p.join(project.path, 'pubspec.yaml'))
+            .writeAsStringSync('name: test_pkg\nversion: 1.0.0\n');
+        File(p.join(project.path, 'package.json'))
+            .writeAsStringSync('{"name":"test_pkg","version":"1.0.0"}');
 
         final language = Utils.findLanguage(project);
 
@@ -173,12 +169,10 @@ void main() {
         final project = Directory(p.join(workspace.path, 'project'));
         final backupDir = Directory(p.join(project.path, '.gg'))
           ..createSync(recursive: true);
-        File(
-          p.join(backupDir.path, '.gg_localize_refs_backup.json'),
-        ).writeAsStringSync('{"a":"^1.0.0"}');
-        File(
-          p.join(backupDir.path, '.gg_localize_refs_publish_to_backup.json'),
-        ).writeAsStringSync('{"publish_to":"none"}');
+        File(p.join(backupDir.path, '.gg_localize_refs_backup.json'))
+            .writeAsStringSync('{"a":"^1.0.0"}');
+        File(p.join(backupDir.path, '.gg_localize_refs_publish_to_backup.json'))
+            .writeAsStringSync('{"publish_to":"none"}');
 
         expect(
           Utils.dartBackupFile(project).readAsStringSync(),
@@ -206,21 +200,18 @@ void main() {
         final project = Directory(p.join(workspace.path, 'project'));
         final backupDir = Directory(p.join(project.path, '.gg'))
           ..createSync(recursive: true);
-        File(
-          p.join(backupDir.path, '.gg_localize_refs_backup.json'),
-        ).writeAsStringSync('{"oldest":true}');
-        File(
-          p.join(backupDir.path, 'gg_localize_refs_backup.json'),
-        ).writeAsStringSync('{"newer":true}');
+        File(p.join(backupDir.path, '.gg_localize_refs_backup.json'))
+            .writeAsStringSync('{"oldest":true}');
+        File(p.join(backupDir.path, 'gg_localize_refs_backup.json'))
+            .writeAsStringSync('{"newer":true}');
 
         expect(
           Utils.dartBackupFile(project).readAsStringSync(),
           '{"newer":true}',
         );
         expect(
-          File(
-            p.join(backupDir.path, '.gg_localize_refs_backup.json'),
-          ).existsSync(),
+          File(p.join(backupDir.path, '.gg_localize_refs_backup.json'))
+              .existsSync(),
           isTrue,
         );
       });
@@ -231,21 +222,18 @@ void main() {
         final project = Directory(p.join(workspace.path, 'project'));
         final backupDir = Directory(p.join(project.path, '.gg'))
           ..createSync(recursive: true);
-        File(
-          p.join(backupDir.path, 'gg_localize_refs_backup.json'),
-        ).writeAsStringSync('{"legacy":true}');
-        File(
-          p.join(backupDir.path, 'gg_localize_refs_backup_dart.json'),
-        ).writeAsStringSync('{"current":true}');
+        File(p.join(backupDir.path, 'gg_localize_refs_backup.json'))
+            .writeAsStringSync('{"legacy":true}');
+        File(p.join(backupDir.path, 'gg_localize_refs_backup_dart.json'))
+            .writeAsStringSync('{"current":true}');
 
         expect(
           Utils.dartBackupFile(project).readAsStringSync(),
           '{"current":true}',
         );
         expect(
-          File(
-            p.join(backupDir.path, 'gg_localize_refs_backup.json'),
-          ).existsSync(),
+          File(p.join(backupDir.path, 'gg_localize_refs_backup.json'))
+              .existsSync(),
           isTrue,
         );
       });

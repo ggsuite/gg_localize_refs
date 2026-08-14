@@ -1,5 +1,5 @@
 // @license
-// Copyright (c) 2025 Göran Hegenberg. All Rights Reserved.
+// Copyright (c) ggsuite
 //
 // Use of this source code is governed by terms that can be
 // found in the LICENSE file in the root of this package.
@@ -354,13 +354,12 @@ void main() {
         final dependencyDir = Directory(p.join(workspace.path, 'dep'))
           ..createSync(recursive: true);
 
-        File(
-          p.join(projectDir.path, 'pubspec_overrides.yaml'),
-        ).writeAsStringSync(
-          'dependency_overrides:\n'
-          '  dep:\n'
-          '    path: ../dep\n',
-        );
+        File(p.join(projectDir.path, 'pubspec_overrides.yaml'))
+            .writeAsStringSync(
+              'dependency_overrides:\n'
+              '  dep:\n'
+              '    path: ../dep\n',
+            );
 
         final language = DartProjectLanguage();
         final node = createNode(

@@ -1,5 +1,5 @@
 // @license
-// Copyright (c) 2025 Göran Hegenberg. All Rights Reserved.
+// Copyright (c) ggsuite
 //
 // Use of this source code is governed by terms that can be
 // found in the LICENSE file in the root of this package.
@@ -209,9 +209,8 @@ void main() {
 
         group('when pubspec.yaml cannot be parsed', () {
           test('when calling command', () async {
-            File(
-              p.join(dParseError.path, 'pubspec.yaml'),
-            ).writeAsStringSync('invalid yaml');
+            File(p.join(dParseError.path, 'pubspec.yaml'))
+                .writeAsStringSync('invalid yaml');
 
             await expectLater(
               runner.run(<String>[
@@ -280,9 +279,8 @@ void main() {
             p.join(dWorkspaceTransitive.path, 'project1'),
           );
 
-          await ChangeRefsToLocal(
-            ggLog: messages.add,
-          ).get(directory: dProject1, ggLog: messages.add);
+          await ChangeRefsToLocal(ggLog: messages.add)
+              .get(directory: dProject1, ggLog: messages.add);
 
           final overrides = File(
             p.join(dProject1.path, 'pubspec_overrides.yaml'),
@@ -314,9 +312,8 @@ void main() {
             p.join(dWorkspaceSucceed.path, 'project1'),
           );
 
-          final pubspecBefore = File(
-            p.join(dProject1.path, 'pubspec.yaml'),
-          ).readAsStringSync();
+          final pubspecBefore = File(p.join(dProject1.path, 'pubspec.yaml'))
+              .readAsStringSync();
 
           final localMessages = <String>[];
           final local = ChangeRefsToLocal(ggLog: localMessages.add);
@@ -326,9 +323,8 @@ void main() {
           expect(localMessages[1], contains('Localize refs of test1'));
 
           // pubspec.yaml keeps its published constraints untouched.
-          final resultYaml = File(
-            p.join(dProject1.path, 'pubspec.yaml'),
-          ).readAsStringSync();
+          final resultYaml = File(p.join(dProject1.path, 'pubspec.yaml'))
+              .readAsStringSync();
           expect(resultYaml, pubspecBefore);
           expect(resultYaml, isNot(contains('publish_to')));
           expect(resultYaml, isNot(contains('path:')));
@@ -430,9 +426,8 @@ void main() {
               'dependency_overrides:\n'
               '  pinned: 1.2.3\n';
 
-          File(
-            p.join(project1.path, 'pubspec.yaml'),
-          ).writeAsStringSync(pubspec);
+          File(p.join(project1.path, 'pubspec.yaml'))
+              .writeAsStringSync(pubspec);
           File(p.join(project2.path, 'pubspec.yaml')).writeAsStringSync(
             'name: project2\n'
             'version: 1.0.0\n',
@@ -606,9 +601,8 @@ void main() {
                 '    git: git@github.com:ggsuite/testproject_gg_2.git\n'
                 '    version: ^1.0.0\n';
 
-            File(
-              p.join(project1.path, 'pubspec.yaml'),
-            ).writeAsStringSync(pubspec);
+            File(p.join(project1.path, 'pubspec.yaml'))
+                .writeAsStringSync(pubspec);
             File(p.join(project2.path, 'pubspec.yaml')).writeAsStringSync(
               'name: project2\n'
               'version: 1.0.0\n',
@@ -645,9 +639,8 @@ void main() {
             );
 
             expect(
-              File(
-                p.join(project1.path, 'pubspec_overrides.yaml'),
-              ).readAsStringSync(),
+              File(p.join(project1.path, 'pubspec_overrides.yaml'))
+                  .readAsStringSync(),
               contains('path: ../project2'),
             );
 
@@ -693,16 +686,14 @@ void main() {
               contains('Migrate refs of project1 out of pubspec.yaml'),
             );
 
-            final resultYaml = File(
-              p.join(project1.path, 'pubspec.yaml'),
-            ).readAsStringSync();
+            final resultYaml = File(p.join(project1.path, 'pubspec.yaml'))
+                .readAsStringSync();
             expect(resultYaml, contains('project2: ^7.0.0'));
             expect(resultYaml, isNot(contains('path:')));
 
             expect(
-              File(
-                p.join(project1.path, 'pubspec_overrides.yaml'),
-              ).readAsStringSync(),
+              File(p.join(project1.path, 'pubspec_overrides.yaml'))
+                  .readAsStringSync(),
               contains('path: ../project2'),
             );
 
@@ -753,16 +744,14 @@ void main() {
             final local = ChangeRefsToLocal(ggLog: messages.add);
             await local.get(directory: project1, ggLog: messages.add);
 
-            final resultYaml = File(
-              p.join(project1.path, 'pubspec.yaml'),
-            ).readAsStringSync();
+            final resultYaml = File(p.join(project1.path, 'pubspec.yaml'))
+                .readAsStringSync();
             expect(resultYaml, contains('project2: ^8.0.0'));
             expect(resultYaml, isNot(contains('git:')));
 
             expect(
-              File(
-                p.join(project1.path, 'pubspec_overrides.yaml'),
-              ).readAsStringSync(),
+              File(p.join(project1.path, 'pubspec_overrides.yaml'))
+                  .readAsStringSync(),
               contains('path: ../project2'),
             );
 
@@ -793,10 +782,58 @@ void main() {
             final local = ChangeRefsToLocal(ggLog: messages.add);
             await local.get(directory: project1, ggLog: messages.add);
 
-            final resultYaml = File(
-              p.join(project1.path, 'pubspec.yaml'),
-            ).readAsStringSync();
+            final resultYaml = File(p.join(project1.path, 'pubspec.yaml'))
+                .readAsStringSync();
             expect(resultYaml, contains('publish_to: none'));
+            expect(resultYaml, contains('project2: ^1.2.3'));
+
+            deleteDirs(<Directory>[workspace]);
+          },
+        );
+
+        test(
+          'reverts the injected publish_to when no refs are localized',
+          () async {
+            final workspace = createTempDir('localize_publish_to_revert');
+            final project1 = Directory(p.join(workspace.path, 'project1'));
+            final project2 = Directory(p.join(workspace.path, 'project2'));
+            await createDirs(<Directory>[project1, project2]);
+
+            // The refs are not localized, only the publish_to was injected.
+            File(p.join(project1.path, 'pubspec.yaml')).writeAsStringSync(
+              'name: project1\n'
+              'version: 1.0.0\n'
+              'publish_to: none\n'
+              'dependencies:\n'
+              '  project2: ^1.2.3\n',
+            );
+            File(p.join(project2.path, 'pubspec.yaml')).writeAsStringSync(
+              'name: project2\n'
+              'version: 1.0.0\n',
+            );
+
+            final backupFile = File(
+              p.join(
+                project1.path,
+                '.gg',
+                'gg_localize_refs_publish_to_backup.json',
+              ),
+            );
+            backupFile.parent.createSync(recursive: true);
+            backupFile.writeAsStringSync('{"publish_to_original": null}');
+
+            final localMessages = <String>[];
+            final local = ChangeRefsToLocal(ggLog: localMessages.add);
+            await local.get(directory: project1, ggLog: localMessages.add);
+
+            expect(
+              localMessages,
+              contains('Revert the injected publish_to of project1'),
+            );
+
+            final resultYaml = File(p.join(project1.path, 'pubspec.yaml'))
+                .readAsStringSync();
+            expect(resultYaml, isNot(contains('publish_to')));
             expect(resultYaml, contains('project2: ^1.2.3'));
 
             deleteDirs(<Directory>[workspace]);
@@ -813,9 +850,8 @@ void main() {
           final local = ChangeRefsToLocal(ggLog: localMessages.add);
           await local.get(directory: dProject1, ggLog: localMessages.add);
 
-          final resultYaml = File(
-            p.join(dProject1.path, 'pubspec.yaml'),
-          ).readAsStringSync();
+          final resultYaml = File(p.join(dProject1.path, 'pubspec.yaml'))
+              .readAsStringSync();
           expect(resultYaml, contains('test2: ^1.0.0'));
           expect(resultYaml, isNot(contains('path:')));
           expect(resultYaml, isNot(contains('publish_to')));
@@ -825,9 +861,8 @@ void main() {
           expect(resultYaml, endsWith('\n'));
 
           expect(
-            File(
-              p.join(dProject1.path, 'pubspec_overrides.yaml'),
-            ).readAsStringSync(),
+            File(p.join(dProject1.path, 'pubspec_overrides.yaml'))
+                .readAsStringSync(),
             contains('path: ../project2'),
           );
 
@@ -854,9 +889,8 @@ void main() {
           final local = ChangeRefsToLocal(ggLog: messages.add);
           await local.get(directory: dProject1, ggLog: messages.add);
 
-          final resultYaml = File(
-            p.join(dProject1.path, 'pubspec.yaml'),
-          ).readAsStringSync();
+          final resultYaml = File(p.join(dProject1.path, 'pubspec.yaml'))
+              .readAsStringSync();
           expect(resultYaml, contains('test2: ^1.0.0'));
           expect(resultYaml, contains('publish_to: none'));
           expect(
@@ -883,9 +917,8 @@ void main() {
             contains('Kept publish_to: none in'),
           );
 
-          final resultYaml = File(
-            p.join(dProject1.path, 'pubspec.yaml'),
-          ).readAsStringSync();
+          final resultYaml = File(p.join(dProject1.path, 'pubspec.yaml'))
+              .readAsStringSync();
           expect(resultYaml, contains('test2: ^1.0.0'));
           expect(resultYaml, contains('publish_to: none'));
         });
@@ -896,9 +929,8 @@ void main() {
             p.join(dWorkspaceLegacyNoDepsBackup.path, 'project1'),
           );
 
-          final pubspecBefore = File(
-            p.join(dProject1.path, 'pubspec.yaml'),
-          ).readAsStringSync();
+          final pubspecBefore = File(p.join(dProject1.path, 'pubspec.yaml'))
+              .readAsStringSync();
 
           final localMessages = <String>[];
           final local = ChangeRefsToLocal(ggLog: localMessages.add);
@@ -915,9 +947,8 @@ void main() {
             pubspecBefore,
           );
           expect(
-            File(
-              p.join(dProject1.path, 'pubspec_overrides.yaml'),
-            ).readAsStringSync(),
+            File(p.join(dProject1.path, 'pubspec_overrides.yaml'))
+                .readAsStringSync(),
             contains('path: ../project2'),
           );
         });
@@ -956,9 +987,8 @@ void main() {
           expect(localMessages[0], contains('Running change-refs-to-local in'));
           expect(localMessages[1], contains('Localize refs of test1_ts'));
 
-          final resultJson = File(
-            p.join(dProject1.path, 'package.json'),
-          ).readAsStringSync();
+          final resultJson = File(p.join(dProject1.path, 'package.json'))
+              .readAsStringSync();
           expect(resultJson, contains('"test2_ts": "link:../project2"'));
 
           final backupJson = File(
@@ -996,9 +1026,8 @@ void main() {
             final pkgDir = Directory(p.join(root.path, 'project_no_deps'));
             await createDirs(<Directory>[pkgDir]);
 
-            File(
-              p.join(pkgDir.path, 'package.json'),
-            ).writeAsStringSync('{"name":"nodeps","version":"1.0.0"}');
+            File(p.join(pkgDir.path, 'package.json'))
+                .writeAsStringSync('{"name":"nodeps","version":"1.0.0"}');
 
             final language = TypeScriptProjectLanguage();
             final node = await language.createNode(pkgDir);
@@ -1033,17 +1062,15 @@ void main() {
             '{"name":"proj1_ts","version":"1.0.0",'
             '"devDependencies":{"proj2_ts":"^1.0.0"}}',
           );
-          File(
-            p.join(project2.path, 'package.json'),
-          ).writeAsStringSync('{"name":"proj2_ts","version":"1.0.0"}');
+          File(p.join(project2.path, 'package.json'))
+              .writeAsStringSync('{"name":"proj2_ts","version":"1.0.0"}');
 
           final localMessages = <String>[];
           final local = ChangeRefsToLocal(ggLog: localMessages.add);
           await local.get(directory: project1, ggLog: localMessages.add);
 
-          final resultJson = File(
-            p.join(project1.path, 'package.json'),
-          ).readAsStringSync();
+          final resultJson = File(p.join(project1.path, 'package.json'))
+              .readAsStringSync();
           expect(resultJson, contains('"proj2_ts": "link:../project2"'));
 
           final backupJson = File(
@@ -1059,9 +1086,8 @@ void main() {
           final dProject1 = Directory(
             p.join(dWorkspacePnpmSucceed.path, 'project1'),
           );
-          final manifestBefore = File(
-            p.join(dProject1.path, 'package.json'),
-          ).readAsStringSync();
+          final manifestBefore = File(p.join(dProject1.path, 'package.json'))
+              .readAsStringSync();
 
           final localMessages = <String>[];
           final local = ChangeRefsToLocal(ggLog: localMessages.add);
@@ -1070,16 +1096,14 @@ void main() {
           expect(localMessages[1], contains('Localize refs of test1_ts'));
 
           // The manifest keeps its published constraints.
-          final manifestAfter = File(
-            p.join(dProject1.path, 'package.json'),
-          ).readAsStringSync();
+          final manifestAfter = File(p.join(dProject1.path, 'package.json'))
+              .readAsStringSync();
           expect(manifestAfter, manifestBefore);
           expect(manifestAfter, contains('^1.0.0'));
 
           // The redirection sits in the overrides of pnpm-workspace.yaml.
-          final overrides = File(
-            p.join(dProject1.path, 'pnpm-workspace.yaml'),
-          ).readAsStringSync();
+          final overrides = File(p.join(dProject1.path, 'pnpm-workspace.yaml'))
+              .readAsStringSync();
           expect(overrides, startsWith(PnpmWorkspaceIo.headerComment));
           expect(overrides, contains('test2_ts: link:../project2'));
 
@@ -1120,16 +1144,14 @@ void main() {
           );
 
           // The backed up constraints are back in the manifest …
-          final manifest = File(
-            p.join(dProject1.path, 'package.json'),
-          ).readAsStringSync();
+          final manifest = File(p.join(dProject1.path, 'package.json'))
+              .readAsStringSync();
           expect(manifest, contains('"test2_ts": "^1.0.0"'));
           expect(manifest, isNot(contains('link:')));
 
           // … and the redirection moved into the overrides.
-          final overrides = File(
-            p.join(dProject1.path, 'pnpm-workspace.yaml'),
-          ).readAsStringSync();
+          final overrides = File(p.join(dProject1.path, 'pnpm-workspace.yaml'))
+              .readAsStringSync();
           expect(overrides, contains('test2_ts: link:../project2'));
         });
 
@@ -1138,9 +1160,8 @@ void main() {
           final dProject1 = Directory(
             p.join(dWorkspacePnpmLegacy.path, 'project1'),
           );
-          File(
-            p.join(dProject1.path, '.gg', 'gg_localize_refs_backup_ts.json'),
-          ).deleteSync();
+          File(p.join(dProject1.path, '.gg', 'gg_localize_refs_backup_ts.json'))
+              .deleteSync();
 
           final localMessages = <String>[];
           final local = ChangeRefsToLocal(ggLog: localMessages.add);
@@ -1152,15 +1173,13 @@ void main() {
           );
 
           // The manifest keeps its localized specs …
-          final manifest = File(
-            p.join(dProject1.path, 'package.json'),
-          ).readAsStringSync();
+          final manifest = File(p.join(dProject1.path, 'package.json'))
+              .readAsStringSync();
           expect(manifest, contains('link:../project2'));
 
           // … but the overrides are written anyway, so the workspace works.
-          final overrides = File(
-            p.join(dProject1.path, 'pnpm-workspace.yaml'),
-          ).readAsStringSync();
+          final overrides = File(p.join(dProject1.path, 'pnpm-workspace.yaml'))
+              .readAsStringSync();
           expect(overrides, contains('test2_ts: link:../project2'));
         });
 
@@ -1174,9 +1193,8 @@ void main() {
           final local = ChangeRefsToLocal(ggLog: localMessages.add);
           await local.get(directory: dProject1, ggLog: localMessages.add);
 
-          final overrides = File(
-            p.join(dProject1.path, 'pnpm-workspace.yaml'),
-          ).readAsStringSync();
+          final overrides = File(p.join(dProject1.path, 'pnpm-workspace.yaml'))
+              .readAsStringSync();
 
           expect(overrides, contains('# Local experiment - keep me'));
           expect(overrides, contains('allowBuilds'));

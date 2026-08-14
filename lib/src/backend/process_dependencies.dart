@@ -1,5 +1,5 @@
 // @license
-// Copyright (c) 2025 Göran Hegenberg. All Rights Reserved.
+// Copyright (c) ggsuite
 //
 // Use of this source code is governed by terms that can be
 // found in the LICENSE file in the root of this package.
@@ -16,15 +16,14 @@ import 'package:gg_log/gg_log.dart';
 import 'package:pubspec_parse/pubspec_parse.dart';
 
 /// Signature of a function that modifies a project manifest.
-typedef ModifyManifest =
-    Future<void> Function(
-      ProjectNode node,
-      File manifestFile,
-      String manifestContent,
-      dynamic manifestMap,
-      FileChangesBuffer fileChangesBuffer,
-      GgLog ggLog,
-    );
+typedef ModifyManifest = Future<void> Function(
+  ProjectNode node,
+  File manifestFile,
+  String manifestContent,
+  dynamic manifestMap,
+  FileChangesBuffer fileChangesBuffer,
+  GgLog ggLog,
+);
 
 /// Process the project
 Future<void> processProject({

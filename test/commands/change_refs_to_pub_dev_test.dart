@@ -1,5 +1,5 @@
 // @license
-// Copyright (c) 2025 Göran Hegenberg. All Rights Reserved.
+// Copyright (c) ggsuite
 //
 // Use of this source code is governed by terms that can be
 // found in the LICENSE file in the root of this package.
@@ -230,9 +230,8 @@ void main() {
 
         group('when pubspec.yaml cannot be parsed', () {
           test('when calling command', () async {
-            File(
-              join(dParseError.path, 'pubspec.yaml'),
-            ).writeAsStringSync('invalid yaml');
+            File(join(dParseError.path, 'pubspec.yaml'))
+                .writeAsStringSync('invalid yaml');
 
             await expectLater(
               runner.run(<String>[
@@ -255,9 +254,8 @@ void main() {
           final dProject1 = Directory(
             join(dWorkspaceOverridesPresent.path, 'project1'),
           );
-          File(
-            join(dProject1.path, 'pubspec_overrides.yaml'),
-          ).writeAsStringSync('dependency_overrides: [1, 2\n');
+          File(join(dProject1.path, 'pubspec_overrides.yaml'))
+              .writeAsStringSync('dependency_overrides: [1, 2\n');
 
           final unlocal = ChangeRefsToPubDev(ggLog: messages.add);
 
@@ -335,9 +333,8 @@ void main() {
           );
           expect(localMessages[1], contains('Unlocalize refs of test1'));
 
-          final resultYaml = File(
-            join(dProject1.path, 'pubspec.yaml'),
-          ).readAsStringSync();
+          final resultYaml = File(join(dProject1.path, 'pubspec.yaml'))
+              .readAsStringSync();
           expect(resultYaml, isNot(contains('path: ../project2')));
         });
 
@@ -351,9 +348,8 @@ void main() {
           );
           expect(overrides.existsSync(), isTrue);
 
-          final pubspecBefore = File(
-            join(dProject1.path, 'pubspec.yaml'),
-          ).readAsStringSync();
+          final pubspecBefore = File(join(dProject1.path, 'pubspec.yaml'))
+              .readAsStringSync();
 
           final localMessages = <String>[];
           final unlocal = ChangeRefsToPubDev(ggLog: localMessages.add);
@@ -395,9 +391,8 @@ void main() {
             '    path: ../project3\n',
           );
 
-          await ChangeRefsToPubDev(
-            ggLog: messages.add,
-          ).get(directory: dProject1, ggLog: messages.add);
+          await ChangeRefsToPubDev(ggLog: messages.add)
+              .get(directory: dProject1, ggLog: messages.add);
 
           expect(overrides.existsSync(), isFalse);
         });
@@ -426,9 +421,8 @@ void main() {
             '      ref: feature123\n',
           );
 
-          await ChangeRefsToPubDev(
-            ggLog: messages.add,
-          ).get(directory: dProject1, ggLog: messages.add);
+          await ChangeRefsToPubDev(ggLog: messages.add)
+              .get(directory: dProject1, ggLog: messages.add);
 
           expect(overrides.existsSync(), isFalse);
         });
@@ -554,9 +548,8 @@ void main() {
             final unlocal = ChangeRefsToPubDev(ggLog: localMessages.add);
             await unlocal.get(directory: project1, ggLog: localMessages.add);
 
-            final resultYaml = File(
-              join(project1.path, 'pubspec.yaml'),
-            ).readAsStringSync();
+            final resultYaml = File(join(project1.path, 'pubspec.yaml'))
+                .readAsStringSync();
             expect(resultYaml, contains('git:'));
             expect(resultYaml, contains('url:'));
             expect(resultYaml, contains('tag_pattern: "{{version}}"'));
@@ -684,9 +677,8 @@ void main() {
             final unlocal = ChangeRefsToPubDev(ggLog: localMessages.add);
             await unlocal.get(directory: project1, ggLog: localMessages.add);
 
-            final resultYaml = File(
-              join(project1.path, 'pubspec.yaml'),
-            ).readAsStringSync();
+            final resultYaml = File(join(project1.path, 'pubspec.yaml'))
+                .readAsStringSync();
             expect(resultYaml, contains('version: ^5.0.0'));
 
             deleteDirs(<Directory>[workspace]);
@@ -713,9 +705,8 @@ void main() {
           );
           expect(localMessages[1], contains('Unlocalize refs of test1_ts'));
 
-          final resultJson = File(
-            join(dProject1.path, 'package.json'),
-          ).readAsStringSync();
+          final resultJson = File(join(dProject1.path, 'package.json'))
+              .readAsStringSync();
           expect(resultJson, contains('"test2_ts": "git+'));
           // Private dep: saved `^2.0.4` becomes `#semver:^2.0.4`.
           expect(resultJson, contains('#semver:^2.0.4'));
@@ -790,9 +781,8 @@ void main() {
           final dProject1 = Directory(
             join(dWorkspacePnpmOverridesPresent.path, 'project1'),
           );
-          final manifestBefore = File(
-            join(dProject1.path, 'package.json'),
-          ).readAsStringSync();
+          final manifestBefore = File(join(dProject1.path, 'package.json'))
+              .readAsStringSync();
 
           final localMessages = <String>[];
           final local = ChangeRefsToPubDev(ggLog: localMessages.add);
@@ -813,9 +803,8 @@ void main() {
           );
 
           // … and the manifest never carried localized refs to begin with.
-          final manifestAfter = File(
-            join(dProject1.path, 'package.json'),
-          ).readAsStringSync();
+          final manifestAfter = File(join(dProject1.path, 'package.json'))
+              .readAsStringSync();
           expect(manifestAfter, manifestBefore);
         });
 
@@ -829,9 +818,8 @@ void main() {
           final local = ChangeRefsToPubDev(ggLog: localMessages.add);
           await local.get(directory: dProject1, ggLog: localMessages.add);
 
-          final overrides = File(
-            join(dProject1.path, 'pnpm-workspace.yaml'),
-          ).readAsStringSync();
+          final overrides = File(join(dProject1.path, 'pnpm-workspace.yaml'))
+              .readAsStringSync();
 
           // The user's settings and hand written pin survive; the owned
           // link: override is gone.
@@ -850,9 +838,8 @@ void main() {
             final pkgDir = Directory(join(root.path, 'project_no_deps'));
             await createDirs(<Directory>[pkgDir]);
 
-            File(
-              join(pkgDir.path, 'package.json'),
-            ).writeAsStringSync('{"name":"nodeps","version":"1.0.0"}');
+            File(join(pkgDir.path, 'package.json'))
+                .writeAsStringSync('{"name":"nodeps","version":"1.0.0"}');
 
             final language = TypeScriptProjectLanguage();
             final node = await language.createNode(pkgDir);
@@ -1009,9 +996,8 @@ void main() {
           '{"name":"proj1_ts","version":"1.0.0",'
           '"dependencies":{"proj2_ts":"link:../project2"}}';
       File(join(project1.path, 'package.json')).writeAsStringSync(manifest);
-      File(
-        join(project2.path, 'package.json'),
-      ).writeAsStringSync('{"name":"proj2_ts","version":"1.0.0"}');
+      File(join(project2.path, 'package.json'))
+          .writeAsStringSync('{"name":"proj2_ts","version":"1.0.0"}');
       File(join(project1.path, '.gg', 'gg_localize_refs_backup_ts.json'))
         ..createSync(recursive: true)
         ..writeAsStringSync('{"proj2_ts":"^3.1.4"}');
