@@ -17,8 +17,8 @@ dependencies:
   yaml_edit: ^2.2.4
   gg_project_root: ^2.1.0
   pubspec_parse: ^1.6.0
-  gg_git: ^4.2.0
-  gg_publish: ^4.4.0
+  gg_git: ^4.2.1
+  gg_publish: ^4.4.1
 dev_dependencies:
   gg_capture_print: ^1.1.0
   lints: ^6.1.0
