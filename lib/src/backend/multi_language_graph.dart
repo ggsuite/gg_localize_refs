@@ -76,13 +76,13 @@ class MultiLanguageGraph {
         node.dependencies[depName] = depNode;
         depNode.dependents[node.name] = node;
       }
+
+      final devOnly = await language.readDeclaredDevOnlyDependencies(node);
+      node.devOnlyDependencies.addAll(devOnly.where(nodes.containsKey));
     }
 
     // Detect circular dependencies.
-    final coveredNodes = <ProjectNode>[];
-    for (final node in nodes.values) {
-      _detectCircularDependencies(node, coveredNodes);
-    }
+    _checkCircularDependencies(nodes, ggLog);
 
     ProjectNode? rootNode;
     final normalizedRoot = _correctDir(rootDir).path;
@@ -230,30 +230,96 @@ class MultiLanguageGraph {
     }
   }
 
-  void _detectCircularDependencies(
-    ProjectNode node,
-    List<ProjectNode> coveredNodes,
+  /// Verifies that the regular dependencies form no cycle.
+  ///
+  /// A cycle that only a dev dependency closes is allowed: the DNA makes
+  /// helper packages dev-depend on `helix`, while `helix` builds on them.
+  /// Such an edge is ignored for this check only - the graph keeps it, so
+  /// localize and unlocalize still rewrite the reference. Every ignored
+  /// edge is reported via [ggLog]. A cycle made of regular dependencies
+  /// alone remains an error.
+  void _checkCircularDependencies(
+    Map<String, ProjectNode> nodes,
+    GgLog? ggLog,
   ) {
-    if (coveredNodes.contains(node)) {
-      final indexOfCoveredNode = coveredNodes.indexOf(node);
-      final circularNodes = <ProjectNode>[
-        ...coveredNodes.sublist(indexOfCoveredNode),
-        node,
-      ];
-      final circularNames = circularNodes.map((n) => n.name).join(' -> ');
+    final edges = <String, Set<String>>{
+      for (final node in nodes.values)
+        node.name: <String>{...node.dependencies.keys},
+    };
 
-      final part0 = red('Please remove circular dependency:\n');
-      final part1 = yellow(circularNames);
+    while (true) {
+      final cycle = _findCycle(edges);
+      if (cycle == null) {
+        return;
+      }
 
-      throw Exception('$part0$part1');
+      // The edge to cut is picked by name, so the same graph always
+      // yields the same breaks no matter which sequence the packages
+      // were read in.
+      String? cutFrom;
+      String? cutTo;
+      for (var i = 0; i < cycle.length - 1; i++) {
+        final from = cycle[i];
+        final to = cycle[i + 1];
+        if (!nodes[from]!.devOnlyDependencies.contains(to)) {
+          continue;
+        }
+        if (cutTo == null || to.compareTo(cutTo) < 0) {
+          cutFrom = from;
+          cutTo = to;
+        }
+      }
+
+      if (cutFrom == null || cutTo == null) {
+        final part0 = red('Please remove circular dependency:\n');
+        final part1 = yellow(cycle.join(' -> '));
+        throw Exception('$part0$part1');
+      }
+
+      edges[cutFrom]!.remove(cutTo);
+      ggLog?.call(
+        yellow('Broke dev dependency $cutFrom -> $cutTo to resolve a cycle.'),
+      );
+    }
+  }
+
+  /// Returns the names of one cycle in [edges], first and last entry
+  /// equal, or `null` when the graph is acyclic.
+  List<String>? _findCycle(Map<String, Set<String>> edges) {
+    final path = <String>[];
+    final onPath = <String>{};
+    final settled = <String>{};
+
+    List<String>? visit(String name) {
+      if (onPath.contains(name)) {
+        return <String>[...path.sublist(path.indexOf(name)), name];
+      }
+      if (settled.contains(name)) {
+        return null;
+      }
+
+      path.add(name);
+      onPath.add(name);
+      // Copied: the loop above removes edges between two searches.
+      for (final dependency in edges[name]!.toList()) {
+        final cycle = visit(dependency);
+        if (cycle != null) {
+          return cycle;
+        }
+      }
+      path.removeLast();
+      onPath.remove(name);
+      settled.add(name);
+      return null;
     }
 
-    for (final dependency in node.dependencies.values) {
-      _detectCircularDependencies(dependency, <ProjectNode>[
-        ...coveredNodes,
-        node,
-      ]);
+    for (final name in edges.keys) {
+      final cycle = visit(name);
+      if (cycle != null) {
+        return cycle;
+      }
     }
+    return null;
   }
 
   Directory _correctDir(Directory directory) {

@@ -100,6 +100,32 @@ void main() {
       },
     );
 
+    test('readDeclaredDevOnlyDependencies returns the names declared '
+        'only as dev dependency', () async {
+      final dir = createTempProject('ts_lang_read_dev_only');
+      File('${dir.path}/package.json').writeAsStringSync(
+        '{"name":"pkg","version":"1.0.0","dependencies":'
+        '{"a":"^1.0.0"},"devDependencies":{"a":"^1.0.0","b":"^2.0.0"}}',
+      );
+
+      final node = await language.createNode(dir);
+      final devOnly = await language.readDeclaredDevOnlyDependencies(node);
+
+      expect(devOnly, <String>{'b'});
+    });
+
+    test('readDeclaredDevOnlyDependencies returns an empty set without '
+        'a devDependencies section', () async {
+      final dir = createTempProject('ts_lang_read_dev_only_none');
+      File('${dir.path}/package.json')
+          .writeAsStringSync('{"name":"pkg","version":"1.0.0"}');
+
+      final node = await language.createNode(dir);
+      final devOnly = await language.readDeclaredDevOnlyDependencies(node);
+
+      expect(devOnly, isEmpty);
+    });
+
     test('parseManifestContent returns Map for valid JSON object', () {
       const content = '{"name":"pkg","version":"1.0.0"}';
 

@@ -77,6 +77,12 @@ class ProjectNode {
   /// Nodes that depend on this project.
   final Map<String, ProjectNode> dependents = <String, ProjectNode>{};
 
+  /// Names of workspace projects this one needs only as a dev dependency.
+  ///
+  /// Such an edge may close a cycle - see the circular dependency check
+  /// of `MultiLanguageGraph`.
+  final Set<String> devOnlyDependencies = <String>{};
+
   /// Every workspace project this one needs, directly or indirectly.
   ///
   /// Pub honors `dependency_overrides` only from the **root** package of a
@@ -87,8 +93,9 @@ class ProjectNode {
   /// its siblings come from the ticket, and the published version has to
   /// satisfy the local sources.
   ///
-  /// The graph is acyclic - `MultiLanguageGraph` rejects cycles - so the walk
-  /// terminates; the visited set additionally collapses a diamond.
+  /// The walk terminates on any graph: the visited set collapses a diamond
+  /// and stops a cycle a dev dependency closes - `MultiLanguageGraph`
+  /// rejects only cycles of regular dependencies.
   Map<String, ProjectNode> get transitiveDependencies {
     final result = <String, ProjectNode>{};
 
@@ -136,6 +143,10 @@ abstract class ProjectLanguage {
   /// version or spec string as value. Only names are required to build
   /// the workspace graph.
   Future<Map<String, String>> readDeclaredDependencies(ProjectNode node);
+
+  /// Returns the declared dependency names that appear only in the dev
+  /// section of the manifest, not in the regular one.
+  Future<Set<String>> readDeclaredDevOnlyDependencies(ProjectNode node);
 
   /// Parses the manifest content and returns a language specific structure.
   ///

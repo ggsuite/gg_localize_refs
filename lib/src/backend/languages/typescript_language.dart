@@ -75,6 +75,24 @@ class TypeScriptProjectLanguage extends ProjectLanguage {
   }
 
   @override
+  Future<Set<String>> readDeclaredDevOnlyDependencies(ProjectNode node) async {
+    final manifestFile = File('${node.directory.path}/$manifestFileName');
+    final content = await manifestFile.readAsString();
+    final json = jsonDecode(content) as Map<String, dynamic>;
+
+    final regular = json['dependencies'] is Map
+        ? (json['dependencies'] as Map).keys.cast<String>().toSet()
+        : <String>{};
+    if (json['devDependencies'] is! Map) {
+      return <String>{};
+    }
+    return (json['devDependencies'] as Map).keys
+        .cast<String>()
+        .where((name) => !regular.contains(name))
+        .toSet();
+  }
+
+  @override
   dynamic parseManifestContent(String content) {
     final json = jsonDecode(content);
     if (json is Map<String, dynamic>) {

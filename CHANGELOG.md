@@ -1,10 +1,15 @@
 # Changelog
 
-## Unreleased
+## 4.3.1 - 2026-09-01
 
 ### Changed
 
 - Use ggwsm in pipelines
+- Tolerate dependency cycles closed by dev dependencies when building the workspace graph
+
+### Fixed
+
+- Fix Windows-specific test failures that blocked the review
 
 ## 4.3.0 - 2026-08-14
 

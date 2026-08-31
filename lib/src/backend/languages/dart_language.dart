@@ -48,15 +48,7 @@ class DartProjectLanguage extends ProjectLanguage {
 
   @override
   Future<Map<String, String>> readDeclaredDependencies(ProjectNode node) async {
-    final pubspecFile = File('${node.directory.path}/$manifestFileName');
-    final content = await pubspecFile.readAsString();
-
-    late Pubspec pubspec;
-    try {
-      pubspec = Pubspec.parse(content);
-    } catch (e) {
-      throw Exception(red('Error parsing pubspec.yaml:') + e.toString());
-    }
+    final pubspec = await _readPubspec(node);
 
     final result = <String, String>{};
 
@@ -69,6 +61,26 @@ class DartProjectLanguage extends ProjectLanguage {
     }
 
     return result;
+  }
+
+  @override
+  Future<Set<String>> readDeclaredDevOnlyDependencies(ProjectNode node) async {
+    final pubspec = await _readPubspec(node);
+    return pubspec.devDependencies.keys
+        .where((name) => !pubspec.dependencies.containsKey(name))
+        .toSet();
+  }
+
+  /// Reads and parses the pubspec.yaml of [node].
+  Future<Pubspec> _readPubspec(ProjectNode node) async {
+    final pubspecFile = File('${node.directory.path}/$manifestFileName');
+    final content = await pubspecFile.readAsString();
+
+    try {
+      return Pubspec.parse(content);
+    } catch (e) {
+      throw Exception(red('Error parsing pubspec.yaml:') + e.toString());
+    }
   }
 
   @override
