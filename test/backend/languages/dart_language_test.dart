@@ -101,6 +101,25 @@ void main() {
       expect(deps['b'], 'HostedDependency: ^2.0.0');
     });
 
+    test('readDeclaredDevOnlyDependencies returns the names declared '
+        'only as dev dependency', () async {
+      final dir = createTempProject('dart_lang_read_dev_only');
+      File('${dir.path}/pubspec.yaml').writeAsStringSync(
+        'name: pkg\n'
+        'version: 1.0.0\n'
+        'dependencies:\n'
+        '  a: ^1.0.0\n'
+        'dev_dependencies:\n'
+        '  a: ^1.0.0\n'
+        '  b: ^2.0.0\n',
+      );
+
+      final node = await language.createNode(dir);
+      final devOnly = await language.readDeclaredDevOnlyDependencies(node);
+
+      expect(devOnly, <String>{'b'});
+    });
+
     test('readDeclaredDependencies throws when pubspec.yaml '
         'cannot be parsed', () async {
       final dir = createTempProject('dart_lang_read_deps_invalid');

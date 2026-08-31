@@ -187,6 +187,11 @@ class _FakeLanguage extends ProjectLanguage {
   }
 
   @override
+  Future<Set<String>> readDeclaredDevOnlyDependencies(ProjectNode node) async {
+    return <String>{};
+  }
+
+  @override
   dynamic parseManifestContent(String content) {
     return <String, dynamic>{'content': content};
   }

@@ -197,6 +197,111 @@ void main() {
       );
     });
 
+    test('tolerates a cycle a dev-only dependency closes', () async {
+      final workspace = createWorkspace('mlg_dev_cycle');
+      final p1 = Directory(p.join(workspace.path, 'p1'));
+      final p2 = Directory(p.join(workspace.path, 'p2'));
+      await createDirs(<Directory>[p1, p2]);
+
+      File(p.join(p1.path, 'pubspec.yaml')).writeAsStringSync(
+        'name: p1\n'
+        'version: 1.0.0\n'
+        'dependencies:\n'
+        '  p2: ^1.0.0\n',
+      );
+      File(p.join(p2.path, 'pubspec.yaml')).writeAsStringSync(
+        'name: p2\n'
+        'version: 1.0.0\n'
+        'dev_dependencies:\n'
+        '  p1: ^1.0.0\n',
+      );
+
+      final graph = MultiLanguageGraph(
+        languages: <ProjectLanguage>[DartProjectLanguage()],
+      );
+
+      final messages = <String>[];
+      final result = await graph.buildGraph(directory: p1, ggLog: messages.add);
+
+      final all = result.allNodes;
+      final node1 = all['p1']!;
+      final node2 = all['p2']!;
+
+      // The graph keeps the dev edge, so localize and unlocalize still
+      // rewrite the reference.
+      expect(node1.dependencies['p2'], same(node2));
+      expect(node2.dependencies['p1'], same(node1));
+      expect(node2.devOnlyDependencies, <String>{'p1'});
+      expect(
+        messages.join('\n'),
+        contains('Broke dev dependency p2 -> p1 to resolve a cycle.'),
+      );
+    });
+
+    test('breaks the dev edge with the smallest target name', () async {
+      final workspace = createWorkspace('mlg_dev_cycle_smallest');
+      final p1 = Directory(p.join(workspace.path, 'p1'));
+      final p2 = Directory(p.join(workspace.path, 'p2'));
+      await createDirs(<Directory>[p1, p2]);
+
+      File(p.join(p1.path, 'pubspec.yaml')).writeAsStringSync(
+        'name: p1\n'
+        'version: 1.0.0\n'
+        'dev_dependencies:\n'
+        '  p2: ^1.0.0\n',
+      );
+      File(p.join(p2.path, 'pubspec.yaml')).writeAsStringSync(
+        'name: p2\n'
+        'version: 1.0.0\n'
+        'dev_dependencies:\n'
+        '  p1: ^1.0.0\n',
+      );
+
+      final graph = MultiLanguageGraph(
+        languages: <ProjectLanguage>[DartProjectLanguage()],
+      );
+
+      final messages = <String>[];
+      await graph.buildGraph(directory: p1, ggLog: messages.add);
+
+      final joined = messages.join('\n');
+      expect(
+        joined,
+        contains('Broke dev dependency p2 -> p1 to resolve a cycle.'),
+      );
+      expect(RegExp('Broke dev dependency').allMatches(joined).length, 1);
+    });
+
+    test(
+      'stays quiet without a logger when a dev edge closes a cycle',
+      () async {
+        final workspace = createWorkspace('mlg_dev_cycle_no_log');
+        final p1 = Directory(p.join(workspace.path, 'p1'));
+        final p2 = Directory(p.join(workspace.path, 'p2'));
+        await createDirs(<Directory>[p1, p2]);
+
+        File(p.join(p1.path, 'pubspec.yaml')).writeAsStringSync(
+          'name: p1\n'
+          'version: 1.0.0\n'
+          'dependencies:\n'
+          '  p2: ^1.0.0\n',
+        );
+        File(p.join(p2.path, 'pubspec.yaml')).writeAsStringSync(
+          'name: p2\n'
+          'version: 1.0.0\n'
+          'dev_dependencies:\n'
+          '  p1: ^1.0.0\n',
+        );
+
+        final graph = MultiLanguageGraph(
+          languages: <ProjectLanguage>[DartProjectLanguage()],
+        );
+
+        final result = await graph.buildGraph(directory: p1);
+        expect(result.allNodes.length, 2);
+      },
+    );
+
     test('throws when duplicate package names exist in workspace', () async {
       final workspace = createWorkspace('mlg_duplicate');
       final p1 = Directory(p.join(workspace.path, 'pkg1'));
@@ -547,6 +652,11 @@ class _FakeLanguageMissingRootNode extends ProjectLanguage {
   @override
   Future<Map<String, String>> readDeclaredDependencies(ProjectNode node) async {
     return <String, String>{};
+  }
+
+  @override
+  Future<Set<String>> readDeclaredDevOnlyDependencies(ProjectNode node) async {
+    return <String>{};
   }
 
   @override

@@ -5,6 +5,7 @@
 ### Changed
 
 - Use ggwsm in pipelines
+- Tolerate dependency cycles closed by dev dependencies when building the workspace graph
 
 ### Fixed
 
