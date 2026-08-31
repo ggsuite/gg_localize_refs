@@ -13,10 +13,10 @@ dependencies:
   gg_log: ^1.1.0
   gg_process: ^1.2.0
   path: ^1.9.1
-  yaml: ^3.1.3
+  yaml: ^3.1.4
   yaml_edit: ^2.2.4
   gg_project_root: ^2.1.0
-  pubspec_parse: ^1.5.0
+  pubspec_parse: ^1.6.0
   gg_git: ^4.2.0
   gg_publish: ^4.4.0
 dev_dependencies:

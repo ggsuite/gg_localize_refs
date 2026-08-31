@@ -6,6 +6,10 @@
 
 - Use ggwsm in pipelines
 
+### Fixed
+
+- Fix Windows-specific test failures that blocked the review
+
 ## 4.3.0 - 2026-08-14
 
 ### Changed
