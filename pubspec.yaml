@@ -20,7 +20,9 @@ dependencies:
   gg_git: ^4.2.1
   gg_publish: ^4.4.1
 dev_dependencies:
+  dna_ggsuite: ^0.2.0
   gg_capture_print: ^1.1.0
+  helix: ^1.2.1
   lints: ^6.1.0
   test: ^1.31.2
 
