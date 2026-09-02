@@ -15,7 +15,7 @@ dependencies:
   path: ^1.9.1
   yaml: ^3.1.4
   yaml_edit: ^2.2.4
-  gg_project_root: ^2.1.0
+  gg_project_root: ^2.1.1
   pubspec_parse: ^1.6.0
   gg_git: ^4.2.1
   gg_publish: ^4.4.1
