@@ -5,9 +5,9 @@
       "name": "base",
       "package": "helix",
       "ecosystem": null,
-      "resolvedVersion": "1.3.0",
+      "resolvedVersion": "1.7.1",
       "via": null,
-      "hash": "0x705e486e88a93125"
+      "hash": "0x6883da335b415f9d"
     },
     {
       "name": "dna-readme",
@@ -77,23 +77,23 @@
       "name": "dna-scripts",
       "package": "dna_scripts",
       "ecosystem": "pub",
-      "resolvedVersion": "0.1.0",
-      "via": "dna-gg",
-      "hash": "0x9ee08ef13ab4c8d3"
+      "resolvedVersion": "0.2.1",
+      "via": "dna-ggsuite",
+      "hash": "0xe3092339b83504a1"
     },
     {
       "name": "dna-gg",
       "package": "dna_gg",
       "ecosystem": "pub",
-      "resolvedVersion": "0.1.2",
+      "resolvedVersion": "0.2.0",
       "via": "dna-ggsuite",
-      "hash": "0xd5744033dd70c6a3"
+      "hash": "0x97c559b0151610d4"
     },
     {
       "name": "dna-ggsuite",
       "package": "dna_ggsuite",
       "ecosystem": "pub",
-      "resolvedVersion": "0.2.0",
+      "resolvedVersion": "0.2.1",
       "via": "gg-log",
       "hash": "0x72dd616194a8dbe1"
     },
@@ -139,10 +139,11 @@
     }
   ],
   "claude": {
-    "claudeMdInclude": null
+    "claudeMdInclude": null,
+    "claudeMdFromDna": false
   },
-  "baseVersion": "1.3.0",
-  "baseHash": "0x705e486e88a93125",
+  "baseVersion": "1.7.1",
+  "baseHash": "0x6883da335b415f9d",
   "instances": [
     {
       "path": ".claude/skills/blog/SKILL.md",
@@ -394,7 +395,7 @@
     },
     {
       "path": "scripts/functions/get-repo-urls.js",
-      "hash": "0x4c7b3897973acec3"
+      "hash": "0xd101f8b49454b888"
     },
     {
       "path": "scripts/functions/get-version.js",
