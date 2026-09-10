@@ -265,13 +265,12 @@ packages:
     source: hosted
     version: "4.3.0"
   gg_lang:
-    dependency: transitive
+    dependency: "direct overridden"
     description:
-      name: gg_lang
-      sha256: a6989325792f3de66c01a7728d0063104afd872bf2a2563714475b965bdf48d0
-      url: "https://pub.dev"
-    source: hosted
-    version: "0.6.1"
+      path: "../gg_lang"
+      relative: true
+    source: path
+    version: "0.7.0"
   gg_log:
     dependency: "direct main"
     description:
