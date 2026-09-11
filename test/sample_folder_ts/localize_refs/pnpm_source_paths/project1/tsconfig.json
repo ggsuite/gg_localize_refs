@@ -1,0 +1,10 @@
+{
+  "extends": "./tsconfig.workspace.json",
+  "compilerOptions": {
+    /* Distribution */
+    "rootDir": "../..", // sibling checkouts of a ticket may join the program
+    "outDir": "dist/",
+    "noEmit": true
+  },
+  "include": ["./src/"]
+}

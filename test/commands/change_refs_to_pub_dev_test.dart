@@ -15,6 +15,7 @@ import 'package:gg_localize_refs/src/backend/languages/project_language.dart';
 import 'package:gg_localize_refs/src/backend/languages/typescript_language.dart';
 import 'package:gg_localize_refs/src/backend/process_dependencies.dart';
 import 'package:gg_localize_refs/src/backend/utils.dart';
+import 'package:gg_localize_refs/src/commands/change_refs_to_local.dart';
 import 'package:gg_localize_refs/src/commands/change_refs_to_pub_dev.dart';
 import 'package:path/path.dart';
 import 'package:test/test.dart';
@@ -806,6 +807,55 @@ void main() {
           final manifestAfter = File(join(dProject1.path, 'package.json'))
               .readAsStringSync();
           expect(manifestAfter, manifestBefore);
+        });
+
+        test('TypeScript pnpm: empties the source paths of '
+            'tsconfig.workspace.json and keeps the file', () async {
+          final workspace = createTempDir('unlocalize_ts_pnpm_source_paths');
+          copyDirectory(
+            Directory(
+              join(
+                'test',
+                'sample_folder_ts',
+                'localize_refs',
+                'pnpm_source_paths',
+              ),
+            ),
+            workspace,
+          );
+          final dProject1 = Directory(join(workspace.path, 'project1'));
+          final workspaceJson = File(
+            join(dProject1.path, 'tsconfig.workspace.json'),
+          );
+
+          // Localize first, so both the overrides and the source paths exist.
+          await ChangeRefsToLocal(ggLog: (_) {})
+              .get(directory: dProject1, ggLog: (_) {});
+          expect(
+            workspaceJson.readAsStringSync(),
+            contains('../project2/src/index.ts'),
+          );
+
+          final localMessages = <String>[];
+          final local = ChangeRefsToPubDev(ggLog: localMessages.add);
+          await local.get(directory: dProject1, ggLog: localMessages.add);
+
+          expect(
+            localMessages.join('\n'),
+            contains(
+              'Remove the source paths of test1_ts from '
+              'tsconfig.workspace.json',
+            ),
+          );
+
+          // tsconfig.json keeps extending the file, so it stays — with
+          // empty paths, the way the template ships it.
+          expect(
+            workspaceJson.readAsStringSync(),
+            '{\n  "compilerOptions": {\n    "paths": {}\n  }\n}\n',
+          );
+
+          deleteDirs(<Directory>[workspace]);
         });
 
         test('TypeScript pnpm: keeps a user settings file and only drops '

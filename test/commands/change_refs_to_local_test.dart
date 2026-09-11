@@ -1116,6 +1116,77 @@ void main() {
           );
         });
 
+        test('TypeScript pnpm: maps the sibling sources in '
+            'tsconfig.workspace.json when tsconfig.json extends it', () async {
+          final workspace = createTempDir('ts_pnpm_source_paths');
+          copyLocalizeScenarioTs('pnpm_source_paths', workspace);
+          final dProject1 = Directory(p.join(workspace.path, 'project1'));
+          final tsconfigBefore = File(p.join(dProject1.path, 'tsconfig.json'))
+              .readAsStringSync();
+
+          final localMessages = <String>[];
+          final local = ChangeRefsToLocal(ggLog: localMessages.add);
+          await local.get(directory: dProject1, ggLog: localMessages.add);
+
+          expect(
+            localMessages.join('\n'),
+            contains(
+              'Map the workspace dependencies of test1_ts to their sources '
+              'in tsconfig.workspace.json',
+            ),
+          );
+
+          // The install-level redirection is there as before …
+          expect(
+            File(p.join(dProject1.path, 'pnpm-workspace.yaml'))
+                .readAsStringSync(),
+            contains('test2_ts: link:../project2'),
+          );
+
+          // … and the source-level mapping sits in the extended file, while
+          // tsconfig.json with its comments is untouched.
+          final workspaceJson = File(
+            p.join(dProject1.path, 'tsconfig.workspace.json'),
+          ).readAsStringSync();
+          expect(workspaceJson, contains('"test2_ts": [\n'));
+          expect(workspaceJson, contains('"../project2/src/index.ts"'));
+          expect(
+            File(p.join(dProject1.path, 'tsconfig.json')).readAsStringSync(),
+            tsconfigBefore,
+          );
+
+          // A second run changes nothing.
+          final againMessages = <String>[];
+          await ChangeRefsToLocal(ggLog: againMessages.add)
+              .get(directory: dProject1, ggLog: againMessages.add);
+          expect(againMessages[1], contains('No files were changed.'));
+
+          deleteDirs(<Directory>[workspace]);
+        });
+
+        test('TypeScript pnpm: writes no source paths for a project whose '
+            'tsconfig.json does not extend tsconfig.workspace.json', () async {
+          final dProject1 = Directory(
+            p.join(dWorkspacePnpmSucceed.path, 'project1'),
+          );
+          File(
+              p.join(dWorkspacePnpmSucceed.path, 'project2', 'src', 'index.ts'),
+            )
+            ..createSync(recursive: true)
+            ..writeAsStringSync('export const two = 2;\n');
+
+          final localMessages = <String>[];
+          final local = ChangeRefsToLocal(ggLog: localMessages.add);
+          await local.get(directory: dProject1, ggLog: localMessages.add);
+
+          expect(localMessages.join('\n'), isNot(contains('their sources')));
+          expect(
+            File(p.join(dProject1.path, 'tsconfig.workspace.json'))
+                .existsSync(),
+            isFalse,
+          );
+        });
+
         test('TypeScript pnpm: when already localized', () async {
           final dProject1 = Directory(
             p.join(dWorkspacePnpmAlreadyLocalized.path, 'project1'),

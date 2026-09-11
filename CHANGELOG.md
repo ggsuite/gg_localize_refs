@@ -1,5 +1,12 @@
 # Changelog
 
+## 4.5.0 - 2026-09-11
+
+### Added
+
+- `change-refs-to-local` maps the TypeScript dependencies of a workspace to the sources of their sibling checkouts in the `paths` of `tsconfig.workspace.json`, so tests and the editor step into the sibling's `src/` instead of its compiled `dist/`. Written only for a project whose `tsconfig.json` extends that file; `change-refs-to-pub-dev` and `change-refs-to-git-feature-branch` empty the `paths` again.
+- `TsconfigWorkspaceIo` and `parseJsonc` in the public API.
+
 ## 4.4.1 - 2026-09-11
 
 ## 4.4.0 - 2026-09-02
