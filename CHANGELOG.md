@@ -1,5 +1,12 @@
 # Changelog
 
+## Unreleased
+
+### Changed
+
+- **Breaking:** the `tsconfig.workspace.json` source paths of 4.5.0 are gone again, and with them `TsconfigWorkspaceIo` and `parseJsonc`. They needed every repo to extend that file; the shims below replace them and work for any repo.
+- `change-refs-to-local` links a pnpm TypeScript dependency through a shim in `.gg/ts_links/<name>/` — a `package.json` whose `main`/`types` are `./src/index.ts` next to a `src` symlink into the sibling checkout — instead of straight to the sibling. vitest, `tsc` and the editor thereby resolve the dependency to the sibling's TypeScript sources: edits are picked up immediately, stack traces name the `.ts` file, breakpoints in the sibling hit. A sibling without a `src/index.ts` keeps the direct `link:`. `change-refs-to-pub-dev` and `change-refs-to-git-feature-branch` remove the shims.
+
 ## 4.5.0 - 2026-09-11
 
 ### Added

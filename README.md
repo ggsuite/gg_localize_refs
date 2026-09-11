@@ -52,47 +52,36 @@ into `package.json` directly, with the original specs backed up.
 
 ## Debugging across the TypeScript packages of a workspace
 
-A `link:` override redirects the *installed* dependency to the sibling
-checkout, but the consumer still enters it through the `main`/`types` fields
-of the sibling's `package.json` — its compiled `dist/`. That output is missing
+A `link:` straight to the sibling checkout redirects the *installed*
+dependency, but the consumer still enters it through the `main`/`types` of
+the sibling's `package.json` — its compiled `dist/`. That output is missing
 in a fresh checkout, goes stale with every edit of the sibling and carries no
 source map by default, so a test stepping into the dependency lands in
-generated JavaScript and a breakpoint in the sibling's TypeScript is never hit.
+generated JavaScript and a breakpoint in the sibling's TypeScript is never
+hit.
 
-`change-refs-to-local` therefore also maps every workspace dependency to the
-sibling's source in the `paths` of `tsconfig.workspace.json`:
+`change-refs-to-local` therefore links every pnpm dependency through a shim:
 
-```json
-{
-  "compilerOptions": {
-    "paths": {
-      "@scope/dep": ["../dep/src/index.ts"]
-    }
-  }
-}
+```
+.gg/ts_links/@scope/dep/
+├── package.json   {"name": "@scope/dep", "main": "./src/index.ts", "types": "./src/index.ts", …}
+└── src -> /abs/path/to/ticket/dep/src
 ```
 
-The project's `tsconfig.json` has to extend that file — `tsconfig.json` itself
-is JSON with comments and is never rewritten:
-
-```jsonc
-{
-  "extends": "./tsconfig.workspace.json",
-  "compilerOptions": {
-    // The sibling checkouts of a ticket may join the program.
-    "rootDir": "../..",
-    ...
-  }
-}
+```yaml
+# pnpm-workspace.yaml
+overrides:
+  "@scope/dep": link:./.gg/ts_links/@scope/dep
 ```
 
-With `resolve: { tsconfigPaths: true }` in the Vite/vitest config, `tsc`, the
-editor and vitest all resolve the dependency to the sibling's source: edits
-are picked up immediately, stack traces name the `.ts` file, breakpoints in
-the sibling hit. A project whose `tsconfig.json` does not extend the file is
-skipped. Only siblings with a `src/index.ts` are mapped.
+vitest, `tsc` and the editor all follow the link into the sibling's source:
+edits are picked up immediately, stack traces name the `.ts` file,
+breakpoints in the sibling hit. Nothing has to be configured in either repo.
+The `src` symlink is what keeps TypeScript (which resolves `main`/`types`
+relative to the path inside `node_modules`) and Vite (which resolves relative
+to the real location) in agreement.
 
-`tsconfig.workspace.json` is committed like `pnpm-workspace.yaml` — it holds
-relative paths only. `change-refs-to-pub-dev` and
-`change-refs-to-git-feature-branch` empty the `paths` again; the file stays,
-because `tsconfig.json` keeps extending it.
+The shims are machine-local helper files below the gitignored `.gg/` and are
+rewritten by every localizing run. Only a sibling with a `src/index.ts` gets
+one; anything else keeps the plain `link:` to the sibling checkout.
+`change-refs-to-pub-dev` and `change-refs-to-git-feature-branch` remove them.

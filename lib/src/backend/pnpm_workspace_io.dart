@@ -8,6 +8,7 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:gg_localize_refs/src/backend/pubspec_overrides_io.dart';
+import 'package:gg_localize_refs/src/backend/ts_link_shims.dart';
 import 'package:gg_localize_refs/src/backend/typescript_npm_spec.dart';
 import 'package:path/path.dart' as p;
 import 'package:yaml/yaml.dart';
@@ -378,7 +379,8 @@ class PnpmWorkspaceIo {
   // ...........................................................................
   /// Returns whether the override [name] → [value] looks like one this
   /// package writes: a `link:` pointing at a sibling checkout of
-  /// [projectDir] whose package name is [name].
+  /// [projectDir] whose package name is [name], or at the shim of [name]
+  /// below `.gg/ts_links` of [projectDir] (see [TsLinkShims]).
   ///
   /// pnpm accepts no marker key inside `overrides`, so ownership is derived
   /// from the shape of the entry — the same way the Dart side recognizes its
@@ -388,7 +390,7 @@ class PnpmWorkspaceIo {
     required String name,
     required dynamic value,
   }) {
-    final target = _siblingLinkTarget(projectDir: projectDir, value: value);
+    final target = _ownedLinkTarget(projectDir: projectDir, value: value);
     if (target == null) {
       return false;
     }
@@ -407,20 +409,44 @@ class PnpmWorkspaceIo {
   }
 
   /// Returns whether [value] is a `link:` override pointing at a **missing
-  /// sibling** of [projectDir].
+  /// sibling** of [projectDir] or at a missing shim below its `.gg/ts_links`.
   ///
-  /// That is the exact shape this package writes, so the entry is ours even
-  /// though ownership cannot be proven anymore — the package name it would
-  /// have to match is unreadable once the checkout is gone. Keeping it is
-  /// not an option: pnpm fails hard on the dangling symlink target, and as
-  /// long as the entry stays the workspace can never leave local mode. A
-  /// link reaching further out (a vendored `../../vendor/x`) is left alone.
+  /// Those are the exact shapes this package writes, so the entry is ours
+  /// even though ownership cannot be proven anymore — the package name it
+  /// would have to match is unreadable once the checkout or shim is gone.
+  /// Keeping it is not an option: pnpm fails hard on the dangling symlink
+  /// target, and as long as the entry stays the workspace can never leave
+  /// local mode. A link reaching further out (a vendored `../../vendor/x`)
+  /// is left alone.
   bool _isDeadLinkOverride({
     required Directory projectDir,
     required dynamic value,
   }) {
-    final target = _siblingLinkTarget(projectDir: projectDir, value: value);
+    final target = _ownedLinkTarget(projectDir: projectDir, value: value);
     return target != null && !Directory(target).existsSync();
+  }
+
+  /// Returns the normalized target path of a `link:`/`file:` override
+  /// [value] when it has one of the two shapes this package writes — a
+  /// **sibling** of [projectDir] or a **shim** below its `.gg/ts_links` —
+  /// else null.
+  String? _ownedLinkTarget({
+    required Directory projectDir,
+    required dynamic value,
+  }) {
+    final sibling = _siblingLinkTarget(projectDir: projectDir, value: value);
+    if (sibling != null) {
+      return sibling;
+    }
+
+    final target = _linkTarget(projectDir: projectDir, value: value);
+    if (target == null) {
+      return null;
+    }
+    return TsLinkShims.shimNameOf(projectDir: projectDir, target: target) ==
+            null
+        ? null
+        : target;
   }
 
   /// Returns the normalized target path of a `link:`/`file:` override
@@ -429,6 +455,22 @@ class PnpmWorkspaceIo {
     required Directory projectDir,
     required dynamic value,
   }) {
+    final targetPath = _linkTarget(projectDir: projectDir, value: value);
+    if (targetPath == null) {
+      return null;
+    }
+
+    final projectPath = p.normalize(projectDir.absolute.path);
+    if (p.dirname(targetPath) != p.dirname(projectPath)) {
+      return null;
+    }
+
+    return targetPath;
+  }
+
+  /// Returns the normalized absolute target of a `link:`/`file:` override
+  /// [value], resolved against [projectDir], or null for any other value.
+  String? _linkTarget({required Directory projectDir, required dynamic value}) {
     if (!_isLinkOverride(value)) {
       return null;
     }
@@ -438,12 +480,7 @@ class PnpmWorkspaceIo {
       '',
     );
     final projectPath = p.normalize(projectDir.absolute.path);
-    final targetPath = p.normalize(p.join(projectPath, linkPath));
-    if (p.dirname(targetPath) != p.dirname(projectPath)) {
-      return null;
-    }
-
-    return targetPath;
+    return p.normalize(p.join(projectPath, linkPath));
   }
 
   /// Returns whether [value] is an override declaring a local

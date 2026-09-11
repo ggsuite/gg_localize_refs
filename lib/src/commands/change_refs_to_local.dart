@@ -17,7 +17,7 @@ import 'package:gg_localize_refs/src/backend/pnpm_workspace_io.dart';
 import 'package:gg_localize_refs/src/backend/process_dependencies.dart';
 import 'package:gg_localize_refs/src/backend/publish_to_utils.dart';
 import 'package:gg_localize_refs/src/backend/pubspec_overrides_io.dart';
-import 'package:gg_localize_refs/src/backend/tsconfig_workspace_io.dart';
+import 'package:gg_localize_refs/src/backend/ts_link_shims.dart';
 import 'package:gg_localize_refs/src/backend/typescript_npm_spec.dart';
 import 'package:gg_localize_refs/src/backend/utils.dart';
 import 'package:gg_localize_refs/src/commands/change_refs_to_pub_dev.dart';
@@ -36,11 +36,12 @@ import 'package:path/path.dart' as p;
 /// `link:` rewrite — npm's own `overrides` field cannot redirect a direct
 /// dependency (`EOVERRIDE`).
 ///
-/// On top of the install-level redirection every TypeScript project whose
-/// `tsconfig.json` extends `tsconfig.workspace.json` gets its workspace
-/// dependencies mapped to the sibling *sources* in the `paths` of that file,
-/// so tests and the editor step into the sibling's TypeScript instead of its
-/// compiled `dist/` (see [TsconfigWorkspaceIo]).
+/// The `link:` of a pnpm project does not point at the sibling checkout
+/// itself but at a generated shim whose `main`/`types` lead to the sibling's
+/// `src/index.ts` (see [TsLinkShims]), so tests and the editor step into the
+/// sibling's TypeScript instead of its compiled `dist/` — for any repo,
+/// without configuration on either side. A sibling without a `src/index.ts`
+/// is linked directly.
 class ChangeRefsToLocal extends DirCommand<dynamic> {
   /// Constructor.
   ///
@@ -62,7 +63,7 @@ class ChangeRefsToLocal extends DirCommand<dynamic> {
 
   final PnpmWorkspaceIo _pnpmWorkspace = const PnpmWorkspaceIo();
 
-  final TsconfigWorkspaceIo _tsconfigWorkspace = const TsconfigWorkspaceIo();
+  final TsLinkShims _shims = const TsLinkShims();
 
   final ChangeRefsToPubDev _changeRefsToPubDev;
 
@@ -291,11 +292,6 @@ class ChangeRefsToLocal extends DirCommand<dynamic> {
         fileChangesBuffer: fileChangesBuffer,
         ggLog: ggLog,
       );
-      _localizeSourcePaths(
-        node: node,
-        fileChangesBuffer: fileChangesBuffer,
-        ggLog: ggLog,
-      );
       return;
     }
 
@@ -304,12 +300,6 @@ class ChangeRefsToLocal extends DirCommand<dynamic> {
       manifestFile: manifestFile,
       manifestContent: manifestContent,
       references: references,
-      fileChangesBuffer: fileChangesBuffer,
-      ggLog: ggLog,
-    );
-
-    _localizeSourcePaths(
-      node: node,
       fileChangesBuffer: fileChangesBuffer,
       ggLog: ggLog,
     );
@@ -328,9 +318,11 @@ class ChangeRefsToLocal extends DirCommand<dynamic> {
       projectDir: node.directory,
       pathsByDependency: <String, String>{
         for (final dependency in node.transitiveDependencies.entries)
-          dependency.key: _relativePathTo(
-            from: node.directory,
-            to: dependency.value.directory,
+          dependency.key: _linkPathTo(
+            node: node,
+            name: dependency.key,
+            depDir: dependency.value.directory,
+            ggLog: ggLog,
           ),
       },
     );
@@ -348,46 +340,32 @@ class ChangeRefsToLocal extends DirCommand<dynamic> {
     );
   }
 
-  /// Maps the workspace dependencies of [node] to their sibling sources in
-  /// the `paths` of `tsconfig.workspace.json`.
+  /// Returns the `link:` path for the dependency [name] of [node] and puts
+  /// the shim it points at in place.
   ///
-  /// The `link:` override alone still enters a sibling through its compiled
-  /// `dist/` — absent in a fresh checkout, stale after every edit and
-  /// without source maps. The `paths` make `tsc`, the editor and vitest
-  /// resolve the sibling at the source level instead, so a breakpoint set
-  /// in its TypeScript hits. Nothing is written for a project whose
-  /// `tsconfig.json` does not extend the file (see
-  /// [TsconfigWorkspaceIo.isExtended]).
-  void _localizeSourcePaths({
+  /// A sibling with a `src/index.ts` is linked through a shim in
+  /// `.gg/ts_links/` whose `main`/`types` lead to that source, so a test
+  /// or the editor steps into the sibling's TypeScript instead of its
+  /// compiled `dist/` (see [TsLinkShims]). A sibling without one is linked
+  /// directly, and a shim an earlier run left for it is removed.
+  String _linkPathTo({
     required ProjectNode node,
-    required FileChangesBuffer fileChangesBuffer,
+    required String name,
+    required Directory depDir,
     required GgLog ggLog,
   }) {
-    final edit = _tsconfigWorkspace.addSourcePaths(
-      projectDir: node.directory,
-      pathsByDependency: <String, String>{
-        for (final dependency in node.transitiveDependencies.entries)
-          dependency.key: _relativePathTo(
-            from: node.directory,
-            to: dependency.value.directory,
-          ),
-      },
-    );
-
-    if (edit.isUnchanged) {
-      return;
+    if (!TsLinkShims.hasSourceEntry(depDir)) {
+      _shims.remove(projectDir: node.directory, name: name);
+      return _relativePathTo(from: node.directory, to: depDir);
     }
 
-    ggLog(
-      'Map the workspace dependencies of ${node.name} to their sources in '
-      '${TsconfigWorkspaceIo.fileName}',
-    );
-
-    _support.bufferTsconfigWorkspaceEdit(
-      projectDir: node.directory,
-      edit: edit,
-      fileChangesBuffer: fileChangesBuffer,
-    );
+    // The shims live in `.gg`, which has to stay out of git like the
+    // backups do.
+    _support.ensureGitignoreHasDartBackupEntries(node.directory);
+    if (_shims.write(projectDir: node.directory, name: name, depDir: depDir)) {
+      ggLog('Link $name of ${node.name} to the sources of its checkout');
+    }
+    return TsLinkShims.linkPath(name);
   }
 
   /// Undoes a localization an earlier version of this package wrote into

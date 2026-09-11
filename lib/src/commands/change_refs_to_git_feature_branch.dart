@@ -13,7 +13,7 @@ import 'package:gg_localize_refs/src/backend/file_changes_buffer.dart';
 import 'package:gg_localize_refs/src/backend/languages/project_language.dart';
 import 'package:gg_localize_refs/src/backend/manifest_command_support.dart';
 import 'package:gg_localize_refs/src/backend/pnpm_workspace_io.dart';
-import 'package:gg_localize_refs/src/backend/tsconfig_workspace_io.dart';
+import 'package:gg_localize_refs/src/backend/ts_link_shims.dart';
 import 'package:gg_localize_refs/src/backend/process_dependencies.dart';
 import 'package:gg_localize_refs/src/backend/pubspec_overrides_io.dart';
 import 'package:gg_localize_refs/src/backend/typescript_npm_spec.dart';
@@ -215,11 +215,7 @@ class ChangeRefsToGitFeatureBranch extends DirCommand<dynamic> {
         fileChangesBuffer: fileChangesBuffer,
         ggLog: ggLog,
       );
-      _removeSourcePaths(
-        node: node,
-        fileChangesBuffer: fileChangesBuffer,
-        ggLog: ggLog,
-      );
+      _removeSourceLinks(node: node, ggLog: ggLog);
       return;
     }
 
@@ -232,11 +228,7 @@ class ChangeRefsToGitFeatureBranch extends DirCommand<dynamic> {
       ggLog: ggLog,
     );
 
-    _removeSourcePaths(
-      node: node,
-      fileChangesBuffer: fileChangesBuffer,
-      ggLog: ggLog,
-    );
+    _removeSourceLinks(node: node, ggLog: ggLog);
 
     // The overrides are written for every *transitive* workspace dependency,
     // also for one that package.json already declares as a git ref: pnpm
@@ -269,24 +261,13 @@ class ChangeRefsToGitFeatureBranch extends DirCommand<dynamic> {
     );
   }
 
-  /// Drops the source paths `change-refs-to-local` wrote into
-  /// `tsconfig.workspace.json`: on a feature branch the dependency comes
-  /// from git, and a mapping to a sibling checkout the CI runner does not
-  /// have would only mislead the editor.
-  void _removeSourcePaths({
-    required ProjectNode node,
-    required FileChangesBuffer fileChangesBuffer,
-    required GgLog ggLog,
-  }) {
-    final edit = _support.bufferTsconfigWorkspaceRemoval(
-      node: node,
-      fileChangesBuffer: fileChangesBuffer,
-    );
-    if (!edit.isUnchanged) {
-      ggLog(
-        'Remove the source paths of ${node.name} from '
-        '${TsconfigWorkspaceIo.fileName}',
-      );
+  /// Drops the shims `change-refs-to-local` linked the workspace
+  /// dependencies through: on a feature branch the dependency comes from
+  /// git, and a link into a sibling checkout the CI runner does not have
+  /// would only mislead.
+  void _removeSourceLinks({required ProjectNode node, required GgLog ggLog}) {
+    if (const TsLinkShims().removeAll(node.directory)) {
+      ggLog('Remove the source links of ${node.name}');
     }
   }
 
