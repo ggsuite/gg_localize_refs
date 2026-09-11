@@ -15,6 +15,7 @@ import 'package:gg_localize_refs/src/backend/languages/project_language.dart';
 import 'package:gg_localize_refs/src/backend/languages/typescript_language.dart';
 import 'package:gg_localize_refs/src/backend/process_dependencies.dart';
 // ignore: lines_longer_than_80_chars
+import 'package:gg_localize_refs/src/commands/change_refs_to_local.dart';
 import 'package:gg_localize_refs/src/commands/change_refs_to_git_feature_branch.dart';
 import 'package:path/path.dart' as p;
 import 'package:test/test.dart';
@@ -730,6 +731,76 @@ void main() {
 
           deleteDirs(<Directory>[workspace]);
         });
+
+        test(
+          'TypeScript pnpm: drops the source paths of '
+          'tsconfig.workspace.json on the way to the feature branch',
+          () async {
+            final workspace = createTempDir('git_feature_ts_pnpm_source_paths');
+            copyDirectory(
+              Directory(
+                p.join(
+                  'test',
+                  'sample_folder_ts',
+                  'localize_refs',
+                  'pnpm_source_paths',
+                ),
+              ),
+              workspace,
+            );
+            final dProject1 = Directory(p.join(workspace.path, 'project1'));
+            final dProject2 = Directory(p.join(workspace.path, 'project2'));
+            Process.runSync('git', <String>[
+              'init',
+            ], workingDirectory: dProject2.path);
+            Process.runSync('git', <String>[
+              'remote',
+              'add',
+              'origin',
+              'git@github.com:user/test2_ts.git',
+            ], workingDirectory: dProject2.path);
+            final workspaceJson = File(
+              p.join(dProject1.path, 'tsconfig.workspace.json'),
+            );
+
+            // Localize first, so the source paths exist.
+            await ChangeRefsToLocal(ggLog: (_) {})
+                .get(directory: dProject1, ggLog: (_) {});
+            expect(
+              workspaceJson.readAsStringSync(),
+              contains('../project2/src/index.ts'),
+            );
+
+            final localMessages = <String>[];
+            final local = ChangeRefsToGitFeatureBranch(
+              ggLog: localMessages.add,
+            );
+            await local.get(
+              directory: dProject1,
+              ggLog: localMessages.add,
+              gitRef: 'feature123',
+            );
+
+            expect(
+              localMessages.join('\n'),
+              contains(
+                'Remove the source paths of test1_ts from '
+                'tsconfig.workspace.json',
+              ),
+            );
+            expect(
+              workspaceJson.readAsStringSync(),
+              isNot(contains('../project2/src/index.ts')),
+            );
+            expect(
+              File(p.join(dProject1.path, 'pnpm-workspace.yaml'))
+                  .readAsStringSync(),
+              contains('#feature123'),
+            );
+
+            deleteDirs(<Directory>[workspace]);
+          },
+        );
 
         test('TypeScript pnpm: migrates a manifest an earlier version '
             'pinned in place', () async {

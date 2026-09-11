@@ -50,6 +50,8 @@ The pnpm TypeScript analog — `package.json` plays the role of `pubspec.yaml`, 
 | git feature branch | version constraints, untouched | `overrides` with `git+…#<ref>`, committed        |
 | registry           | version constraints            | `overrides` section removed; the file itself is deleted only when this tool created it (recognized by its header comment) — an existing settings file keeps its `allowBuilds` & co. |
 
+On top of the install-level redirection, local mode maps every TypeScript workspace dependency to the *source* of its sibling (`"<name>": ["../<repo>/src/index.ts"]`) in the `paths` of **`tsconfig.workspace.json`** (`lib/src/backend/tsconfig_workspace_io.dart`). Reason: through `link:` alone the consumer still enters the sibling via the `main`/`types` of its `package.json`, i.e. its compiled `dist/` — missing in a fresh checkout, stale after every edit, no source maps — so a breakpoint in the sibling's TypeScript never hits. The `paths` make `tsc`, the editor and (via Vite's `resolve.tsconfigPaths`) vitest resolve the sibling at the source level. The file is written only when the project's `tsconfig.json` extends it (`TsconfigWorkspaceIo.isExtended`) — `tsconfig.json` is JSON with comments and is never rewritten — and only siblings with a `src/index.ts` are mapped. The template ships `"rootDir": "../.."`, because TypeScript ≥ 6 defaults `rootDir` to the project folder and reports TS6059 for every program file outside it. Ownership is structural again (single path ending in `src/index.ts`, sibling's `package.json` name matches the key; a mapping to a missing sibling is pruned); git feature branch mode and registry mode empty the `paths`, the file itself stays while `tsconfig.json` extends it.
+
 Rules that follow from it:
 
 - `change-refs-to-local` and `change-refs-to-git-feature-branch` write only `pubspec_overrides.yaml`. Neither **ever** edits `pubspec.yaml` — except `change-refs-to-local`, to undo an earlier localization (see migration below). Only `change-refs-to-pub-dev` still restores refs inside the manifest, and only for a workspace an old version localized there.
@@ -120,6 +122,8 @@ Implement `ProjectLanguage` + register it in the `languages:` list passed to `Mu
 ## Tests
 
 Fixture-based. `test/sample_folder/` holds Dart fixtures; `test/sample_folder_ts/` holds TypeScript fixtures. Tests under `test/commands/` and `test/backend/` run scenarios against copies of these fixtures via helpers in `test/test_helpers.dart`. When touching graph or rewrite logic, add/adjust a fixture under the relevant scenario folder rather than inventing ad-hoc dirs. `test/sample_folder/**` is excluded from analysis (see `analysis_options.yaml`).
+
+TypeScript scenarios under `test/sample_folder_ts/localize_refs/`: `pnpm_succeed` (plain pnpm project), `pnpm_source_paths` (`tsconfig.json` extends `tsconfig.workspace.json`, the sibling has a `src/index.ts` — drives the source paths tests of all three commands).
 
 Mode-related scenarios under `test/sample_folder/localize_refs/`: `already_localized` (new style, drives the idempotency test), `git_overrides_present` (a repo in local mode that switches to git refs), `legacy_localized` / `legacy_localized_private` / `legacy_localized_no_backup` (the three publish_to migration cases), `overrides_unrelated` (hand written overrides file); plus `unlocalize_refs/overrides_present`.
 

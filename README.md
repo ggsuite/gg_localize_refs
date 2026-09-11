@@ -49,3 +49,50 @@ npm refuses an override that conflicts with a direct dependency
 `pnpm.overrides` inside `package.json`). A TypeScript project **not** managed
 by pnpm therefore keeps the legacy behavior: its `link:` specs are written
 into `package.json` directly, with the original specs backed up.
+
+## Debugging across the TypeScript packages of a workspace
+
+A `link:` override redirects the *installed* dependency to the sibling
+checkout, but the consumer still enters it through the `main`/`types` fields
+of the sibling's `package.json` — its compiled `dist/`. That output is missing
+in a fresh checkout, goes stale with every edit of the sibling and carries no
+source map by default, so a test stepping into the dependency lands in
+generated JavaScript and a breakpoint in the sibling's TypeScript is never hit.
+
+`change-refs-to-local` therefore also maps every workspace dependency to the
+sibling's source in the `paths` of `tsconfig.workspace.json`:
+
+```json
+{
+  "compilerOptions": {
+    "paths": {
+      "@scope/dep": ["../dep/src/index.ts"]
+    }
+  }
+}
+```
+
+The project's `tsconfig.json` has to extend that file — `tsconfig.json` itself
+is JSON with comments and is never rewritten:
+
+```jsonc
+{
+  "extends": "./tsconfig.workspace.json",
+  "compilerOptions": {
+    // The sibling checkouts of a ticket may join the program.
+    "rootDir": "../..",
+    ...
+  }
+}
+```
+
+With `resolve: { tsconfigPaths: true }` in the Vite/vitest config, `tsc`, the
+editor and vitest all resolve the dependency to the sibling's source: edits
+are picked up immediately, stack traces name the `.ts` file, breakpoints in
+the sibling hit. A project whose `tsconfig.json` does not extend the file is
+skipped. Only siblings with a `src/index.ts` are mapped.
+
+`tsconfig.workspace.json` is committed like `pnpm-workspace.yaml` — it holds
+relative paths only. `change-refs-to-pub-dev` and
+`change-refs-to-git-feature-branch` empty the `paths` again; the file stays,
+because `tsconfig.json` keeps extending it.

@@ -11,6 +11,7 @@ import 'package:gg_localize_refs/src/backend/file_changes_buffer.dart';
 import 'package:gg_localize_refs/src/backend/languages/project_language.dart';
 import 'package:gg_localize_refs/src/backend/pnpm_workspace_io.dart';
 import 'package:gg_localize_refs/src/backend/pubspec_overrides_io.dart';
+import 'package:gg_localize_refs/src/backend/tsconfig_workspace_io.dart';
 import 'package:gg_localize_refs/src/backend/typescript_npm_spec.dart';
 import 'package:gg_localize_refs/src/backend/utils.dart';
 import 'package:path/path.dart' as p;
@@ -189,6 +190,47 @@ class ManifestCommandSupport {
     }
 
     fileChangesBuffer.add(overridesFile, edit.content!);
+  }
+
+  /// Queues [edit] for the `tsconfig.workspace.json` of [projectDir].
+  void bufferTsconfigWorkspaceEdit({
+    required Directory projectDir,
+    required PubspecOverridesEdit edit,
+    required FileChangesBuffer fileChangesBuffer,
+  }) {
+    if (edit.isUnchanged) {
+      return;
+    }
+
+    final workspaceFile = const TsconfigWorkspaceIo().file(projectDir);
+    if (edit.deleteFile) {
+      fileChangesBuffer.addDeletion(workspaceFile);
+      return;
+    }
+
+    fileChangesBuffer.add(workspaceFile, edit.content!);
+  }
+
+  /// Queues the removal of the source paths this package wrote for [node]
+  /// into `tsconfig.workspace.json` and returns the edit, so the caller can
+  /// report it. Covers the *transitive* dependencies, the set
+  /// `change-refs-to-local` maps.
+  PubspecOverridesEdit bufferTsconfigWorkspaceRemoval({
+    required ProjectNode node,
+    required FileChangesBuffer fileChangesBuffer,
+  }) {
+    final edit = const TsconfigWorkspaceIo().removeOwnedPaths(
+      projectDir: node.directory,
+      dependencyNames: node.transitiveDependencies.keys,
+    );
+
+    bufferTsconfigWorkspaceEdit(
+      projectDir: node.directory,
+      edit: edit,
+      fileChangesBuffer: fileChangesBuffer,
+    );
+
+    return edit;
   }
 
   /// Writes the TypeScript backup file for [projectDirectory].

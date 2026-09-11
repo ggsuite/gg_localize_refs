@@ -17,6 +17,7 @@ import 'package:gg_localize_refs/src/backend/pnpm_workspace_io.dart';
 import 'package:gg_localize_refs/src/backend/process_dependencies.dart';
 import 'package:gg_localize_refs/src/backend/publish_to_utils.dart';
 import 'package:gg_localize_refs/src/backend/pubspec_overrides_io.dart';
+import 'package:gg_localize_refs/src/backend/tsconfig_workspace_io.dart';
 import 'package:gg_localize_refs/src/backend/typescript_npm_spec.dart';
 import 'package:gg_localize_refs/src/backend/utils.dart';
 import 'package:gg_localize_refs/src/commands/change_refs_to_pub_dev.dart';
@@ -34,6 +35,12 @@ import 'package:path/path.dart' as p;
 /// way. TypeScript projects not managed by pnpm keep the legacy in-manifest
 /// `link:` rewrite — npm's own `overrides` field cannot redirect a direct
 /// dependency (`EOVERRIDE`).
+///
+/// On top of the install-level redirection every TypeScript project whose
+/// `tsconfig.json` extends `tsconfig.workspace.json` gets its workspace
+/// dependencies mapped to the sibling *sources* in the `paths` of that file,
+/// so tests and the editor step into the sibling's TypeScript instead of its
+/// compiled `dist/` (see [TsconfigWorkspaceIo]).
 class ChangeRefsToLocal extends DirCommand<dynamic> {
   /// Constructor.
   ///
@@ -54,6 +61,8 @@ class ChangeRefsToLocal extends DirCommand<dynamic> {
   final PubspecOverridesIo _overrides = const PubspecOverridesIo();
 
   final PnpmWorkspaceIo _pnpmWorkspace = const PnpmWorkspaceIo();
+
+  final TsconfigWorkspaceIo _tsconfigWorkspace = const TsconfigWorkspaceIo();
 
   final ChangeRefsToPubDev _changeRefsToPubDev;
 
@@ -282,6 +291,11 @@ class ChangeRefsToLocal extends DirCommand<dynamic> {
         fileChangesBuffer: fileChangesBuffer,
         ggLog: ggLog,
       );
+      _localizeSourcePaths(
+        node: node,
+        fileChangesBuffer: fileChangesBuffer,
+        ggLog: ggLog,
+      );
       return;
     }
 
@@ -290,6 +304,12 @@ class ChangeRefsToLocal extends DirCommand<dynamic> {
       manifestFile: manifestFile,
       manifestContent: manifestContent,
       references: references,
+      fileChangesBuffer: fileChangesBuffer,
+      ggLog: ggLog,
+    );
+
+    _localizeSourcePaths(
+      node: node,
       fileChangesBuffer: fileChangesBuffer,
       ggLog: ggLog,
     );
@@ -322,6 +342,48 @@ class ChangeRefsToLocal extends DirCommand<dynamic> {
     ggLog('Localize refs of ${node.name}');
 
     _support.bufferPnpmWorkspaceEdit(
+      projectDir: node.directory,
+      edit: edit,
+      fileChangesBuffer: fileChangesBuffer,
+    );
+  }
+
+  /// Maps the workspace dependencies of [node] to their sibling sources in
+  /// the `paths` of `tsconfig.workspace.json`.
+  ///
+  /// The `link:` override alone still enters a sibling through its compiled
+  /// `dist/` — absent in a fresh checkout, stale after every edit and
+  /// without source maps. The `paths` make `tsc`, the editor and vitest
+  /// resolve the sibling at the source level instead, so a breakpoint set
+  /// in its TypeScript hits. Nothing is written for a project whose
+  /// `tsconfig.json` does not extend the file (see
+  /// [TsconfigWorkspaceIo.isExtended]).
+  void _localizeSourcePaths({
+    required ProjectNode node,
+    required FileChangesBuffer fileChangesBuffer,
+    required GgLog ggLog,
+  }) {
+    final edit = _tsconfigWorkspace.addSourcePaths(
+      projectDir: node.directory,
+      pathsByDependency: <String, String>{
+        for (final dependency in node.transitiveDependencies.entries)
+          dependency.key: _relativePathTo(
+            from: node.directory,
+            to: dependency.value.directory,
+          ),
+      },
+    );
+
+    if (edit.isUnchanged) {
+      return;
+    }
+
+    ggLog(
+      'Map the workspace dependencies of ${node.name} to their sources in '
+      '${TsconfigWorkspaceIo.fileName}',
+    );
+
+    _support.bufferTsconfigWorkspaceEdit(
       projectDir: node.directory,
       edit: edit,
       fileChangesBuffer: fileChangesBuffer,

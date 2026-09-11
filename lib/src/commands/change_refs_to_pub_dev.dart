@@ -14,6 +14,7 @@ import 'package:gg_localize_refs/src/backend/languages/project_language.dart';
 import 'package:gg_localize_refs/src/backend/manifest_command_support.dart';
 import 'package:gg_localize_refs/src/backend/package_json_io.dart';
 import 'package:gg_localize_refs/src/backend/pnpm_workspace_io.dart';
+import 'package:gg_localize_refs/src/backend/tsconfig_workspace_io.dart';
 import 'package:gg_localize_refs/src/backend/process_dependencies.dart';
 import 'package:gg_localize_refs/src/backend/pubspec_overrides_io.dart';
 import 'package:gg_localize_refs/src/backend/typescript_npm_spec.dart';
@@ -326,6 +327,20 @@ class ChangeRefsToPubDev extends DirCommand<dynamic> {
       ggLog(
         'Remove the dependency overrides of ${node.name} from '
         '${PnpmWorkspaceIo.fileName}',
+      );
+    }
+
+    // The source paths of tsconfig.workspace.json go with the overrides:
+    // once the dependency is installed from the registry again, a mapping
+    // to a sibling source tree would shadow it in every test run.
+    final pathsEdit = _support.bufferTsconfigWorkspaceRemoval(
+      node: node,
+      fileChangesBuffer: fileChangesBuffer,
+    );
+    if (!pathsEdit.isUnchanged) {
+      ggLog(
+        'Remove the source paths of ${node.name} from '
+        '${TsconfigWorkspaceIo.fileName}',
       );
     }
 
