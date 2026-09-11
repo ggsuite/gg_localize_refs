@@ -9,7 +9,7 @@ library;
 export 'src/gg_localize_refs.dart';
 export 'src/backend/pnpm_workspace_io.dart';
 export 'src/backend/pubspec_overrides_io.dart';
-export 'src/backend/tsconfig_workspace_io.dart';
+export 'src/backend/ts_link_shims.dart';
 export 'src/commands/backup_publish_to.dart';
 export 'src/commands/change_refs_to_local.dart';
 export 'src/commands/change_refs_to_pub_dev.dart';

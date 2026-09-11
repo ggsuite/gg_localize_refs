@@ -1116,13 +1116,12 @@ void main() {
           );
         });
 
-        test('TypeScript pnpm: maps the sibling sources in '
-            'tsconfig.workspace.json when tsconfig.json extends it', () async {
-          final workspace = createTempDir('ts_pnpm_source_paths');
-          copyLocalizeScenarioTs('pnpm_source_paths', workspace);
+        test('TypeScript pnpm: links a sibling with sources through a shim '
+            'that leads to its src/index.ts', () async {
+          final workspace = createTempDir('ts_pnpm_with_sources');
+          copyLocalizeScenarioTs('pnpm_with_sources', workspace);
           final dProject1 = Directory(p.join(workspace.path, 'project1'));
-          final tsconfigBefore = File(p.join(dProject1.path, 'tsconfig.json'))
-              .readAsStringSync();
+          final dProject2 = Directory(p.join(workspace.path, 'project2'));
 
           final localMessages = <String>[];
           final local = ChangeRefsToLocal(ggLog: localMessages.add);
@@ -1131,28 +1130,34 @@ void main() {
           expect(
             localMessages.join('\n'),
             contains(
-              'Map the workspace dependencies of test1_ts to their sources '
-              'in tsconfig.workspace.json',
+              'Link test2_ts of test1_ts to the sources of its checkout',
             ),
           );
 
-          // The install-level redirection is there as before …
+          // The override points at the shim, not at the sibling …
+          final overrides = File(p.join(dProject1.path, 'pnpm-workspace.yaml'))
+              .readAsStringSync();
+          expect(overrides, contains('test2_ts: link:./.gg/ts_links/test2_ts'));
+
+          // … and the shim leads to the sibling's source.
+          final shimDir = Directory(
+            p.join(dProject1.path, '.gg', 'ts_links', 'test2_ts'),
+          );
+          final manifest = jsonDecode(
+            File(p.join(shimDir.path, 'package.json')).readAsStringSync(),
+          ) as Map<String, dynamic>;
+          expect(manifest['name'], 'test2_ts');
+          expect(manifest['main'], './src/index.ts');
+          expect(manifest['types'], './src/index.ts');
           expect(
-            File(p.join(dProject1.path, 'pnpm-workspace.yaml'))
-                .readAsStringSync(),
-            contains('test2_ts: link:../project2'),
+            File(p.join(shimDir.path, 'src', 'index.ts')).readAsStringSync(),
+            File(p.join(dProject2.path, 'src', 'index.ts')).readAsStringSync(),
           );
 
-          // … and the source-level mapping sits in the extended file, while
-          // tsconfig.json with its comments is untouched.
-          final workspaceJson = File(
-            p.join(dProject1.path, 'tsconfig.workspace.json'),
-          ).readAsStringSync();
-          expect(workspaceJson, contains('"test2_ts": [\n'));
-          expect(workspaceJson, contains('"../project2/src/index.ts"'));
+          // The shims stay out of git.
           expect(
-            File(p.join(dProject1.path, 'tsconfig.json')).readAsStringSync(),
-            tsconfigBefore,
+            File(p.join(dProject1.path, '.gitignore')).readAsStringSync(),
+            contains('.gg/*'),
           );
 
           // A second run changes nothing.
@@ -1164,27 +1169,33 @@ void main() {
           deleteDirs(<Directory>[workspace]);
         });
 
-        test('TypeScript pnpm: writes no source paths for a project whose '
-            'tsconfig.json does not extend tsconfig.workspace.json', () async {
-          final dProject1 = Directory(
-            p.join(dWorkspacePnpmSucceed.path, 'project1'),
-          );
-          File(
-              p.join(dWorkspacePnpmSucceed.path, 'project2', 'src', 'index.ts'),
-            )
-            ..createSync(recursive: true)
-            ..writeAsStringSync('export const two = 2;\n');
+        test('TypeScript pnpm: falls back to the sibling link and drops the '
+            'shim once the sibling has no src/index.ts anymore', () async {
+          final workspace = createTempDir('ts_pnpm_sources_gone');
+          copyLocalizeScenarioTs('pnpm_with_sources', workspace);
+          final dProject1 = Directory(p.join(workspace.path, 'project1'));
+          final dProject2 = Directory(p.join(workspace.path, 'project2'));
 
+          await ChangeRefsToLocal(ggLog: (_) {})
+              .get(directory: dProject1, ggLog: (_) {});
+          final shimDir = Directory(
+            p.join(dProject1.path, '.gg', 'ts_links', 'test2_ts'),
+          );
+          expect(shimDir.existsSync(), isTrue);
+
+          Directory(p.join(dProject2.path, 'src')).deleteSync(recursive: true);
           final localMessages = <String>[];
-          final local = ChangeRefsToLocal(ggLog: localMessages.add);
-          await local.get(directory: dProject1, ggLog: localMessages.add);
+          await ChangeRefsToLocal(ggLog: localMessages.add)
+              .get(directory: dProject1, ggLog: localMessages.add);
 
-          expect(localMessages.join('\n'), isNot(contains('their sources')));
           expect(
-            File(p.join(dProject1.path, 'tsconfig.workspace.json'))
-                .existsSync(),
-            isFalse,
+            File(p.join(dProject1.path, 'pnpm-workspace.yaml'))
+                .readAsStringSync(),
+            contains('test2_ts: link:../project2'),
           );
+          expect(shimDir.existsSync(), isFalse);
+
+          deleteDirs(<Directory>[workspace]);
         });
 
         test('TypeScript pnpm: when already localized', () async {

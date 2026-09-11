@@ -809,32 +809,26 @@ void main() {
           expect(manifestAfter, manifestBefore);
         });
 
-        test('TypeScript pnpm: empties the source paths of '
-            'tsconfig.workspace.json and keeps the file', () async {
-          final workspace = createTempDir('unlocalize_ts_pnpm_source_paths');
+        test('TypeScript pnpm: removes the shim links along with the '
+            'overrides', () async {
+          final workspace = createTempDir('unlocalize_ts_pnpm_shims');
           copyDirectory(
             Directory(
               join(
                 'test',
                 'sample_folder_ts',
                 'localize_refs',
-                'pnpm_source_paths',
+                'pnpm_with_sources',
               ),
             ),
             workspace,
           );
           final dProject1 = Directory(join(workspace.path, 'project1'));
-          final workspaceJson = File(
-            join(dProject1.path, 'tsconfig.workspace.json'),
-          );
+          final shimsDir = Directory(join(dProject1.path, '.gg', 'ts_links'));
 
-          // Localize first, so both the overrides and the source paths exist.
           await ChangeRefsToLocal(ggLog: (_) {})
               .get(directory: dProject1, ggLog: (_) {});
-          expect(
-            workspaceJson.readAsStringSync(),
-            contains('../project2/src/index.ts'),
-          );
+          expect(shimsDir.existsSync(), isTrue);
 
           final localMessages = <String>[];
           final local = ChangeRefsToPubDev(ggLog: localMessages.add);
@@ -842,17 +836,12 @@ void main() {
 
           expect(
             localMessages.join('\n'),
-            contains(
-              'Remove the source paths of test1_ts from '
-              'tsconfig.workspace.json',
-            ),
+            contains('Remove the source links of test1_ts'),
           );
-
-          // tsconfig.json keeps extending the file, so it stays — with
-          // empty paths, the way the template ships it.
+          expect(shimsDir.existsSync(), isFalse);
           expect(
-            workspaceJson.readAsStringSync(),
-            '{\n  "compilerOptions": {\n    "paths": {}\n  }\n}\n',
+            File(join(dProject1.path, 'pnpm-workspace.yaml')).existsSync(),
+            isFalse,
           );
 
           deleteDirs(<Directory>[workspace]);

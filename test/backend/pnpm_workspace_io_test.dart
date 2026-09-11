@@ -84,6 +84,93 @@ void main() {
       });
     });
 
+    group('shim links', () {
+      void writeShim(String name) {
+        final dir = Directory(
+          p.joinAll(<String>[
+            project.path,
+            '.gg',
+            'ts_links',
+            ...name.split('/'),
+          ]),
+        )..createSync(recursive: true);
+        File(p.join(dir.path, 'package.json'))
+            .writeAsStringSync('{"name":"$name","main":"./src/index.ts"}');
+      }
+
+      test('an override linking the shim of the dependency is owned', () {
+        writeShim('dep_a');
+        expect(
+          io.isOwnedLinkOverride(
+            projectDir: project,
+            name: 'dep_a',
+            value: 'link:./.gg/ts_links/dep_a',
+          ),
+          isTrue,
+        );
+        writeShim('@scope/dep_b');
+        expect(
+          io.isOwnedLinkOverride(
+            projectDir: project,
+            name: '@scope/dep_b',
+            value: 'link:./.gg/ts_links/@scope/dep_b',
+          ),
+          isTrue,
+        );
+      });
+
+      test('a shim link under another name or outside ts_links is not', () {
+        writeShim('dep_a');
+        expect(
+          io.isOwnedLinkOverride(
+            projectDir: project,
+            name: 'other',
+            value: 'link:./.gg/ts_links/dep_a',
+          ),
+          isFalse,
+        );
+        expect(
+          io.isOwnedLinkOverride(
+            projectDir: project,
+            name: 'dep_a',
+            value: 'link:./.gg/dep_a',
+          ),
+          isFalse,
+        );
+      });
+
+      test('removeOwnedOverrides() drops shim links, present or gone', () {
+        writeShim('dep_a');
+        workspaceYaml().writeAsStringSync(
+          'overrides:\n'
+          '  dep_a: link:./.gg/ts_links/dep_a\n'
+          '  gone: link:./.gg/ts_links/gone\n'
+          '  vendored: link:../../vendor/x\n',
+        );
+        final edit = io.removeOwnedOverrides(
+          projectDir: project,
+          dependencyNames: <String>['unrelated'],
+        );
+        expect(edit.content, isNot(contains('ts_links')));
+        expect(edit.content, contains('vendored: link:../../vendor/x'));
+      });
+
+      test('addLinkOverrides() prunes a stale shim link', () {
+        writeShim('dep_a');
+        writeSiblingManifest('dep_b');
+        workspaceYaml().writeAsStringSync(
+          'overrides:\n'
+          '  dep_a: link:./.gg/ts_links/dep_a\n',
+        );
+        final edit = io.addLinkOverrides(
+          projectDir: project,
+          pathsByDependency: <String, String>{'dep_b': '../dep_a'},
+        );
+        expect(edit.content, isNot(contains('ts_links')));
+        expect(edit.content, contains('dep_b: link:../dep_a'));
+      });
+    });
+
     group('hasLocalizedRefs()', () {
       test('returns false when the file is missing', () {
         expect(PnpmWorkspaceIo.hasLocalizedRefs(project), isFalse);
