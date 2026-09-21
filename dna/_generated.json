@@ -5,89 +5,89 @@
       "name": "base",
       "package": "helix",
       "ecosystem": null,
-      "resolvedVersion": "1.7.1",
+      "resolvedVersion": "1.8.0",
       "via": null,
       "hash": "0x6883da335b415f9d"
     },
     {
       "name": "dna-readme",
-      "package": "dna_readme",
-      "ecosystem": "pub",
+      "package": "@ggdna/dna-readme",
+      "ecosystem": "node",
       "resolvedVersion": "0.1.0",
       "via": "dna-ggsuite",
       "hash": "0xb8eeee4e2937ca0d"
     },
     {
       "name": "dna-guides",
-      "package": "dna_guides",
-      "ecosystem": "pub",
+      "package": "@ggdna/dna-guides",
+      "ecosystem": "node",
       "resolvedVersion": "0.1.0",
       "via": "dna-ggsuite",
       "hash": "0x3bd4be7c009270a6"
     },
     {
       "name": "dna-translate",
-      "package": "dna_translate",
-      "ecosystem": "pub",
+      "package": "@ggdna/dna-translate",
+      "ecosystem": "node",
       "resolvedVersion": "0.1.0",
       "via": "dna-ggsuite",
       "hash": "0x1c92ce37a7ede19b"
     },
     {
       "name": "dna-index",
-      "package": "dna_index",
-      "ecosystem": "pub",
-      "resolvedVersion": "0.1.0",
+      "package": "@ggdna/dna-index",
+      "ecosystem": "node",
+      "resolvedVersion": "0.1.1",
       "via": "dna-ggsuite",
       "hash": "0x1d92b0add37a1ac7"
     },
     {
       "name": "dna-blog",
-      "package": "dna_blog",
-      "ecosystem": "pub",
+      "package": "@ggdna/dna-blog",
+      "ecosystem": "node",
       "resolvedVersion": "0.1.0",
       "via": "dna-ggsuite",
       "hash": "0x2aafe5211ebd4365"
     },
     {
       "name": "dna-install",
-      "package": "dna_install",
-      "ecosystem": "pub",
-      "resolvedVersion": "0.1.0",
+      "package": "@ggdna/dna-install",
+      "ecosystem": "node",
+      "resolvedVersion": "0.1.1",
       "via": "dna-ggsuite",
       "hash": "0xbe88eb4256745ee1"
     },
     {
       "name": "dna-vscode",
-      "package": "dna_vscode",
-      "ecosystem": "pub",
-      "resolvedVersion": "0.1.0",
+      "package": "@ggdna/dna-vscode",
+      "ecosystem": "node",
+      "resolvedVersion": "0.2.0",
       "via": "dna-ggsuite",
-      "hash": "0x388c565943d37cae"
+      "hash": "0xa88376a88c6618fa"
     },
     {
       "name": "dna-clean-code",
-      "package": "dna_clean_code",
-      "ecosystem": "pub",
+      "package": "@ggdna/dna-clean-code",
+      "ecosystem": "node",
       "resolvedVersion": "0.1.0",
       "via": "dna-ggsuite",
       "hash": "0xacaa785dad36b047"
     },
     {
       "name": "dna-scripts",
-      "package": "dna_scripts",
-      "ecosystem": "pub",
+      "package": "@ggdna/dna-scripts",
+      "ecosystem": "node",
       "resolvedVersion": "0.2.1",
       "via": "dna-ggsuite",
       "hash": "0xe3092339b83504a1"
     },
     {
       "name": "dna-gg",
-      "package": "dna_gg",
-      "ecosystem": "pub",
-      "resolvedVersion": "0.2.0",
+      "package": "@ggdna/dna-gg",
+      "ecosystem": "node",
+      "resolvedVersion": "0.5.0",
       "via": "dna-ggsuite",
-      "hash": "0x97c559b0151610d4"
+      "hash": "0x80c6dc9dbb7e23c3"
     },
     {
       "name": "dna-ggsuite",
@@ -140,9 +140,9 @@
   ],
   "claude": {
     "claudeMdInclude": null,
-    "claudeMdFromDna": false
+    "claudeMdFromDna": true
   },
-  "baseVersion": "1.7.1",
+  "baseVersion": "1.8.0",
   "baseHash": "0x6883da335b415f9d",
   "instances": [
     {
@@ -150,16 +150,32 @@
       "hash": "0xaa8c556ad7ace267"
     },
     {
-      "path": ".claude/skills/cleanup/SKILL.md",
-      "hash": "0xc5c7b7940ab51b83"
-    },
-    {
       "path": ".claude/skills/code/SKILL.md",
       "hash": "0x2e5533a3705cb7a3"
     },
     {
-      "path": ".claude/skills/commit/SKILL.md",
-      "hash": "0xad0e75ab4d725133"
+      "path": ".claude/skills/gg-cleanup/SKILL.md",
+      "hash": "0x4a6903a51168486a"
+    },
+    {
+      "path": ".claude/skills/gg-commit/SKILL.md",
+      "hash": "0xd2e82c49f737093b"
+    },
+    {
+      "path": ".claude/skills/gg-publish/SKILL.md",
+      "hash": "0xaa7d82e9b407f561"
+    },
+    {
+      "path": ".claude/skills/gg-push/SKILL.md",
+      "hash": "0x140e1b8d6cbe222e"
+    },
+    {
+      "path": ".claude/skills/gg-ticket/SKILL.md",
+      "hash": "0x06f83f4f73c9fb42"
+    },
+    {
+      "path": ".claude/skills/gg/SKILL.md",
+      "hash": "0x0e643054f49cf6a2"
     },
     {
       "path": ".claude/skills/guide/SKILL.md",
@@ -172,14 +188,6 @@
     {
       "path": ".claude/skills/install/SKILL.md",
       "hash": "0x29c4ded946b50053"
-    },
-    {
-      "path": ".claude/skills/publish/SKILL.md",
-      "hash": "0xb8e70eff3563f75d"
-    },
-    {
-      "path": ".claude/skills/push/SKILL.md",
-      "hash": "0x76c357ca9933317d"
     },
     {
       "path": ".claude/skills/readme/SKILL.md",
@@ -202,10 +210,6 @@
       "hash": "0x9d1d85ae314437ea"
     },
     {
-      "path": ".claude/skills/ticket/SKILL.md",
-      "hash": "0xbc13efe6fa9af962"
-    },
-    {
       "path": ".claude/skills/translate/SKILL.md",
       "hash": "0x9ade789b3ae72f2e"
     },
@@ -216,6 +220,14 @@
     {
       "path": ".github/workflows/quick_check.yaml",
       "hash": "0xf3320fb8f530a565"
+    },
+    {
+      "path": ".prettierignore",
+      "hash": "0xca9871c5856573ee"
+    },
+    {
+      "path": ".prettierrc",
+      "hash": "0xf2be2549d1b502ae"
     },
     {
       "path": ".vscode/extensions.json",
@@ -243,7 +255,7 @@
     },
     {
       "path": "doc/guides/develop-guide.md",
-      "hash": "0xbd9fa5efab7af735"
+      "hash": "0xc31d5f25f496a9d6"
     },
     {
       "path": "doc/guides/develop-without-ai-guide.md",
@@ -259,7 +271,7 @@
     },
     {
       "path": "doc/guides/for-ai/ai-dev-guide.md",
-      "hash": "0x3d2812a1dfb025cf"
+      "hash": "0xbbaf82081767678b"
     },
     {
       "path": "doc/guides/for-ai/ai-review-guide.md",
@@ -303,7 +315,7 @@
     },
     {
       "path": "doc/guides/install-guide/install-gg-workspace-guide.md",
-      "hash": "0x846766914bb56a84"
+      "hash": "0xc06dc45d20e1bf79"
     },
     {
       "path": "doc/guides/install-guide/install-github-cli-guide.md",
