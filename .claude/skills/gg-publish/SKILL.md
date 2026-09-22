@@ -1,6 +1,6 @@
 ---
-name: publish
-description: Prepares the release of a reviewed ticket and hands `gg do publish` over to the user. Use when the user says "/publish" or asks to release the ticket.
+name: gg-publish
+description: Prepares the release of a reviewed ticket and hands `gg do publish` over to the user. Use when the user says "/gg-publish" or asks to release the ticket.
 ---
 
 # Publish
@@ -31,7 +31,7 @@ gg do publish
 ```
 
 It asks whether the ticket and the remote feature branches may be deleted.
-If the user declines, run `/cleanup` afterwards.
+If the user declines, run `/gg-cleanup` afterwards.
 
 ## Important
 

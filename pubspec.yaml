@@ -1,6 +1,6 @@
 name: gg_localize_refs
 description: gg_localize_refs allows to switch a local package and its local checkouts to local pathes
-version: 5.0.0
+version: 5.0.1
 repository: https://github.com/ggsuite/gg_localize_refs.git
 
 environment:
@@ -15,14 +15,14 @@ dependencies:
   path: ^1.9.1
   yaml: ^3.1.4
   yaml_edit: ^2.2.4
-  gg_project_root: ^2.2.0
+  gg_project_root: ^2.2.1
   pubspec_parse: ^1.6.0
-  gg_git: ^4.4.1
-  gg_publish: ^4.7.0
+  gg_git: ^4.4.2
+  gg_publish: ^4.7.1
 dev_dependencies:
-  dna_ggsuite: ^0.2.1
+  dna_ggsuite: ^0.2.2
   gg_capture_print: ^1.2.0
-  helix: ^1.7.1
+  helix: ^1.9.0
   lints: ^6.1.0
   test: ^1.32.0
 

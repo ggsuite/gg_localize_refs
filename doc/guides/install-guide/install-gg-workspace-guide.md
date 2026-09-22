@@ -21,6 +21,11 @@ cd ~/dev2
 gg do init workspace
 ```
 
+This creates the `.ocean` folder and instantiates the latest `dna_gg` in
+the workspace folder: the gg guides, the skills and the managed block of
+`CLAUDE.md`. It is the same as running `gg dna init`, `gg dna add dna_gg`
+and `gg dna build` by hand.
+
 ## Add your repositories
 
 ```bash

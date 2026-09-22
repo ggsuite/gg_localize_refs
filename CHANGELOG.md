@@ -1,5 +1,12 @@
 # Changelog
 
+## 5.0.1 - 2026-09-22
+
+### Changed
+
+- "Quiet
+- "Tighten
+
 ## 5.0.0 - 2026-09-11
 
 ### Changed
