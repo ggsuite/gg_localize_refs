@@ -61,9 +61,9 @@
       "name": "dna-vscode",
       "package": "dna_vscode",
       "ecosystem": "pub",
-      "resolvedVersion": "0.2.3",
+      "resolvedVersion": "0.2.4",
       "via": "dna-ggsuite",
-      "hash": "0x29fdd0bc52e50e39"
+      "hash": "0x9a76a39efcd34360"
     },
     {
       "name": "dna-clean-code",
@@ -133,7 +133,7 @@
       "name": "gg-git",
       "package": "gg_git",
       "ecosystem": "pub",
-      "resolvedVersion": "4.5.2",
+      "resolvedVersion": "4.5.4",
       "via": null,
       "hash": "0x32b3537fa5495175"
     },
@@ -231,7 +231,7 @@
     },
     {
       "path": ".prettierignore",
-      "hash": "0xca9871c5856573ee"
+      "hash": "0x9e5afe8bbdb91467"
     },
     {
       "path": ".prettierrc",
