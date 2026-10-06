@@ -117,18 +117,18 @@ packages:
     dependency: transitive
     description:
       name: dna_gg
-      sha256: "318156eaba327896b4ed2574725ebb5da4b69f60b4a0ba05e29a4c24dd3ccbe5"
+      sha256: a6108d86d02702efb96374578f11a48ef46259a8596fec66553688f17df18b0d
       url: "https://pub.dev"
     source: hosted
-    version: "0.5.1"
+    version: "0.6.0"
   dna_ggsuite:
     dependency: "direct dev"
     description:
       name: dna_ggsuite
-      sha256: "4398bfd53f8f3869e819cd6782937f660f2a0d381effd0a651c4758fe5004ea2"
+      sha256: "06c436f4b89c7007d54f82b44ba97c66dc9d68acf2715a9e33a67a22d5f540f6"
       url: "https://pub.dev"
     source: hosted
-    version: "0.2.2"
+    version: "0.2.3"
   dna_guides:
     dependency: transitive
     description:
@@ -181,10 +181,10 @@ packages:
     dependency: transitive
     description:
       name: dna_vscode
-      sha256: "7bead1b4ca9dc7e1229124ba39773cf7ebf2a9185400a5d12a6d1d26ef16dacf"
+      sha256: "5305e968fe4b97537e5c61888ce3c3b4141c0f14c6cda2b05523a6d96dbe4bba"
       url: "https://pub.dev"
     source: hosted
-    version: "0.2.1"
+    version: "0.2.2"
   file:
     dependency: transitive
     description:
@@ -197,10 +197,10 @@ packages:
     dependency: transitive
     description:
       name: frontend_server_client
-      sha256: f64a0333a82f30b0cca061bc3d143813a486dc086b574bfb233b7c1372427694
+      sha256: "404dbf9bce29beafbe9dcb19219447b6f7d49900cd42b8d3b7af102b24508e25"
       url: "https://pub.dev"
     source: hosted
-    version: "4.0.0"
+    version: "4.1.0"
   gg_args:
     dependency: "direct main"
     description:
@@ -229,10 +229,10 @@ packages:
     dependency: "direct main"
     description:
       name: gg_git
-      sha256: "4d94c77b8128833811cf0520b8b35e3c2726c5a67e988bc4388c8a883eca3ff6"
+      sha256: "344d70859caddea7996377c3ed05b22bd8f0c721968e2dd2fb3e06deb4bfd931"
       url: "https://pub.dev"
     source: hosted
-    version: "4.4.2"
+    version: "4.5.1"
   gg_hash:
     dependency: transitive
     description:
@@ -300,11 +300,10 @@ packages:
   gg_publish:
     dependency: "direct main"
     description:
-      name: gg_publish
-      sha256: a08272e10795d8509e15533750f19cd1f89a5f68526b03eaab6d123f6c820a78
-      url: "https://pub.dev"
-    source: hosted
-    version: "4.7.1"
+      path: "../gg_publish"
+      relative: true
+    source: path
+    version: "4.9.0"
   gg_status_printer:
     dependency: transitive
     description:
@@ -317,10 +316,10 @@ packages:
     dependency: transitive
     description:
       name: gg_version
-      sha256: "350c3b35124d36df8bb043f73696006c65d4134ed11ec56be27253f7d3ba785f"
+      sha256: "0e7534ddb4dfb1fb54861da02e0d2c39a36e3c8a08ff2a32c4c60d2fbf3b72f6"
       url: "https://pub.dev"
     source: hosted
-    version: "5.5.1"
+    version: "5.7.0"
   glob:
     dependency: transitive
     description:
@@ -333,10 +332,10 @@ packages:
     dependency: "direct dev"
     description:
       name: helix
-      sha256: "0eb0407fddd8431dbdc50660deb00a98f9dcc01c6d51769d48e6d9351da2df92"
+      sha256: ce0982d27de107b92169bf7ffa59079456ab162e23d5f3d071c273ecf06b36bd
       url: "https://pub.dev"
     source: hosted
-    version: "1.9.0"
+    version: "1.10.0"
   http:
     dependency: transitive
     description:
