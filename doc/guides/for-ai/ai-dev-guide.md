@@ -62,8 +62,16 @@ repositories. The ticket then carries no plan of its own.
 
 ## Add git repositories
 
-Look at the `index.jsonc` of each repo in .ocean and decide which repos need to
-be added to the ticket.
+Ask the user how the repos are chosen, as a single question with two
+options: automatically or manually.
+
+Manually: ask in a second single input field which repos the ticket needs,
+e.g. `repo1 repo2`. Check each name against the repos in .ocean and ask
+again for names that do not exist there. The entered list is the
+confirmation; add the repos as shown below.
+
+Automatically: look at the `index.jsonc` of each repo in .ocean and decide
+which repos need to be added to the ticket.
 Make a plan for how you roughly want to implement the ticket.
 If certain parts of the implementation belong to a domain that does not yet
 exist in the .ocean folder, consider creating a new repository.
@@ -106,6 +114,42 @@ ticket.
 - Plan only: skip this step. The following steps then apply to the project
   management repo only.
 
+## Keep the publish config up to date
+
+Each repo of the ticket has a file `.gg/publish_config.json`. gg offers its
+values as defaults: `gg do commit` pre-fills the commit message editor with
+`nextCommitMessage`, `gg do publish` pre-selects `versionIncrement` and
+pre-fills the merge message with `mergeMessage`. git ignores the file.
+
+Whenever you change code in a repo, update `nextCommitMessage` of that repo
+so it describes everything that is not committed yet, not only your last
+step. Create the file if it does not exist. Change only the keys you mean
+to change and keep the rest — `commits` is written by gg, never by hand.
+
+```json
+{
+  "publishConfig": {
+    "nextCommitMessage": {
+      "firstLine": "Let the user pick the ticket repos",
+      "details": ["Ask whether repos are chosen automatically or manually"]
+    },
+    "mergeMessage": "Let the user pick the ticket repos manually",
+    "versionIncrement": "minor"
+  }
+}
+```
+
+- `firstLine`: imperative, at most 60 characters
+- `details`: optional, one entry per line
+- `mergeMessage`: the pull request title and the merge commit message of
+  the repo
+- `versionIncrement`: `patch`, `minor` or `major`, matching what the
+  ticket changes in the repo
+
+Set `mergeMessage` and `versionIncrement` as soon as the change of the repo
+is clear, and adjust them when it changes. Only `gg do commit` in the
+ticket folder reads `nextCommitMessage`; `gg one do commit` does not.
+
 ## Commit
 
 ```bash
@@ -144,7 +188,8 @@ Afterwards load the review-light skill and execute it.
 
 - Create a blog post for the current ticket
 - Update the index.jsonc and README.md
-- Create the configuration for gg do publish
+- Check `mergeMessage` and `versionIncrement` in `.gg/publish_config.json`
+  of each repo — `gg do publish` offers them as defaults
 - If the ticket was only planned, publish the project management repo only
 
 Ask the user to run the following command **manually**:
