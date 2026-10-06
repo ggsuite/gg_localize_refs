@@ -5,6 +5,7 @@
 ### Changed
 
 - Merge main
+- Upgrade_dependencies
 
 ## 5.0.2 - 2026-10-06
 

@@ -17,8 +17,8 @@ dependencies:
   yaml_edit: ^2.2.4
   gg_project_root: ^2.2.2
   pubspec_parse: ^1.6.0
-  gg_git: ^4.5.2
-  gg_publish: ^4.9.1
+  gg_git: ^4.5.3
+  gg_publish: ^4.10.0
 dev_dependencies:
   dna_ggsuite: ^0.2.4
   gg_capture_print: ^1.2.0
