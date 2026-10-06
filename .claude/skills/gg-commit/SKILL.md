@@ -22,7 +22,13 @@ whenever you are inside a repo.
 
 Look at `git status` and `git diff` in the repos of the ticket. Propose one
 imperative one-liner that says what the step does, not which files changed.
-Let the user confirm it.
+Start from `nextCommitMessage` in `.gg/publish_config.json` of each repo and
+update it there if it no longer matches the diff (see the development
+guide). Let the user confirm it.
+
+If the user runs `gg do commit` in the ticket folder without `-m`, the
+editor already shows each repo's `nextCommitMessage` — `-m` overrides it
+with one message for all repos.
 
 ## 3. Commit
 
