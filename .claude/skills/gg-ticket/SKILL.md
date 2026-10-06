@@ -52,10 +52,19 @@ Call it the "project management repo" whenever you write to the user, never
 
 ## 4. Choose the code repos
 
-Read the `index.md` of the candidate repos in `.ocean`. Tell the user which
-repos the ticket needs and what you roughly want to change in each one. If a
-part belongs to a domain that has no repo yet, say so and ask whether to
-create one. A ticket that is only planned may need no code repo at all.
+Ask the user how the code repos are chosen, as a single question with two
+options:
+
+- **automatically** — Claude finds the repos. Read the `index.md` of the
+  candidate repos in `.ocean`. Tell the user which repos the ticket needs
+  and what you roughly want to change in each one. If a part belongs to a
+  domain that has no repo yet, say so and ask whether to create one.
+- **manually** — the user names the repos. Ask in a second single input
+  field which repos the ticket needs, e.g. `repo1 repo2`. Check each name
+  against the repos in `.ocean` and ask again for names that do not exist
+  there. The entered list is the confirmation.
+
+A ticket that is only planned may need no code repo at all.
 
 After the confirmation:
 
@@ -81,6 +90,6 @@ repo alone.
 
 ## Important
 
-- Never add repos without confirmation. Rather too few than too many — more
-  can be added later.
+- Never add repos without confirmation — a manually entered list counts as
+  one. Rather too few than too many — more can be added later.
 - Do not start the implementation unasked.

@@ -15,12 +15,15 @@ creates and pushes the version tags. It is interactive — the user runs it.
 
 ## 2. Configure the publish
 
-```bash
-gg do configure-publish
-```
+Write per repo into `.gg/publish_config.json` (see the development guide):
 
-Check per repo that the version bump matches what the ticket changed and
-that `CHANGELOG.md` reads well.
+- `mergeMessage` — the pull request title and merge commit message
+- `versionIncrement` — `patch`, `minor` or `major`, matching what the
+  ticket changed
+
+`gg do publish` pre-fills the merge message and pre-selects the version
+increment with these values. Never run `gg do configure-publish` yourself,
+it is interactive. Check that `CHANGELOG.md` reads well.
 
 ## 3. Let the user publish
 
