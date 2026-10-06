@@ -1,5 +1,17 @@
 # Changelog
 
+## Unreleased
+
+### Changed
+
+- Merge main
+
+## 5.0.2 - 2026-10-06
+
+### Changed
+
+- Upgrade dependencies
+
 ## 5.0.1 - 2026-09-22
 
 ### Changed
