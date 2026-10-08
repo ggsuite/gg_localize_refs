@@ -101,6 +101,59 @@ void main() {
         );
       });
 
+      test('removes the last stale override and deletes the file', () {
+        createSibling('gone');
+        overridesFile.writeAsStringSync(
+          '${PubspecOverridesIo.headerComment}'
+          'dependency_overrides:\n'
+          '  gone:\n'
+          '    path: ../gone\n',
+        );
+
+        final edit = io.addPathOverrides(
+          projectDir: projectDir,
+          pathsByDependency: <String, String>{},
+        );
+
+        expect(edit.deleteFile, isTrue);
+      });
+
+      test('removes stale overrides but keeps hand written entries', () {
+        createSibling('gone');
+        overridesFile.writeAsStringSync(
+          'dependency_overrides:\n'
+          '  gone:\n'
+          '    path: ../gone\n'
+          '  pinned: 1.2.3\n',
+        );
+
+        final edit = io.addPathOverrides(
+          projectDir: projectDir,
+          pathsByDependency: <String, String>{},
+        );
+
+        expect(overridesOf(edit.content!), <String, dynamic>{
+          'pinned': '1.2.3',
+        });
+      });
+
+      test('is unchanged for an empty request without stale entries', () {
+        overridesFile.writeAsStringSync(
+          'dependency_overrides:\n'
+          '  pinned: 1.2.3\n',
+        );
+
+        expect(
+          io
+              .addPathOverrides(
+                projectDir: projectDir,
+                pathsByDependency: <String, String>{},
+              )
+              .isUnchanged,
+          isTrue,
+        );
+      });
+
       test('creates the file with a header', () {
         final edit = io.addPathOverrides(
           projectDir: projectDir,
@@ -570,6 +623,68 @@ void main() {
         final override = overridesOf(edit.content!)['a'] as Map;
         expect(override.containsKey('path'), isFalse);
         expect((override['git'] as Map)['ref'], 'feature123');
+      });
+    });
+
+    group('diffPathOverrides()', () {
+      test('names every dependency as missing without a file', () {
+        final diff = io.diffPathOverrides(
+          projectDir: projectDir,
+          pathsByDependency: <String, String>{'a': '../a'},
+        );
+
+        expect(diff.missing, <String>['a']);
+        expect(diff.stale, isEmpty);
+      });
+
+      test('names missing, different and stale overrides', () {
+        createSibling('a');
+        createSibling('b');
+        createSibling('gone');
+        createSibling('inherited');
+        overridesFile.writeAsStringSync(
+          'dependency_overrides:\n'
+          '  a:\n'
+          '    path: ../a\n'
+          '  b: 1.0.0\n'
+          '  gone:\n'
+          '    path: ../gone\n'
+          '  inherited:\n'
+          '    path: ../inherited\n',
+        );
+
+        final diff = io.diffPathOverrides(
+          projectDir: projectDir,
+          pathsByDependency: <String, String>{
+            'a': '../a',
+            'b': '../b',
+            'c': '../c',
+          },
+          inheritedOverrides: <String, dynamic>{'inherited': '1.0.0'},
+        );
+
+        expect(diff.missing, <String>['b', 'c']);
+        expect(diff.stale, <String>['gone']);
+      });
+
+      test('reports nothing for what addPathOverrides wrote', () {
+        createSibling('a');
+        overridesFile.writeAsStringSync(
+          io
+              .addPathOverrides(
+                projectDir: projectDir,
+                pathsByDependency: <String, String>{'a': '../a'},
+              )
+              .content!,
+        );
+
+        final diff = io.diffPathOverrides(
+          projectDir: projectDir,
+          pathsByDependency: <String, String>{'a': '../a'},
+        );
+
+        expect(diff.missing, isEmpty);
+        expect(diff.stale, isEmpty);
       });
     });
 

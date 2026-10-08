@@ -137,17 +137,15 @@ class PubspecOverridesIo {
   /// [header] is put on top of a file that has to be created from scratch.
   ///
   /// Returns an unchanged edit when every dependency is already overridden
-  /// with exactly that value, so running a command twice is a no-op.
+  /// with exactly that value, so running a command twice is a no-op. With an
+  /// empty [overridesByDependency] only the stale overrides are removed, and
+  /// the file is deleted when nothing worth keeping is left.
   PubspecOverridesEdit _addOverrides({
     required Directory projectDir,
     required Map<String, dynamic> overridesByDependency,
     required Map<String, dynamic> inheritedOverrides,
     required String header,
   }) {
-    if (overridesByDependency.isEmpty) {
-      return const PubspecOverridesEdit.unchanged();
-    }
-
     final overridesFile = file(projectDir);
     final existing = overridesFile.existsSync()
         ? overridesFile.readAsStringSync()
@@ -157,6 +155,11 @@ class PubspecOverridesIo {
         : _parseOrThrow(existing, overridesFile);
     final section = parsed is Map ? parsed['dependency_overrides'] : null;
 
+    // Nothing to declare: no file is created, only a section is cleaned up.
+    if (overridesByDependency.isEmpty && section is! Map) {
+      return const PubspecOverridesEdit.unchanged();
+    }
+
     final inherited = <String, dynamic>{
       for (final entry in inheritedOverrides.entries)
         if (!overridesByDependency.containsKey(entry.key) &&
@@ -164,25 +167,11 @@ class PubspecOverridesIo {
           entry.key: entry.value,
     };
 
-    // A dependency that was dropped from pubspec.yaml must lose its override:
-    // pub pulls every overridden package into the resolution, whether the
-    // manifest declares it or not.
-    final stale = <String>[
-      if (section is Map)
-        for (final entry in section.entries)
-          if (!overridesByDependency.containsKey(entry.key.toString()) &&
-              !inheritedOverrides.containsKey(entry.key.toString()) &&
-              (isOwnedPathOverride(
-                    projectDir: projectDir,
-                    name: entry.key.toString(),
-                    value: entry.value,
-                  ) ||
-                  _isDeadPathOverride(
-                    projectDir: projectDir,
-                    value: entry.value,
-                  )))
-            entry.key.toString(),
-    ];
+    final stale = _staleOverrides(
+      projectDir: projectDir,
+      section: section,
+      keep: <String>{...overridesByDependency.keys, ...inheritedOverrides.keys},
+    );
 
     if (inherited.isEmpty &&
         stale.isEmpty &&
@@ -224,9 +213,44 @@ class PubspecOverridesIo {
     }
 
     final updated = _withTrailingNewline(editor.toString());
-    return updated == existing
-        ? const PubspecOverridesEdit.unchanged()
+    if (updated == existing) {
+      return const PubspecOverridesEdit.unchanged();
+    }
+    return _isEffectivelyEmpty(_parseOrThrow(updated, overridesFile))
+        ? const PubspecOverridesEdit.delete()
         : PubspecOverridesEdit.write(updated);
+  }
+
+  // ...........................................................................
+  /// Compares the overrides file of [projectDir] with [addPathOverrides] for
+  /// [pathsByDependency], read-only: `missing` = not overridden with exactly
+  /// that path, `stale` = overrides it would remove.
+  ({List<String> missing, List<String> stale}) diffPathOverrides({
+    required Directory projectDir,
+    required Map<String, String> pathsByDependency,
+    Map<String, dynamic> inheritedOverrides = const <String, dynamic>{},
+  }) {
+    final overridesFile = file(projectDir);
+    final parsed = overridesFile.existsSync()
+        ? _parseOrThrow(overridesFile.readAsStringSync(), overridesFile)
+        : null;
+    final section = parsed is Map ? parsed['dependency_overrides'] : null;
+
+    return (
+      missing: <String>[
+        for (final entry in pathsByDependency.entries)
+          if (section is! Map ||
+              !_isSameOverride(section[entry.key], <String, dynamic>{
+                'path': entry.value,
+              }))
+            entry.key,
+      ],
+      stale: _staleOverrides(
+        projectDir: projectDir,
+        section: section,
+        keep: <String>{...pathsByDependency.keys, ...inheritedOverrides.keys},
+      ),
+    );
   }
 
   /// Computes the edit that removes the overrides this package owns from the
@@ -264,16 +288,12 @@ class PubspecOverridesIo {
     final toRemove = <String>[
       for (final entry in section.entries)
         if ((_isPathOverride(entry.value) &&
-                (names.contains(entry.key.toString()) ||
-                    isOwnedPathOverride(
-                      projectDir: projectDir,
-                      name: entry.key.toString(),
-                      value: entry.value,
-                    ) ||
-                    _isDeadPathOverride(
-                      projectDir: projectDir,
-                      value: entry.value,
-                    ))) ||
+                names.contains(entry.key.toString())) ||
+            _isStale(
+              projectDir: projectDir,
+              name: entry.key.toString(),
+              value: entry.value,
+            ) ||
             (names.contains(entry.key.toString()) &&
                 isOwnedGitOverride(entry.value)))
           entry.key.toString(),
@@ -338,6 +358,35 @@ class PubspecOverridesIo {
       return false;
     }
   }
+
+  /// Returns the entries of [section] whose name is not in [keep] and that
+  /// are stale (see [_isStale]): left behind by a dropped dependency.
+  List<String> _staleOverrides({
+    required Directory projectDir,
+    required dynamic section,
+    required Set<String> keep,
+  }) => <String>[
+    if (section is Map)
+      for (final entry in section.entries)
+        if (!keep.contains(entry.key.toString()) &&
+            _isStale(
+              projectDir: projectDir,
+              name: entry.key.toString(),
+              value: entry.value,
+            ))
+          entry.key.toString(),
+  ];
+
+  /// The one stale predicate: an owned path (see [isOwnedPathOverride]) or a
+  /// dead one (see [_isDeadPathOverride]) goes once nobody needs it — pub
+  /// pulls every overridden package into the resolution.
+  bool _isStale({
+    required Directory projectDir,
+    required String name,
+    required dynamic value,
+  }) =>
+      isOwnedPathOverride(projectDir: projectDir, name: name, value: value) ||
+      _isDeadPathOverride(projectDir: projectDir, value: value);
 
   /// Returns whether [value] is a bare `path` override pointing at a **missing
   /// sibling** of [projectDir].

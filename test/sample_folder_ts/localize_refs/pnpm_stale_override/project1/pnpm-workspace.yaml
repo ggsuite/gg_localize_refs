@@ -1,0 +1,6 @@
+# Created by gg_localize_refs. The overrides section redirects
+# the dependencies of package.json to the sibling checkouts of
+# this workspace without touching their published constraints.
+# change-refs-to-pub-dev removes the section again.
+overrides:
+  test2_ts: link:../project2

@@ -32,7 +32,20 @@ finds one, because a file that is gitignored *and* checked in makes
 `dart pub publish` fail.
 
 Leaving local mode removes the overrides this tool wrote — hand written entries
-in that file survive.
+in that file survive. `change-refs-to-local` also prunes the overrides of
+dependencies the project dropped, including the very last one: the file is
+then deleted (or, for a `pnpm-workspace.yaml` holding your settings, only its
+`overrides` section goes).
+
+## Checking whether a project is localized
+
+`unlocalized-refs` is the read-only counterpart of `change-refs-to-local`. It
+lists every workspace dependency of the project whose override is missing or
+different (`missing` — the published version is resolved instead of the
+checkout) and every override `change-refs-to-local` would remove (`stale`).
+Run on the command line, it prints one line per ref and fails when there is
+any; an empty result means `change-refs-to-local` would change nothing. A
+dependency added to `pubspec.yaml`/`package.json` by hand shows up here.
 
 pnpm-managed TypeScript/JavaScript projects get the same architecture:
 `package.json` keeps its published constraints and the `link:` specs (or the
@@ -48,7 +61,10 @@ npm refuses an override that conflicts with a direct dependency
 (`EOVERRIDE`), and pnpm ignores that field entirely (pnpm ≥ 11 also ignores
 `pnpm.overrides` inside `package.json`). A TypeScript project **not** managed
 by pnpm therefore keeps the legacy behavior: its `link:` specs are written
-into `package.json` directly, with the original specs backed up.
+into `package.json` directly, with the original specs backed up. A `link:`
+that no longer leads to the sibling (a moved or renamed folder) is repaired by
+the next `change-refs-to-local` and reported by `unlocalized-refs`; the backup
+keeps the original published spec.
 
 ## Debugging across the TypeScript packages of a workspace
 
@@ -82,6 +98,9 @@ relative to the path inside `node_modules`) and Vite (which resolves relative
 to the real location) in agreement.
 
 The shims are machine-local helper files below the gitignored `.gg/` and are
-rewritten by every localizing run. Only a sibling with a `src/index.ts` gets
+rewritten by every localizing run — a shim lost to a fresh clone or
+`git clean` is recreated even when `pnpm-workspace.yaml` is already correct,
+and `unlocalized-refs` reports it until then. Only a sibling with a
+`src/index.ts` gets
 one; anything else keeps the plain `link:` to the sibling checkout.
 `change-refs-to-pub-dev` and `change-refs-to-git-feature-branch` remove them.
