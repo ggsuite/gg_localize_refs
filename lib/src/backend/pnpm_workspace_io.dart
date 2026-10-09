@@ -182,15 +182,12 @@ class PnpmWorkspaceIo {
   /// survive, an override this package owns for a dependency that left the
   /// workspace is pruned. Returns an unchanged edit when every dependency is
   /// already overridden with exactly that spec, so running a command twice
-  /// is a no-op.
+  /// is a no-op. With an empty [specsByDependency] only the stale overrides
+  /// are removed, and an own file is deleted once nothing is left in it.
   PubspecOverridesEdit _addOverrides({
     required Directory projectDir,
     required Map<String, String> specsByDependency,
   }) {
-    if (specsByDependency.isEmpty) {
-      return const PubspecOverridesEdit.unchanged();
-    }
-
     final overridesFile = file(projectDir);
     final existing = overridesFile.existsSync()
         ? overridesFile.readAsStringSync()
@@ -200,25 +197,16 @@ class PnpmWorkspaceIo {
         : _parseOrThrow(existing, overridesFile);
     final section = parsed is Map ? parsed['overrides'] : null;
 
-    // An override this package wrote for a dependency that is no longer part
-    // of the workspace set must go — pnpm fails hard on a `link:` whose
-    // target is gone, and a stale git pin would silently shadow the restored
-    // constraint.
-    final stale = <String>[
-      if (section is Map)
-        for (final entry in section.entries)
-          if (!specsByDependency.containsKey(entry.key.toString()) &&
-              (isOwnedLinkOverride(
-                    projectDir: projectDir,
-                    name: entry.key.toString(),
-                    value: entry.value,
-                  ) ||
-                  _isDeadLinkOverride(
-                    projectDir: projectDir,
-                    value: entry.value,
-                  )))
-            entry.key.toString(),
-    ];
+    // Nothing to declare: no file is created, only a section is cleaned up.
+    if (specsByDependency.isEmpty && section is! Map) {
+      return const PubspecOverridesEdit.unchanged();
+    }
+
+    final stale = _staleOverrides(
+      projectDir: projectDir,
+      section: section,
+      keep: specsByDependency.keys.toSet(),
+    );
 
     if (stale.isEmpty &&
         section is Map &&
@@ -246,6 +234,9 @@ class PnpmWorkspaceIo {
       // The key is absent or has a null value: yaml_edit cannot address
       // children of a scalar, so the whole section is written at once.
       editor.update(<Object>['overrides'], specsByDependency);
+    } else if (specsByDependency.isEmpty && stale.length == section.length) {
+      // An empty `overrides` mapping is noise, so the whole section goes.
+      editor.remove(<Object>['overrides']);
     } else {
       for (final entry in specsByDependency.entries) {
         editor.update(<Object>['overrides', entry.key], entry.value);
@@ -256,9 +247,42 @@ class PnpmWorkspaceIo {
     }
 
     final updated = _withTrailingNewline(editor.toString());
-    return updated == existing
-        ? const PubspecOverridesEdit.unchanged()
-        : PubspecOverridesEdit.write(updated);
+    if (updated == existing) {
+      return const PubspecOverridesEdit.unchanged();
+    }
+    final edit = _deleteWhenOwnAndEmpty(
+      existing,
+      _parseOrThrow(updated, overridesFile),
+    );
+    return edit.deleteFile ? edit : PubspecOverridesEdit.write(updated);
+  }
+
+  // ...........................................................................
+  /// Compares the `pnpm-workspace.yaml` of [projectDir] with [addLinkOverrides]
+  /// for [pathsByDependency], read-only: `missing` = not overridden with
+  /// exactly that `link:`, `stale` = overrides it would remove.
+  ({List<String> missing, List<String> stale}) diffLinkOverrides({
+    required Directory projectDir,
+    required Map<String, String> pathsByDependency,
+  }) {
+    final overridesFile = file(projectDir);
+    final parsed = overridesFile.existsSync()
+        ? _parseOrThrow(overridesFile.readAsStringSync(), overridesFile)
+        : null;
+    final section = parsed is Map ? parsed['overrides'] : null;
+
+    return (
+      missing: <String>[
+        for (final entry in pathsByDependency.entries)
+          if (section is! Map || section[entry.key] != 'link:${entry.value}')
+            entry.key,
+      ],
+      stale: _staleOverrides(
+        projectDir: projectDir,
+        section: section,
+        keep: pathsByDependency.keys.toSet(),
+      ),
+    );
   }
 
   // ...........................................................................
@@ -304,18 +328,14 @@ class PnpmWorkspaceIo {
     final names = dependencyNames.toSet();
     final toRemove = <String>[
       for (final entry in section.entries)
-        if (_isLinkOverride(entry.value) &&
-                (names.contains(entry.key.toString()) ||
-                    (!restrictToNames &&
-                        (isOwnedLinkOverride(
-                              projectDir: projectDir,
-                              name: entry.key.toString(),
-                              value: entry.value,
-                            ) ||
-                            _isDeadLinkOverride(
-                              projectDir: projectDir,
-                              value: entry.value,
-                            )))) ||
+        if ((_isLinkOverride(entry.value) &&
+                names.contains(entry.key.toString())) ||
+            (!restrictToNames &&
+                _isStale(
+                  projectDir: projectDir,
+                  name: entry.key.toString(),
+                  value: entry.value,
+                )) ||
             (names.contains(entry.key.toString()) &&
                 entry.value is String &&
                 TypeScriptNpmSpec.isGitSpec(entry.value as String)))
@@ -407,6 +427,35 @@ class PnpmWorkspaceIo {
       return false;
     }
   }
+
+  /// Returns the entries of [section] whose name is not in [keep] and that
+  /// are stale (see [_isStale]): left behind by a dropped dependency.
+  List<String> _staleOverrides({
+    required Directory projectDir,
+    required dynamic section,
+    required Set<String> keep,
+  }) => <String>[
+    if (section is Map)
+      for (final entry in section.entries)
+        if (!keep.contains(entry.key.toString()) &&
+            _isStale(
+              projectDir: projectDir,
+              name: entry.key.toString(),
+              value: entry.value,
+            ))
+          entry.key.toString(),
+  ];
+
+  /// The one stale predicate: an owned link (see [isOwnedLinkOverride]) or a
+  /// dead one (see [_isDeadLinkOverride]) goes once nobody needs it — pnpm
+  /// fails hard on a `link:` whose target is gone.
+  bool _isStale({
+    required Directory projectDir,
+    required String name,
+    required dynamic value,
+  }) =>
+      isOwnedLinkOverride(projectDir: projectDir, name: name, value: value) ||
+      _isDeadLinkOverride(projectDir: projectDir, value: value);
 
   /// Returns whether [value] is a `link:` override pointing at a **missing
   /// sibling** of [projectDir] or at a missing shim below its `.gg/ts_links`.

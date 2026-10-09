@@ -12,13 +12,13 @@ import 'package:gg_args/gg_args.dart';
 import 'package:gg_console_colors/gg_console_colors.dart';
 import 'package:gg_localize_refs/src/backend/file_changes_buffer.dart';
 import 'package:gg_localize_refs/src/backend/languages/project_language.dart';
+import 'package:gg_localize_refs/src/backend/local_overrides.dart';
 import 'package:gg_localize_refs/src/backend/manifest_command_support.dart';
 import 'package:gg_localize_refs/src/backend/pnpm_workspace_io.dart';
 import 'package:gg_localize_refs/src/backend/process_dependencies.dart';
 import 'package:gg_localize_refs/src/backend/publish_to_utils.dart';
 import 'package:gg_localize_refs/src/backend/pubspec_overrides_io.dart';
 import 'package:gg_localize_refs/src/backend/ts_link_shims.dart';
-import 'package:gg_localize_refs/src/backend/typescript_npm_spec.dart';
 import 'package:gg_localize_refs/src/backend/utils.dart';
 import 'package:gg_localize_refs/src/commands/change_refs_to_pub_dev.dart';
 import 'package:gg_log/gg_log.dart';
@@ -64,6 +64,8 @@ class ChangeRefsToLocal extends DirCommand<dynamic> {
   final PnpmWorkspaceIo _pnpmWorkspace = const PnpmWorkspaceIo();
 
   final TsLinkShims _shims = const TsLinkShims();
+
+  final LocalOverrides _localOverrides = const LocalOverrides();
 
   final ChangeRefsToPubDev _changeRefsToPubDev;
 
@@ -144,18 +146,9 @@ class ChangeRefsToLocal extends DirCommand<dynamic> {
       ggLog: ggLog,
     );
 
-    // The overrides cover the *transitive* workspace dependencies: pub reads
-    // them from the root package only, so a project that is left out here is
-    // resolved from the registry while its siblings come from the workspace.
     final edit = _overrides.addPathOverrides(
       projectDir: projectDir,
-      pathsByDependency: <String, String>{
-        for (final dependency in node.transitiveDependencies.entries)
-          dependency.key: _relativePathTo(
-            from: projectDir,
-            to: dependency.value.directory,
-          ),
-      },
+      pathsByDependency: _localOverrides.dartPaths(node),
       inheritedOverrides: _support.dependencyOverridesOf(yamlMap),
     );
 
@@ -254,17 +247,6 @@ class ChangeRefsToLocal extends DirCommand<dynamic> {
     fileChangesBuffer.add(pubspec, newContent);
   }
 
-  /// Returns the path of [to] relative to [from], always with forward slashes.
-  ///
-  /// Pub accepts forward slashes on every platform, so the written override
-  /// stays the same no matter where it was generated. The separators are
-  /// rebuilt from the split path instead of replacing every backslash, because
-  /// a POSIX directory name may legally contain one.
-  String _relativePathTo({required Directory from, required Directory to}) {
-    final relative = p.relative(to.path, from: from.path);
-    return p.posix.joinAll(p.split(relative));
-  }
-
   /// Returns whether [pubspecContent] declares `publish_to: none`.
   bool _hasPublishToNone(String pubspecContent) {
     return RegExp(
@@ -304,11 +286,8 @@ class ChangeRefsToLocal extends DirCommand<dynamic> {
       ggLog: ggLog,
     );
 
-    // The overrides cover the *transitive* workspace dependencies: pnpm
-    // reads them from the root project only, so a project that is left out
-    // here is resolved from the registry while its siblings come from the
-    // workspace.
-    //
+    _syncShims(node: node, ggLog: ggLog);
+
     // A `link:` (a live symlink to the sibling source dir), not `file:`
     // (which pnpm snapshots into its store at install time): a snapshot
     // goes stale the moment the dependency is rebuilt — e.g. a bridge whose
@@ -316,15 +295,7 @@ class ChangeRefsToLocal extends DirCommand<dynamic> {
     // copy. `link:` mirrors Dart's `path:` live-link semantics.
     final edit = _pnpmWorkspace.addLinkOverrides(
       projectDir: node.directory,
-      pathsByDependency: <String, String>{
-        for (final dependency in node.transitiveDependencies.entries)
-          dependency.key: _linkPathTo(
-            node: node,
-            name: dependency.key,
-            depDir: dependency.value.directory,
-            ggLog: ggLog,
-          ),
-      },
+      pathsByDependency: _localOverrides.pnpmLinkPaths(node),
     );
 
     if (edit.isUnchanged) {
@@ -340,32 +311,29 @@ class ChangeRefsToLocal extends DirCommand<dynamic> {
     );
   }
 
-  /// Returns the `link:` path for the dependency [name] of [node] and puts
-  /// the shim it points at in place.
-  ///
-  /// A sibling with a `src/index.ts` is linked through a shim in
-  /// `.gg/ts_links/` whose `main`/`types` lead to that source, so a test
-  /// or the editor steps into the sibling's TypeScript instead of its
-  /// compiled `dist/` (see [TsLinkShims]). A sibling without one is linked
-  /// directly, and a shim an earlier run left for it is removed.
-  String _linkPathTo({
-    required ProjectNode node,
-    required String name,
-    required Directory depDir,
-    required GgLog ggLog,
-  }) {
-    if (!TsLinkShims.hasSourceEntry(depDir)) {
-      _shims.remove(projectDir: node.directory, name: name);
-      return _relativePathTo(from: node.directory, to: depDir);
-    }
+  /// Puts the shims the `link:` overrides of [node] point at in place (see
+  /// [TsLinkShims], [LocalOverrides.pnpmLinkPaths]), also when the overrides
+  /// are already correct; a sibling without sources loses its old shim.
+  void _syncShims({required ProjectNode node, required GgLog ggLog}) {
+    for (final dependency in node.transitiveDependencies.entries) {
+      final name = dependency.key;
+      final depDir = dependency.value.directory;
+      if (!TsLinkShims.hasSourceEntry(depDir)) {
+        _shims.remove(projectDir: node.directory, name: name);
+        continue;
+      }
 
-    // The shims live in `.gg`, which has to stay out of git like the
-    // backups do.
-    _support.ensureGitignoreHasDartBackupEntries(node.directory);
-    if (_shims.write(projectDir: node.directory, name: name, depDir: depDir)) {
-      ggLog('Link $name of ${node.name} to the sources of its checkout');
+      // The shims live in `.gg`, which has to stay out of git like the
+      // backups do.
+      _support.ensureGitignoreHasDartBackupEntries(node.directory);
+      if (_shims.write(
+        projectDir: node.directory,
+        name: name,
+        depDir: depDir,
+      )) {
+        ggLog('Link $name of ${node.name} to the sources of its checkout');
+      }
     }
-    return TsLinkShims.linkPath(name);
   }
 
   /// Undoes a localization an earlier version of this package wrote into
@@ -419,7 +387,8 @@ class ChangeRefsToLocal extends DirCommand<dynamic> {
   /// its own top-level `overrides` field refuses exactly that (`EOVERRIDE`)
   /// — so the `link:` specs are written straight into the dependency
   /// sections of `package.json`, with the original specs backed up for
-  /// `change-refs-to-pub-dev`.
+  /// `change-refs-to-pub-dev`. A link pointing somewhere else than the
+  /// sibling (a moved folder) is repaired; the backup keeps its original.
   Future<void> _modifyTypeScriptLegacy({
     required ProjectNode node,
     required File manifestFile,
@@ -428,46 +397,31 @@ class ChangeRefsToLocal extends DirCommand<dynamic> {
     required FileChangesBuffer fileChangesBuffer,
     required GgLog ggLog,
   }) async {
-    if (!_support.hasNonLocalTypeScriptDependencies(
+    final unlinked = _localOverrides.unlinkedNpmDependencies(
       node: node,
       references: references,
-    )) {
+    );
+    if (unlinked.isEmpty) {
       return;
     }
 
     ggLog('Localize refs of ${node.name}');
 
-    final replacedDependencies = <String, dynamic>{};
+    final linkSpecs = _localOverrides.npmLinkSpecs(node);
+    final originals = <String, dynamic>{};
     var updatedContent = manifestContent;
-
-    for (final dependency in node.transitiveDependencies.entries) {
-      final reference = references[dependency.key];
-      if (reference == null) {
-        continue;
-      }
-
-      final oldValue = reference.value;
-      final oldString = oldValue.toString();
-      if (!TypeScriptNpmSpec.isLocalizedSpec(oldString.trim())) {
-        replacedDependencies[dependency.key] = oldValue;
-      }
-
-      final relativePath = p
-          .relative(dependency.value.directory.path, from: node.directory.path)
-          .replaceAll('\\', '/');
-
+    for (final name in unlinked) {
+      final reference = references[name]!;
+      originals[name] = reference.value;
       updatedContent = node.language.replaceDependencyInContent(
         manifestContent: updatedContent,
         reference: reference,
-        newValue: 'link:$relativePath',
+        newValue: linkSpecs[name]!,
       );
     }
 
-    if (replacedDependencies.isEmpty) {
-      return;
-    }
-
-    await _support.writeTypeScriptBackup(node.directory, replacedDependencies);
+    // Records only the registry specs; a repaired link is no original.
+    await _support.writeTypeScriptBackup(node.directory, originals);
     fileChangesBuffer.add(manifestFile, updatedContent);
   }
 }

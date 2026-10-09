@@ -18,3 +18,4 @@ export 'src/commands/get_ref_version.dart';
 export 'src/commands/restore_publish_to.dart';
 export 'src/commands/set_ref_version.dart';
 export 'src/commands/get_version.dart';
+export 'src/commands/unlocalized_refs.dart';

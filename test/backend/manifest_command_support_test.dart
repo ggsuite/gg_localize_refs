@@ -426,6 +426,41 @@ void main() {
             jsonDecode(file.readAsStringSync()) as Map<String, dynamic>;
         expect(data['dep'], '^1.2.3');
       });
+
+      test('merges into an existing backup and never records a link', () async {
+        final workspace = createWorkspace('manifest_support_ts_backup_merge');
+        final projectDir = Directory(p.join(workspace.path, 'project'))
+          ..createSync(recursive: true);
+        final file = File(
+          p.join(projectDir.path, '.gg', 'gg_localize_refs_backup_ts.json'),
+        )..createSync(recursive: true);
+        file.writeAsStringSync('{"a":"^1.0.0","b":"^2.0.0"}');
+
+        await support.writeTypeScriptBackup(projectDir, <String, dynamic>{
+          'a': 'link:../moved/a',
+          'b': '^2.1.0',
+          'c': 'file:../c',
+          'd': '^4.0.0',
+        });
+
+        expect(jsonDecode(file.readAsStringSync()), <String, dynamic>{
+          'a': '^1.0.0',
+          'b': '^2.1.0',
+          'd': '^4.0.0',
+        });
+      });
+
+      test('writes nothing when there is no original to record', () async {
+        final workspace = createWorkspace('manifest_support_ts_backup_none');
+        final projectDir = Directory(p.join(workspace.path, 'project'))
+          ..createSync(recursive: true);
+
+        await support.writeTypeScriptBackup(projectDir, <String, dynamic>{
+          'a': 'link:../a',
+        });
+
+        expect(projectDir.listSync(), isEmpty);
+      });
     });
 
     group('referencesFor()', () {
@@ -471,74 +506,6 @@ void main() {
         expect(references.keys, containsAll(<String>['a', 'b']));
         expect(references['a']!.sectionName, 'dependencies');
         expect(references['b']!.sectionName, 'devDependencies');
-      });
-    });
-
-    group('hasNonLocalTypeScriptDependencies()', () {
-      test('returns false when all workspace dependencies are file refs', () {
-        final workspace = createWorkspace('manifest_support_non_local_ts_no');
-        final projectDir = Directory(p.join(workspace.path, 'project1'))
-          ..createSync(recursive: true);
-        final depDir = Directory(p.join(workspace.path, 'project2'))
-          ..createSync(recursive: true);
-        final depNode = createNode(
-          name: 'dep',
-          directory: depDir,
-          language: TypeScriptProjectLanguage(),
-        );
-        final node = createNode(
-          name: 'pkg',
-          directory: projectDir,
-          language: TypeScriptProjectLanguage(),
-          dependencies: <String, ProjectNode>{'dep': depNode},
-        );
-        final references = <String, DependencyReference>{
-          'dep': const DependencyReference(
-            sectionName: 'dependencies',
-            name: 'dep',
-            value: 'file:../project2',
-          ),
-        };
-
-        final result = support.hasNonLocalTypeScriptDependencies(
-          node: node,
-          references: references,
-        );
-
-        expect(result, isFalse);
-      });
-
-      test('returns true when a workspace dependency is a version ref', () {
-        final workspace = createWorkspace('manifest_support_non_local_ts_yes');
-        final projectDir = Directory(p.join(workspace.path, 'project1'))
-          ..createSync(recursive: true);
-        final depDir = Directory(p.join(workspace.path, 'project2'))
-          ..createSync(recursive: true);
-        final depNode = createNode(
-          name: 'dep',
-          directory: depDir,
-          language: TypeScriptProjectLanguage(),
-        );
-        final node = createNode(
-          name: 'pkg',
-          directory: projectDir,
-          language: TypeScriptProjectLanguage(),
-          dependencies: <String, ProjectNode>{'dep': depNode},
-        );
-        final references = <String, DependencyReference>{
-          'dep': const DependencyReference(
-            sectionName: 'dependencies',
-            name: 'dep',
-            value: '^1.0.0',
-          ),
-        };
-
-        final result = support.hasNonLocalTypeScriptDependencies(
-          node: node,
-          references: references,
-        );
-
-        expect(result, isTrue);
       });
     });
 

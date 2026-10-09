@@ -199,6 +199,40 @@ void main() {
       });
     });
 
+    group('isInSync()', () {
+      bool inSync() =>
+          shims.isInSync(projectDir: project, name: 'dep_a', depDir: dep);
+
+      test('is true exactly for what write() leaves behind', () {
+        writeDep();
+        expect(inSync(), isFalse);
+
+        shims.write(projectDir: project, name: 'dep_a', depDir: dep);
+        expect(inSync(), isTrue);
+        expect(shimDir().existsSync(), isTrue);
+      });
+
+      test('is false for a src link that leads elsewhere', () {
+        writeDep();
+        shims.write(projectDir: project, name: 'dep_a', depDir: dep);
+        final other = Directory(p.join(workspace.path, 'other', 'src'))
+          ..createSync(recursive: true);
+        shimSrc().updateSync(other.path);
+
+        expect(inSync(), isFalse);
+      });
+
+      test('is false for a missing or differing package.json', () {
+        writeDep();
+        shims.write(projectDir: project, name: 'dep_a', depDir: dep);
+        shimPackageJson().writeAsStringSync('{}');
+        expect(inSync(), isFalse);
+
+        shimPackageJson().deleteSync();
+        expect(inSync(), isFalse);
+      });
+    });
+
     group('remove()', () {
       test('deletes the shim and reports whether it existed', () {
         writeDep();

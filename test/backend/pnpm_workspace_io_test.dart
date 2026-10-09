@@ -237,6 +237,77 @@ void main() {
         expect(edit.isUnchanged, isTrue);
       });
 
+      test('deletes its own file once the last stale override is gone', () {
+        writeSiblingManifest();
+        workspaceYaml().writeAsStringSync(
+          '${PnpmWorkspaceIo.headerComment}overrides:\n'
+          '  dep_a: link:../dep_a\n',
+        );
+
+        final edit = io.addLinkOverrides(
+          projectDir: project,
+          pathsByDependency: const <String, String>{},
+        );
+
+        expect(edit.deleteFile, isTrue);
+      });
+
+      test('keeps the settings of a user file when the last stale override '
+          'is gone', () {
+        writeSiblingManifest();
+        workspaceYaml().writeAsStringSync(
+          'allowBuilds:\n  esbuild: true\noverrides:\n  dep_a: link:../dep_a\n',
+        );
+
+        final edit = io.addLinkOverrides(
+          projectDir: project,
+          pathsByDependency: const <String, String>{},
+        );
+
+        expect(edit.content, contains('allowBuilds'));
+        expect(edit.content, isNot(contains('overrides')));
+      });
+
+      test('drops only the stale override of an empty dependency map and '
+          'keeps a foreign one', () {
+        writeSiblingManifest();
+        workspaceYaml().writeAsStringSync(
+          '${PnpmWorkspaceIo.headerComment}overrides:\n'
+          '  dep_a: link:../dep_a\n'
+          '  foreign: 1.0.0\n',
+        );
+
+        final edit = io.addLinkOverrides(
+          projectDir: project,
+          pathsByDependency: const <String, String>{},
+        );
+
+        expect(edit.deleteFile, isFalse);
+        expect(edit.content, contains('foreign: 1.0.0'));
+        expect(edit.content, isNot(contains('dep_a')));
+      });
+
+      test('returns unchanged for an empty dependency map without a file', () {
+        final edit = io.addLinkOverrides(
+          projectDir: project,
+          pathsByDependency: const <String, String>{},
+        );
+
+        expect(edit.isUnchanged, isTrue);
+      });
+
+      test('returns unchanged for an empty dependency map without stale '
+          'overrides', () {
+        workspaceYaml().writeAsStringSync('overrides:\n  foreign: 1.0.0\n');
+
+        final edit = io.addLinkOverrides(
+          projectDir: project,
+          pathsByDependency: const <String, String>{},
+        );
+
+        expect(edit.isUnchanged, isTrue);
+      });
+
       test('merges into an existing settings file', () {
         workspaceYaml().writeAsStringSync(
           '# keep me\nallowBuilds:\n  esbuild: true\n',
@@ -402,6 +473,58 @@ void main() {
 
         expect(edit.content, isNot(contains('link:')));
         expect(edit.content, contains('#feat'));
+      });
+    });
+
+    group('diffLinkOverrides()', () {
+      test('names every dependency as missing without a file', () {
+        final diff = io.diffLinkOverrides(
+          projectDir: project,
+          pathsByDependency: <String, String>{'dep_a': '../dep_a'},
+        );
+
+        expect(diff.missing, <String>['dep_a']);
+        expect(diff.stale, isEmpty);
+      });
+
+      test('names missing, different and stale overrides', () {
+        writeSiblingManifest();
+        workspaceYaml().writeAsStringSync(
+          'overrides:\n'
+          '  dep_a: link:../dep_a\n'
+          '  dep_b: git+ssh://git@github.com/u/dep_b.git#feat\n'
+          '  foreign: 1.0.0\n',
+        );
+
+        final diff = io.diffLinkOverrides(
+          projectDir: project,
+          pathsByDependency: <String, String>{
+            'dep_b': '../dep_b',
+            'dep_c': '../dep_c',
+          },
+        );
+
+        expect(diff.missing, <String>['dep_b', 'dep_c']);
+        expect(diff.stale, <String>['dep_a']);
+      });
+
+      test('reports nothing for what addLinkOverrides wrote', () {
+        workspaceYaml().writeAsStringSync(
+          io
+              .addLinkOverrides(
+                projectDir: project,
+                pathsByDependency: <String, String>{'dep_a': '../dep_a'},
+              )
+              .content!,
+        );
+
+        final diff = io.diffLinkOverrides(
+          projectDir: project,
+          pathsByDependency: <String, String>{'dep_a': '../dep_a'},
+        );
+
+        expect(diff.missing, isEmpty);
+        expect(diff.stale, isEmpty);
       });
     });
 

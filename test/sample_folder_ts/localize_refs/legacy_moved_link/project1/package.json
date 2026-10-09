@@ -1,0 +1,1 @@
+{"name":"test1_ts","version":"1.0.0","dependencies":{"test2_ts":"link:../moved/project2","test3_ts":"^3.0.0"}}

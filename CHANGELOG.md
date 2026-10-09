@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+### Added
+
+- Add unlocalized-refs and keep local overrides in sync when dependencies change
+
 ## 5.0.3 - 2026-10-06
 
 ### Changed
