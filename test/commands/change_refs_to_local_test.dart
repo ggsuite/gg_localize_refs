@@ -953,6 +953,23 @@ void main() {
           );
         });
 
+        test('removes the override of the last dropped workspace dependency '
+            'together with the file', () async {
+          final workspace = createTempDir('stale_override');
+          copyLocalizeScenario('stale_override', workspace);
+          final dProject1 = Directory(p.join(workspace.path, 'project1'));
+          final overridesFile = File(
+            p.join(dProject1.path, 'pubspec_overrides.yaml'),
+          );
+
+          await ChangeRefsToLocal(ggLog: (_) {})
+              .get(directory: dProject1, ggLog: (_) {});
+
+          expect(overridesFile.existsSync(), isFalse);
+
+          deleteDirs(<Directory>[workspace]);
+        });
+
         test('merges into a hand written pubspec_overrides.yaml', () async {
           final dProject1 = Directory(
             p.join(dWorkspaceOverridesUnrelated.path, 'project1'),
@@ -1081,6 +1098,81 @@ void main() {
           deleteDirs(<Directory>[workspace]);
         });
 
+        test('TypeScript: repairs a link to a moved folder and keeps the '
+            'original spec in the backup', () async {
+          final workspace = createTempDir('ts_legacy_moved_link');
+          copyLocalizeScenarioTs('legacy_moved_link', workspace);
+          final dProject1 = Directory(p.join(workspace.path, 'project1'));
+
+          final localMessages = <String>[];
+          await ChangeRefsToLocal(ggLog: localMessages.add)
+              .get(directory: dProject1, ggLog: localMessages.add);
+
+          expect(localMessages, contains('Localize refs of test1_ts'));
+          final manifest = jsonDecode(
+            File(p.join(dProject1.path, 'package.json')).readAsStringSync(),
+          ) as Map<String, dynamic>;
+          expect(manifest['dependencies'], <String, dynamic>{
+            'test2_ts': 'link:../project2',
+            'test3_ts': 'link:../project3',
+          });
+
+          // The repaired link is no original; the new registry spec is.
+          final backup = jsonDecode(
+            File(
+              p.join(dProject1.path, '.gg', 'gg_localize_refs_backup_ts.json'),
+            ).readAsStringSync(),
+          );
+          expect(backup, <String, dynamic>{
+            'test2_ts': '^1.0.0',
+            'test3_ts': '^3.0.0',
+          });
+
+          // A second run changes nothing.
+          final againMessages = <String>[];
+          await ChangeRefsToLocal(ggLog: againMessages.add)
+              .get(directory: dProject1, ggLog: againMessages.add);
+          expect(againMessages[1], contains('No files were changed.'));
+
+          deleteDirs(<Directory>[workspace]);
+        });
+
+        test('TypeScript pnpm: recreates a missing shim although the '
+            'overrides are correct', () async {
+          final workspace = createTempDir('ts_pnpm_shim_gone');
+          copyLocalizeScenarioTs('pnpm_with_sources', workspace);
+          final dProject1 = Directory(p.join(workspace.path, 'project1'));
+          await ChangeRefsToLocal(ggLog: (_) {})
+              .get(directory: dProject1, ggLog: (_) {});
+          final shimDir = Directory(
+            p.join(dProject1.path, '.gg', 'ts_links', 'test2_ts'),
+          )..deleteSync(recursive: true);
+          final overrides = File(p.join(dProject1.path, 'pnpm-workspace.yaml'))
+              .readAsStringSync();
+
+          final localMessages = <String>[];
+          await ChangeRefsToLocal(ggLog: localMessages.add)
+              .get(directory: dProject1, ggLog: localMessages.add);
+
+          expect(
+            localMessages,
+            contains(
+              'Link test2_ts of test1_ts to the sources of its checkout',
+            ),
+          );
+          expect(
+            File(p.join(shimDir.path, 'src', 'index.ts')).existsSync(),
+            isTrue,
+          );
+          expect(
+            File(p.join(dProject1.path, 'pnpm-workspace.yaml'))
+                .readAsStringSync(),
+            overrides,
+          );
+
+          deleteDirs(<Directory>[workspace]);
+        });
+
         test('TypeScript pnpm: writes overrides into pnpm-workspace.yaml '
             'and leaves package.json untouched', () async {
           final dProject1 = Directory(
@@ -1194,6 +1286,23 @@ void main() {
             contains('test2_ts: link:../project2'),
           );
           expect(shimDir.existsSync(), isFalse);
+
+          deleteDirs(<Directory>[workspace]);
+        });
+
+        test('TypeScript pnpm: removes the override of the last dropped '
+            'workspace dependency together with its own file', () async {
+          final workspace = createTempDir('ts_pnpm_stale_override');
+          copyLocalizeScenarioTs('pnpm_stale_override', workspace);
+          final dProject1 = Directory(p.join(workspace.path, 'project1'));
+
+          await ChangeRefsToLocal(ggLog: (_) {})
+              .get(directory: dProject1, ggLog: (_) {});
+
+          expect(
+            File(p.join(dProject1.path, 'pnpm-workspace.yaml')).existsSync(),
+            isFalse,
+          );
 
           deleteDirs(<Directory>[workspace]);
         });

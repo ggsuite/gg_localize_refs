@@ -90,7 +90,7 @@ class TsLinkShims {
       changed = true;
     }
 
-    final target = p.normalize(p.join(depDir.absolute.path, 'src'));
+    final target = _srcTarget(depDir);
     final link = Link(p.join(dir.path, 'src'));
     if (link.existsSync()) {
       if (p.normalize(link.targetSync()) != target) {
@@ -119,6 +119,24 @@ class TsLinkShims {
     }
 
     return changed;
+  }
+
+  // ...........................................................................
+  /// Returns whether the shim of [name] in [projectDir] is exactly what
+  /// [write] would leave for [depDir]. Read-only.
+  bool isInSync({
+    required Directory projectDir,
+    required String name,
+    required Directory depDir,
+  }) {
+    final dir = shimDir(projectDir, name);
+    final link = Link(p.join(dir.path, 'src'));
+    final packageJson = File(p.join(dir.path, 'package.json'));
+    return link.existsSync() &&
+        p.normalize(link.targetSync()) == _srcTarget(depDir) &&
+        packageJson.existsSync() &&
+        packageJson.readAsStringSync() ==
+            _packageJsonContent(name: name, depDir: depDir);
   }
 
   /// Removes the shim of [name] from [projectDir]. Returns whether it
@@ -177,6 +195,10 @@ class TsLinkShims {
     }
     return segments.join('/');
   }
+
+  /// Returns the target the `src` link of a shim for [depDir] points at.
+  String _srcTarget(Directory depDir) =>
+      p.normalize(p.join(depDir.absolute.path, 'src'));
 
   /// Builds the `package.json` of the shim of [name].
   ///

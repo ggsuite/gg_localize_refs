@@ -191,7 +191,9 @@ class ManifestCommandSupport {
     fileChangesBuffer.add(overridesFile, edit.content!);
   }
 
-  /// Writes the TypeScript backup file for [projectDirectory].
+  /// Records the original specs [replacedDependencies] in the TypeScript
+  /// backup of [projectDirectory], merged into an existing backup (newer
+  /// specs win). A `link:`/`file:` spec is never an original and is skipped.
   ///
   /// The backup lives in `.gg`, so the directory and its `.gitignore` entries
   /// are ensured here the same way the Dart commands do it.
@@ -199,10 +201,25 @@ class ManifestCommandSupport {
     Directory projectDirectory,
     Map<String, dynamic> replacedDependencies,
   ) async {
+    final originals = <String, dynamic>{
+      for (final entry in replacedDependencies.entries)
+        if (!TypeScriptNpmSpec.isLocalizedSpec(entry.value.toString()))
+          entry.key: entry.value,
+    };
+    if (originals.isEmpty) {
+      return;
+    }
+
     ensureDartBackupDir(projectDirectory);
     ensureGitignoreHasDartBackupEntries(projectDirectory);
     final backupFile = Utils.typeScriptBackupFile(projectDirectory);
-    await backupFile.writeAsString(jsonEncode(replacedDependencies));
+    await backupFile.writeAsString(
+      jsonEncode(<String, dynamic>{
+        if (backupFile.existsSync())
+          ...Utils.readDependenciesFromJson(backupFile.path),
+        ...originals,
+      }),
+    );
   }
 
   /// Returns the `dependency_overrides` declared in [manifestMap].
@@ -230,25 +247,5 @@ class ManifestCommandSupport {
     dynamic manifestMap,
   ) {
     return node.language.listDependencyReferences(manifestMap);
-  }
-
-  /// Returns true when any workspace TS dependency is not yet localized.
-  bool hasNonLocalTypeScriptDependencies({
-    required ProjectNode node,
-    required Map<String, DependencyReference> references,
-  }) {
-    for (final dependency in node.dependencies.entries) {
-      final reference = references[dependency.key];
-      final value = reference?.value?.toString();
-      if (value == null) {
-        continue;
-      }
-      // A `file:` or `link:` spec is already localized; anything else still
-      // needs localizing.
-      if (!TypeScriptNpmSpec.isLocalizedSpec(value.trim())) {
-        return true;
-      }
-    }
-    return false;
   }
 }

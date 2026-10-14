@@ -5,7 +5,7 @@
       "name": "base",
       "package": "helix",
       "ecosystem": null,
-      "resolvedVersion": "1.11.0",
+      "resolvedVersion": "1.12.0",
       "via": null,
       "hash": "0x6883da335b415f9d"
     },
@@ -13,7 +13,7 @@
       "name": "dna-readme",
       "package": "dna_readme",
       "ecosystem": "pub",
-      "resolvedVersion": "0.1.2",
+      "resolvedVersion": "0.2.0",
       "via": "dna-ggsuite",
       "hash": "0xb8eeee4e2937ca0d"
     },
@@ -21,7 +21,7 @@
       "name": "dna-guides",
       "package": "dna_guides",
       "ecosystem": "pub",
-      "resolvedVersion": "0.1.2",
+      "resolvedVersion": "0.2.0",
       "via": "dna-ggsuite",
       "hash": "0x3bd4be7c009270a6"
     },
@@ -29,7 +29,7 @@
       "name": "dna-translate",
       "package": "dna_translate",
       "ecosystem": "pub",
-      "resolvedVersion": "0.1.2",
+      "resolvedVersion": "0.2.0",
       "via": "dna-ggsuite",
       "hash": "0x1c92ce37a7ede19b"
     },
@@ -37,7 +37,7 @@
       "name": "dna-index",
       "package": "dna_index",
       "ecosystem": "pub",
-      "resolvedVersion": "0.1.3",
+      "resolvedVersion": "0.2.0",
       "via": "dna-ggsuite",
       "hash": "0x1d92b0add37a1ac7"
     },
@@ -45,7 +45,7 @@
       "name": "dna-blog",
       "package": "dna_blog",
       "ecosystem": "pub",
-      "resolvedVersion": "0.1.2",
+      "resolvedVersion": "0.2.0",
       "via": "dna-ggsuite",
       "hash": "0x2aafe5211ebd4365"
     },
@@ -53,7 +53,7 @@
       "name": "dna-install",
       "package": "dna_install",
       "ecosystem": "pub",
-      "resolvedVersion": "0.1.3",
+      "resolvedVersion": "0.2.0",
       "via": "dna-ggsuite",
       "hash": "0xbe88eb4256745ee1"
     },
@@ -61,7 +61,7 @@
       "name": "dna-vscode",
       "package": "dna_vscode",
       "ecosystem": "pub",
-      "resolvedVersion": "0.2.4",
+      "resolvedVersion": "0.3.0",
       "via": "dna-ggsuite",
       "hash": "0x9a76a39efcd34360"
     },
@@ -69,15 +69,15 @@
       "name": "dna-clean-code",
       "package": "dna_clean_code",
       "ecosystem": "pub",
-      "resolvedVersion": "0.1.2",
+      "resolvedVersion": "0.2.1",
       "via": "dna-ggsuite",
-      "hash": "0xacaa785dad36b047"
+      "hash": "0xe22a90f5db73ee20"
     },
     {
       "name": "dna-scripts",
       "package": "dna_scripts",
       "ecosystem": "pub",
-      "resolvedVersion": "0.2.3",
+      "resolvedVersion": "0.3.0",
       "via": "dna-ggsuite",
       "hash": "0xe3092339b83504a1"
     },
@@ -85,7 +85,7 @@
       "name": "dna-github",
       "package": "dna_github",
       "ecosystem": "pub",
-      "resolvedVersion": "0.0.3",
+      "resolvedVersion": "0.1.0",
       "via": "dna-gg",
       "hash": "0xae24c13573219f91"
     },
@@ -93,7 +93,7 @@
       "name": "dna-gg",
       "package": "dna_gg",
       "ecosystem": "pub",
-      "resolvedVersion": "0.7.1",
+      "resolvedVersion": "0.8.1",
       "via": "dna-ggsuite",
       "hash": "0xc0e2cebcfa39b9d7"
     },
@@ -101,9 +101,9 @@
       "name": "dna-ggsuite",
       "package": "dna_ggsuite",
       "ecosystem": "pub",
-      "resolvedVersion": "0.2.4",
+      "resolvedVersion": "0.3.0",
       "via": "gg-log",
-      "hash": "0x72dd616194a8dbe1"
+      "hash": "0x24d92d142edaf11f"
     },
     {
       "name": "gg-log",
@@ -150,7 +150,7 @@
     "claudeMdInclude": null,
     "claudeMdFromDna": true
   },
-  "baseVersion": "1.11.0",
+  "baseVersion": "1.12.0",
   "baseHash": "0x6883da335b415f9d",
   "instances": [
     {
@@ -159,7 +159,7 @@
     },
     {
       "path": ".claude/skills/code/SKILL.md",
-      "hash": "0x2e5533a3705cb7a3"
+      "hash": "0x94819046c5ce41f3"
     },
     {
       "path": ".claude/skills/gg-cleanup/SKILL.md",
@@ -215,7 +215,7 @@
     },
     {
       "path": ".claude/skills/test/SKILL.md",
-      "hash": "0x9d1d85ae314437ea"
+      "hash": "0x205a400a2064ba93"
     },
     {
       "path": ".claude/skills/translate/SKILL.md",
@@ -251,15 +251,15 @@
     },
     {
       "path": "doc/guides/code-guide-dart.md",
-      "hash": "0x90920ff64d069fc1"
+      "hash": "0x4d561c1f48cd8848"
     },
     {
       "path": "doc/guides/code-guide-typescript.md",
-      "hash": "0xdcae3a0ceb8c859d"
+      "hash": "0xf0951cd8495d3fb4"
     },
     {
       "path": "doc/guides/code-guide.md",
-      "hash": "0x20e15676e7fd9bf8"
+      "hash": "0x92592aded0dc515e"
     },
     {
       "path": "doc/guides/develop-guide.md",
@@ -355,15 +355,15 @@
     },
     {
       "path": "doc/guides/test-guide-dart.md",
-      "hash": "0x0d3f63cd348a4aaa"
+      "hash": "0xc1c38973919e79f0"
     },
     {
       "path": "doc/guides/test-guide-typescript.md",
-      "hash": "0xd7c89e8faff8341e"
+      "hash": "0xe1f8e82c74052ca6"
     },
     {
       "path": "doc/guides/test-guide.md",
-      "hash": "0x01268029d45515a3"
+      "hash": "0x8c2d37f5e599c17e"
     },
     {
       "path": "doc/guides/translate-guide.md",

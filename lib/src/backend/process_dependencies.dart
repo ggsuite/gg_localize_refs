@@ -32,31 +32,10 @@ Future<void> processProject({
   required FileChangesBuffer fileChangesBuffer,
   required GgLog ggLog,
 }) async {
-  final graph = MultiLanguageGraph(
-    languages: <ProjectLanguage>[
-      DartProjectLanguage(),
-      TypeScriptProjectLanguage(),
-    ],
-  );
-
-  // A cross-language bridge (pubspec.yaml + package.json + tsconfig.json) is a
-  // project root for more than one language. Build and process the workspace
-  // once per language the root supports, so BOTH the Dart manifest and the
-  // TypeScript manifest of a bridge get rewritten. A single-language repo is
-  // processed exactly once, identically to before.
-  final root = await graph.findRootAndLanguages(directory);
-  if (root == null) {
-    throw Exception(red('No project root found'));
-  }
-
-  final (rootDir, rootLanguages) = root;
-  for (final language in rootLanguages) {
-    final result = await graph.buildGraph(
-      directory: rootDir,
-      ggLog: ggLog,
-      forLanguage: language,
-    );
-
+  for (final result in await buildRootGraphs(
+    directory: directory,
+    ggLog: ggLog,
+  )) {
     // Each language pass has its own node identity space, so it tracks its
     // own processed set.
     final processedNodes = <String>{};
@@ -69,6 +48,35 @@ Future<void> processProject({
       ggLog,
     );
   }
+}
+
+// ...........................................................................
+/// Builds the workspace graph of the project root in [directory] once per
+/// language the root supports: a cross-language bridge gets one for its Dart
+/// and one for its TypeScript manifest, a single-language repo exactly one.
+Future<List<({ProjectNode rootNode, Map<String, ProjectNode> allNodes})>>
+buildRootGraphs({required Directory directory, required GgLog ggLog}) async {
+  final graph = MultiLanguageGraph(
+    languages: <ProjectLanguage>[
+      DartProjectLanguage(),
+      TypeScriptProjectLanguage(),
+    ],
+  );
+
+  final root = await graph.findRootAndLanguages(directory);
+  if (root == null) {
+    throw Exception(red('No project root found'));
+  }
+
+  final (rootDir, rootLanguages) = root;
+  return <({ProjectNode rootNode, Map<String, ProjectNode> allNodes})>[
+    for (final language in rootLanguages)
+      await graph.buildGraph(
+        directory: rootDir,
+        ggLog: ggLog,
+        forLanguage: language,
+      ),
+  ];
 }
 
 // ...........................................................................

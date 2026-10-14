@@ -271,6 +271,19 @@ void main() {
       });
     });
 
+    group('buildRootGraphs()', () {
+      test('returns one graph per language of the project root', () async {
+        final graphs = await buildRootGraphs(
+          directory: Directory(join(dWorkspaceSucceed.path, 'project1')),
+          ggLog: (_) {},
+        );
+
+        expect(graphs, hasLength(1));
+        expect(basename(graphs.single.rootNode.directory.path), 'project1');
+        expect(graphs.single.allNodes.keys, hasLength(2));
+      });
+    });
+
     group('Helper methods', () {
       group('correctDir()', () {
         test('succeeds', () {

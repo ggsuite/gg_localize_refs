@@ -13,6 +13,7 @@ import 'package:gg_localize_refs/src/commands/get_ref_version.dart';
 import 'package:gg_localize_refs/src/commands/get_version.dart';
 import 'package:gg_localize_refs/src/commands/restore_publish_to.dart';
 import 'package:gg_localize_refs/src/commands/set_ref_version.dart';
+import 'package:gg_localize_refs/src/commands/unlocalized_refs.dart';
 import 'package:gg_log/gg_log.dart';
 
 /// The command line interface for GgToLocal.
@@ -27,6 +28,7 @@ class GgToLocal extends Command<dynamic> {
     addSubcommand(GetRefVersion(ggLog: ggLog));
     addSubcommand(SetRefVersion(ggLog: ggLog));
     addSubcommand(GetVersion(ggLog: ggLog));
+    addSubcommand(UnlocalizedRefs(ggLog: ggLog));
   }
 
   /// The log function.
