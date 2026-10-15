@@ -13,7 +13,7 @@
       "name": "dna-readme",
       "package": "dna_readme",
       "ecosystem": "pub",
-      "resolvedVersion": "0.2.0",
+      "resolvedVersion": "0.3.0",
       "via": "dna-ggsuite",
       "hash": "0xb8eeee4e2937ca0d"
     },
@@ -61,9 +61,9 @@
       "name": "dna-vscode",
       "package": "dna_vscode",
       "ecosystem": "pub",
-      "resolvedVersion": "0.3.0",
+      "resolvedVersion": "0.4.0",
       "via": "dna-ggsuite",
-      "hash": "0x9a76a39efcd34360"
+      "hash": "0xb1b916118eb63333"
     },
     {
       "name": "dna-clean-code",
@@ -93,17 +93,17 @@
       "name": "dna-gg",
       "package": "dna_gg",
       "ecosystem": "pub",
-      "resolvedVersion": "0.8.1",
+      "resolvedVersion": "0.9.0",
       "via": "dna-ggsuite",
-      "hash": "0xc0e2cebcfa39b9d7"
+      "hash": "0x2583c9e1629c0937"
     },
     {
       "name": "dna-ggsuite",
       "package": "dna_ggsuite",
       "ecosystem": "pub",
-      "resolvedVersion": "0.3.0",
+      "resolvedVersion": "0.4.0",
       "via": "gg-log",
-      "hash": "0x24d92d142edaf11f"
+      "hash": "0x309b9f27627022e1"
     },
     {
       "name": "gg-log",
@@ -133,7 +133,7 @@
       "name": "gg-git",
       "package": "gg_git",
       "ecosystem": "pub",
-      "resolvedVersion": "4.5.4",
+      "resolvedVersion": "4.5.5",
       "via": null,
       "hash": "0x32b3537fa5495175"
     },
@@ -279,7 +279,7 @@
     },
     {
       "path": "doc/guides/for-ai/ai-dev-guide.md",
-      "hash": "0xa7d0d75d19ccfb0f"
+      "hash": "0x84e0ee24efbbe12f"
     },
     {
       "path": "doc/guides/for-ai/ai-review-guide.md",
