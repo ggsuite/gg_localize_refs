@@ -15,12 +15,12 @@ dependencies:
   path: ^1.9.1
   yaml: ^3.1.4
   yaml_edit: ^2.2.4
-  gg_project_root: ^2.2.2
+  gg_project_root: ^2.2.3
   pubspec_parse: ^1.6.0
-  gg_git: ^4.5.4
-  gg_publish: ^4.10.1
+  gg_git: ^4.5.5
+  gg_publish: ^4.10.2
 dev_dependencies:
-  dna_ggsuite: ^0.3.0
+  dna_ggsuite: ^0.4.0
   gg_capture_print: ^1.2.0
   helix: ^1.12.0
   lints: ^6.1.0
