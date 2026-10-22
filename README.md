@@ -95,7 +95,9 @@ edits are picked up immediately, stack traces name the `.ts` file,
 breakpoints in the sibling hit. Nothing has to be configured in either repo.
 The `src` symlink is what keeps TypeScript (which resolves `main`/`types`
 relative to the path inside `node_modules`) and Vite (which resolves relative
-to the real location) in agreement.
+to the real location) in agreement. On Windows the link is a directory
+junction: a symbolic link needs Developer Mode or administrator rights there,
+a junction does not.
 
 The shims are machine-local helper files below the gitignored `.gg/` and are
 rewritten by every localizing run — a shim lost to a fresh clone or
