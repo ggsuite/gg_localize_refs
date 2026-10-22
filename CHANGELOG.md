@@ -6,6 +6,7 @@
 
 - Link TypeScript shims through junctions on Windows
 - Document the Windows support of ticket gg-1
+- Apply the review of ticket gg-1
 
 ## 5.1.1 - 2026-10-16
 

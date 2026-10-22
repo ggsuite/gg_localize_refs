@@ -97,7 +97,8 @@ The `src` symlink is what keeps TypeScript (which resolves `main`/`types`
 relative to the path inside `node_modules`) and Vite (which resolves relative
 to the real location) in agreement. On Windows the link is a directory
 junction: a symbolic link needs Developer Mode or administrator rights there,
-a junction does not.
+a junction does not. `TsLinkShims.createDirectoryLink(link, target)` creates
+the one the platform takes.
 
 The shims are machine-local helper files below the gitignored `.gg/` and are
 rewritten by every localizing run — a shim lost to a fresh clone or
