@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+### Changed
+
+- Link TypeScript shims through junctions on Windows
+
 ## 5.1.1 - 2026-10-16
 
 ## 5.1.0 - 2026-10-14
