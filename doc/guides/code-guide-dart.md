@@ -32,17 +32,6 @@ package. Read that one first; this only fills in the specifics.
   `try` / `catch` / `rethrow`
 - Await every future or mark it with `unawaited(…)`
 
-## Give every class an example
-
-Offer a `factory X.example({…})` with only optional parameters, falling
-back to a working value for each:
-
-```dart
-/// Creates an example user for tests and docs.
-factory GgUser.example({String? name, int? age}) =>
-    GgUser(name: name ?? 'Jane Doe', age: age ?? 42);
-```
-
 ## Comment landmarks
 
 - `// #####…` before a class, enum or other top level construct
