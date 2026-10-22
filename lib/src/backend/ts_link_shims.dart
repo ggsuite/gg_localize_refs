@@ -36,6 +36,10 @@ import 'package:path/path.dart' as p;
 /// the shim would mean different things to them; `./src/index.ts` means the
 /// same to both, and the link's absolute target is followed by the OS.
 ///
+/// On Windows the `src` link is a directory junction: a symbolic link
+/// needs Developer Mode or administrator rights there, a junction does not,
+/// and a link to a folder by its absolute path is all the shim needs.
+///
 /// The shims are machine-local helper files: they live in `.gg/`, which is
 /// gitignored, and every localizing run rewrites them. Only a sibling that
 /// has a `src/index.ts` gets one — anything else keeps the plain `link:` to
@@ -95,7 +99,7 @@ class TsLinkShims {
     if (link.existsSync()) {
       if (p.normalize(link.targetSync()) != target) {
         link.deleteSync();
-        link.createSync(target);
+        createDirectoryLink(link, target);
         changed = true;
       }
     } else {
@@ -106,7 +110,7 @@ class TsLinkShims {
       } else if (blocker != FileSystemEntityType.notFound) {
         File(link.path).deleteSync();
       }
-      link.createSync(target);
+      createDirectoryLink(link, target);
       changed = true;
     }
 
@@ -196,6 +200,33 @@ class TsLinkShims {
     return segments.join('/');
   }
 
+  /// Creates [link] to the folder [target]: a junction on Windows, which
+  /// unlike a symbolic link needs no privileges, a symbolic link elsewhere.
+  /// Both read back the same through [Link]. Each platform runs one branch,
+  /// so neither counts for coverage.
+  static void createDirectoryLink(Link link, String target) {
+    // coverage:ignore-start
+    if (!Platform.isWindows) {
+      link.createSync(target);
+      return;
+    }
+    final result = Process.runSync('cmd', [
+      '/c',
+      'mklink',
+      '/J',
+      link.path,
+      target,
+    ]);
+    if (result.exitCode != 0) {
+      throw FileSystemException(
+        'Cannot create junction: ${result.stdout}${result.stderr}'.trim(),
+        link.path,
+      );
+    }
+    // coverage:ignore-end
+  }
+
+  // ...........................................................................
   /// Returns the target the `src` link of a shim for [depDir] points at.
   String _srcTarget(Directory depDir) =>
       p.normalize(p.join(depDir.absolute.path, 'src'));
