@@ -109,34 +109,34 @@ packages:
     dependency: transitive
     description:
       name: dna_blog
-      sha256: fb03e9e4cf1a472252acd3f7d98d14314ee3fa9c61029e1742183cbba6176be6
+      sha256: ec676f751442e6f1b0e2423e76554341a04c11000ba743142ff884b939ed321b
       url: "https://pub.dev"
     source: hosted
-    version: "0.2.0"
+    version: "0.3.0"
   dna_clean_code:
     dependency: transitive
     description:
       name: dna_clean_code
-      sha256: "1d91d144c80c31b34a78580e629522264b3acfe35326ee13a379706f72fa1d40"
+      sha256: "18299d5e4a01e56c9a51629ad70646f28a638bb866c88122c5c4f47bd5828e6c"
       url: "https://pub.dev"
     source: hosted
-    version: "0.2.1"
+    version: "0.2.2"
   dna_gg:
     dependency: transitive
     description:
       name: dna_gg
-      sha256: "73d764c7bdf4b624c871ac4b77e91ed0234cb59e643d175451e015fc7940b937"
+      sha256: "9e80cd79ce8eaaa2470682b3df9bede90f889906d89ca45445054d44b82bcc35"
       url: "https://pub.dev"
     source: hosted
-    version: "0.9.0"
+    version: "1.0.0"
   dna_ggsuite:
     dependency: "direct dev"
     description:
       name: dna_ggsuite
-      sha256: eb07ba88d42a2e56eb182bfc11ca8b188f14d4347055123775105840ec789b8d
+      sha256: ab83b121477005dae6f503e1097f4a26d908ea876f1c71f9724efae2b763f168
       url: "https://pub.dev"
     source: hosted
-    version: "0.4.0"
+    version: "1.0.0"
   dna_github:
     dependency: transitive
     description:
@@ -189,10 +189,10 @@ packages:
     dependency: transitive
     description:
       name: dna_translate
-      sha256: "06aadc3f20e2d0c81cfed89a7ed28e15ece41860b33b2b7912fd9e9179319965"
+      sha256: c6c72c756b93377e6d4232c4e773fe9ed478da5570e9b1680b9bf4e4f1d345de
       url: "https://pub.dev"
     source: hosted
-    version: "0.2.0"
+    version: "0.3.0"
   dna_vscode:
     dependency: transitive
     description:
@@ -637,10 +637,10 @@ packages:
     dependency: transitive
     description:
       name: web
-      sha256: "868d88a33d8a87b18ffc05f9f030ba328ffefba92d6c127917a2ba740f9cfe4a"
+      sha256: e119e82ac4795c7925103b7cf3768191f33941b99e7ccffbd6c645201d9f606b
       url: "https://pub.dev"
     source: hosted
-    version: "1.1.1"
+    version: "1.1.2"
   web_socket:
     dependency: transitive
     description:
