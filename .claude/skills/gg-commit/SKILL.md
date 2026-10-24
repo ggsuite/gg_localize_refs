@@ -20,19 +20,40 @@ whenever you are inside a repo.
 
 ## 2. Propose a message
 
-Look at `git status` and `git diff` in the repos of the ticket. Propose one
-imperative one-liner that says what the step does, not which files changed.
-Start from `nextCommitMessage` in `.gg/publish_config.json` of each repo and
-update it there if it no longer matches the diff (see the development
-guide). Let the user confirm it.
+Look at `git status` and `git diff` in the repos of the ticket. Propose
+for each repo an imperative one-liner that says what the step does in that
+repo, not which files changed. Start from `nextCommitMessage` in
+`.gg/publish_config.json` of each repo and update it there if it no longer
+matches the diff (see the development guide). Let the user confirm them.
+
+A dependency describes its change in its own terms. When a repo of the
+ticket uses another one, the message of the dependency never names the
+parent repo, the goal of the ticket or the use case of the parent — the
+parent may name the dependency. The same holds for the `mergeMessage`.
+
+- Wrong in `gg_git`: `Add remote creation for gg do create repo`
+- Right in `gg_git`: `Add a function that creates a remote repository`
+- Right in `gg`: `Create the remote repository with gg_git`
+
+Section "Describe every repo in its own terms" of
+`doc/guides/for-ai/ai-dev-guide.md` has the details.
+
+Check in the same pass whether the diff changes what the `index.jsonc` of
+the repo says — its `summary`, `domain` or `interfaces` — and update it
+before committing. If the repo has no `index.jsonc`, create it now from
+`doc/templates/index-template.jsonc`, whatever the diff. Section "Keep the
+index.jsonc up to date" of `doc/guides/for-ai/ai-dev-guide.md` has the
+details.
 
 If the user runs `gg do commit` in the ticket folder without `-m`, the
 editor already shows each repo's `nextCommitMessage` — `-m` overrides it
-with one message for all repos.
+with one message for all repos. Use `-m` in the ticket folder only when no
+repo of the ticket depends on another; otherwise commit each repo on its
+own with `gg one do commit -m` and its `nextCommitMessage`.
 
 ## 3. Commit
 
-From the ticket folder:
+From the ticket folder, when no repo of the ticket depends on another:
 
 ```bash
 gg do commit -m"<message>"
@@ -56,4 +77,5 @@ its source under `dna/` instead.
 ## Important
 
 - Never commit without the confirmed message.
+- Never let a parent repo leak into the message of its dependency.
 - Never push here — that is `/gg-push`.

@@ -25,7 +25,7 @@ node scripts/setup-github-repo.js
 ```
 
 Prints the repository and the settings that would be applied, without
-changing anything. 
+changing anything.
 
 Requires the [GitHub CLI](https://cli.github.com) (`gh auth login`).
 
