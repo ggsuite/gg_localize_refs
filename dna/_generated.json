@@ -13,7 +13,7 @@
       "name": "dna-readme",
       "package": "dna_readme",
       "ecosystem": "pub",
-      "resolvedVersion": "0.1.2",
+      "resolvedVersion": "0.3.1",
       "via": "dna-ggsuite",
       "hash": "0x6678ec2e509f3dd9"
     },
@@ -21,7 +21,7 @@
       "name": "dna-guides",
       "package": "dna_guides",
       "ecosystem": "pub",
-      "resolvedVersion": "0.1.2",
+      "resolvedVersion": "0.2.0",
       "via": "dna-ggsuite",
       "hash": "0x3bd4be7c009270a6"
     },
@@ -29,7 +29,7 @@
       "name": "dna-translate",
       "package": "dna_translate",
       "ecosystem": "pub",
-      "resolvedVersion": "0.1.2",
+      "resolvedVersion": "0.3.0",
       "via": "dna-ggsuite",
       "hash": "0xfec6f71367d12db6"
     },
@@ -37,7 +37,7 @@
       "name": "dna-index",
       "package": "dna_index",
       "ecosystem": "pub",
-      "resolvedVersion": "0.1.3",
+      "resolvedVersion": "0.2.0",
       "via": "dna-ggsuite",
       "hash": "0x1d92b0add37a1ac7"
     },
@@ -45,7 +45,7 @@
       "name": "dna-blog",
       "package": "dna_blog",
       "ecosystem": "pub",
-      "resolvedVersion": "0.1.2",
+      "resolvedVersion": "0.3.0",
       "via": "dna-ggsuite",
       "hash": "0x49bf0909e92d37bb"
     },
@@ -53,7 +53,7 @@
       "name": "dna-install",
       "package": "dna_install",
       "ecosystem": "pub",
-      "resolvedVersion": "0.1.3",
+      "resolvedVersion": "0.2.0",
       "via": "dna-ggsuite",
       "hash": "0xbe88eb4256745ee1"
     },
@@ -61,7 +61,7 @@
       "name": "dna-vscode",
       "package": "dna_vscode",
       "ecosystem": "pub",
-      "resolvedVersion": "0.2.4",
+      "resolvedVersion": "0.4.0",
       "via": "dna-ggsuite",
       "hash": "0xb1b916118eb63333"
     },
@@ -69,7 +69,7 @@
       "name": "dna-clean-code",
       "package": "dna_clean_code",
       "ecosystem": "pub",
-      "resolvedVersion": "0.1.2",
+      "resolvedVersion": "0.2.2",
       "via": "dna-ggsuite",
       "hash": "0x7c836197d11ccd60"
     },
@@ -77,7 +77,7 @@
       "name": "dna-scripts",
       "package": "dna_scripts",
       "ecosystem": "pub",
-      "resolvedVersion": "0.2.3",
+      "resolvedVersion": "0.3.0",
       "via": "dna-ggsuite",
       "hash": "0xe3092339b83504a1"
     },
@@ -85,7 +85,7 @@
       "name": "dna-github",
       "package": "dna_github",
       "ecosystem": "pub",
-      "resolvedVersion": "0.0.3",
+      "resolvedVersion": "0.1.1",
       "via": "dna-gg",
       "hash": "0xf541b93b3dc7995d"
     },
@@ -93,7 +93,7 @@
       "name": "dna-gg",
       "package": "dna_gg",
       "ecosystem": "pub",
-      "resolvedVersion": "0.7.1",
+      "resolvedVersion": "1.0.0",
       "via": "dna-ggsuite",
       "hash": "0x713474ca27c6bebc"
     },
@@ -101,7 +101,7 @@
       "name": "dna-ggsuite",
       "package": "dna_ggsuite",
       "ecosystem": "pub",
-      "resolvedVersion": "0.2.4",
+      "resolvedVersion": "1.0.0",
       "via": "gg-log",
       "hash": "0x309b9f27627022e1"
     },
