@@ -1,5 +1,20 @@
 # Changelog
 
+## Unreleased
+
+### Changed
+
+- Link TypeScript shims through junctions on Windows
+- Document the Windows support of ticket gg-1
+- Apply the review of ticket gg-1
+- Upgrade the dependencies
+
+### Removed
+
+- Rewrite the blog post of ticket gg-1 in doc/blog
+
+Remove the older post from the misplaced blog folder
+
 ## 5.1.1 - 2026-10-16
 
 ## 5.1.0 - 2026-10-14

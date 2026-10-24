@@ -141,7 +141,7 @@ void main() {
         final other = Directory(p.join(workspace.path, 'other', 'src'))
           ..createSync(recursive: true);
         shimDir().createSync(recursive: true);
-        shimSrc().createSync(other.path);
+        TsLinkShims.createDirectoryLink(shimSrc(), other.path);
 
         final changed = shims.write(
           projectDir: project,
@@ -217,7 +217,8 @@ void main() {
         shims.write(projectDir: project, name: 'dep_a', depDir: dep);
         final other = Directory(p.join(workspace.path, 'other', 'src'))
           ..createSync(recursive: true);
-        shimSrc().updateSync(other.path);
+        shimSrc().deleteSync();
+        TsLinkShims.createDirectoryLink(shimSrc(), other.path);
 
         expect(inSync(), isFalse);
       });
