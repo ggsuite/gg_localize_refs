@@ -66,6 +66,15 @@ void main() {
         'a uses the published b instead of its checkout',
       );
       expect(stale.toString(), 'a still overrides b, which it no longer needs');
+      expect(
+        const UnlocalizedRef(
+          project: 'a',
+          dependency: 'example',
+          kind: UnlocalizedRefKind.notWorkspaceMember,
+        ).toString(),
+        'a does not share its resolution with example, which is no member '
+        'of its pub workspace',
+      );
     });
   });
 
@@ -114,6 +123,36 @@ void main() {
 
         test('reports nothing for a localized project', () async {
           expect(await refsOf(scenario('already_localized')), isEmpty);
+        });
+
+        test('reports an embedded package outside the pub workspace, '
+            'nothing after change-refs-to-local', () async {
+          final project = scenario('embedded_example');
+
+          expect(await refsOf(project), <String>[
+            'test1 uses the published test2 instead of its checkout',
+            'test1 does not share its resolution with example, which is no '
+                'member of its pub workspace',
+          ]);
+
+          await localize(project);
+          expect(await refsOf(project), isEmpty);
+        });
+
+        test('does not report an embedded package that cannot join', () async {
+          // change-refs-to-local skips it with a warning - a check failing
+          // with a hint that cannot fix it would block every commit.
+          final project = scenario('embedded_example');
+          final pubspec = File(p.join(project.path, 'pubspec.yaml'));
+          pubspec.writeAsStringSync(
+            pubspec.readAsStringSync().replaceFirst(
+              'sdk: ^3.6.0',
+              'sdk: ^3.5.0',
+            ),
+          );
+
+          await localize(project);
+          expect(await refsOf(project), isEmpty);
         });
 
         test('reports an override of a dropped dependency as stale, '

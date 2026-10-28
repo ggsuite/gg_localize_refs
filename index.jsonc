@@ -1,0 +1,40 @@
+// @license
+// Copyright (c) ggsuite
+//
+// Use of this source code is governed by terms that can be
+// found in the LICENSE file in the root of this package.
+
+{
+  // The package name, as declared in pubspec.yaml / package.json.
+  "name": "gg_localize_refs",
+
+  // 1-2 sentence summary about this repo.
+  "summary": "Switches the references between the Dart and TypeScript repos of a workspace between local checkouts, a git feature branch and the published versions, and reports refs that are out of sync.",
+
+  // 1-3 bullet points: the problem space.
+  "domain": [
+    "ref modes: change-refs-to-local, change-refs-to-git-feature-branch, change-refs-to-pub-dev, via pubspec_overrides.yaml and pnpm-workspace.yaml",
+    "embedded packages such as example/ as members of the project's pub workspace, so the overrides reach them",
+    "checks and helpers: unlocalized-refs, ref versions, publish_to backups",
+  ],
+
+  // The repos this one depends on and the repos depending on it.
+  // Keep the reason or the API behind each entry, not just the name.
+  "interfaces": {
+    // "<repo-a>": "why / API"
+    "uses": {
+      "gg_args": "DirCommand base of all commands",
+      "gg_publish": "published versions for change-refs-to-pub-dev and set-ref-version",
+      "gg_process": "runs git to read the remote urls of the siblings",
+      "gg_console_colors": "colored output",
+      "gg_log": "GgLog",
+    },
+
+    // "<repo-b>": "why / API"
+    "usedBy": {
+      "gg_multi_core": "TicketLocalizer: ChangeRefsToLocal, UnlocalizedRefs",
+      "gg_multi_workspace": "localizes the references between ticket repos",
+      "gg_multi_do_publish": "switches the refs to git and pub.dev while publishing",
+    },
+  },
+}

@@ -10,9 +10,12 @@ import 'dart:io';
 import 'package:gg_localize_refs/src/backend/file_changes_buffer.dart';
 import 'package:gg_localize_refs/src/backend/languages/project_language.dart';
 import 'package:gg_localize_refs/src/backend/pnpm_workspace_io.dart';
+import 'package:gg_localize_refs/src/backend/pub_workspace_io.dart';
 import 'package:gg_localize_refs/src/backend/pubspec_overrides_io.dart';
 import 'package:gg_localize_refs/src/backend/typescript_npm_spec.dart';
 import 'package:gg_localize_refs/src/backend/utils.dart';
+import 'package:gg_console_colors/gg_console_colors.dart';
+import 'package:gg_log/gg_log.dart';
 import 'package:path/path.dart' as p;
 
 /// Shared helpers for manifest based ref-changing commands.
@@ -141,6 +144,47 @@ class ManifestCommandSupport {
     }
 
     fileChangesBuffer.add(overridesFile, edit.content!);
+  }
+
+  /// Makes the embedded packages of [node] - an `example/` app with a
+  /// `pubspec.yaml` of its own - members of its pub workspace (see
+  /// [PubWorkspaceIo]), so the overrides of [node] apply to them too.
+  ///
+  /// [overriddenNames] are the dependencies the caller overrides in
+  /// `pubspec_overrides.yaml`. The root `pubspec.yaml` is edited as
+  /// [fileChangesBuffer] already holds it, so an edit queued by an earlier
+  /// step survives.
+  void joinPubWorkspace({
+    required ProjectNode node,
+    required Iterable<String> overriddenNames,
+    required FileChangesBuffer fileChangesBuffer,
+    required GgLog ggLog,
+  }) {
+    final pubspec = File(p.join(node.directory.path, 'pubspec.yaml'));
+    final join = const PubWorkspaceIo().join(
+      projectDir: node.directory,
+      pubspecContent:
+          fileChangesBuffer.contentOf(pubspec) ?? pubspec.readAsStringSync(),
+      overriddenNames: overriddenNames,
+    );
+
+    for (final reason in join.skipped) {
+      ggLog(yellow(reason));
+    }
+
+    if (join.joined.isNotEmpty) {
+      ggLog(
+        'Make ${join.joined.join(', ')} of ${node.name} '
+        'pub workspace member(s)',
+      );
+    }
+
+    if (join.rootContent case final rootContent?) {
+      fileChangesBuffer.add(pubspec, rootContent);
+    }
+    for (final entry in join.memberContents.entries) {
+      fileChangesBuffer.add(File(entry.key), entry.value);
+    }
   }
 
   /// Queues the removal of the overrides this package wrote for [node] and

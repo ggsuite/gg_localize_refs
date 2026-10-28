@@ -146,9 +146,19 @@ class ChangeRefsToLocal extends DirCommand<dynamic> {
       ggLog: ggLog,
     );
 
+    final pathsByDependency = _localOverrides.dartPaths(node);
+
+    // Builds on the migrated pubspec.yaml the buffer holds by now.
+    _support.joinPubWorkspace(
+      node: node,
+      overriddenNames: pathsByDependency.keys,
+      fileChangesBuffer: fileChangesBuffer,
+      ggLog: ggLog,
+    );
+
     final edit = _overrides.addPathOverrides(
       projectDir: projectDir,
-      pathsByDependency: _localOverrides.dartPaths(node),
+      pathsByDependency: pathsByDependency,
       inheritedOverrides: _support.dependencyOverridesOf(yamlMap),
     );
 

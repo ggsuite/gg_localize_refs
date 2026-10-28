@@ -1,5 +1,7 @@
 import 'dart:io';
 
+import 'package:path/path.dart' as p;
+
 /// A class representing changes to be made to a file.
 ///
 /// Contains the [file] object and the new [content] to be written to the file.
@@ -46,6 +48,19 @@ class FileChangesBuffer {
 
   /// Whether the buffer holds neither a content change nor a deletion.
   bool get isEmpty => files.isEmpty && deletions.isEmpty;
+
+  /// Returns the content queued last for [file], or null when none is.
+  ///
+  /// Writes to the same file replace each other on [apply]; a step that edits
+  /// a file another step already queued builds on this content.
+  String? contentOf(File file) {
+    for (final change in files.reversed) {
+      if (p.equals(change.file.path, file.path)) {
+        return change.content;
+      }
+    }
+    return null;
+  }
 
   /// Whether the buffer holds at least one content change or deletion.
   bool get isNotEmpty => !isEmpty;

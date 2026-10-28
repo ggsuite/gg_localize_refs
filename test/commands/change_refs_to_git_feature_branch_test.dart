@@ -440,6 +440,63 @@ void main() {
           deleteDirs(<Directory>[workspace]);
         });
 
+        test('makes an embedded example a pub workspace member', () async {
+          // The git overrides reach example/ only as a workspace member, just
+          // like the local paths.
+          final workspace = createTempDir('git_feature_embedded_example_ws');
+          final project1 = Directory(p.join(workspace.path, 'project1'));
+          final project2 = Directory(p.join(workspace.path, 'project2'));
+          await createDirs(<Directory>[project1, project2]);
+
+          File(p.join(project1.path, 'pubspec.yaml')).writeAsStringSync(
+            'name: project1\n'
+            'version: 1.0.0\n'
+            'environment:\n'
+            '  sdk: ^3.6.0\n'
+            'dependencies:\n'
+            '  project2: ^1.0.0\n',
+          );
+          final example = File(p.join(project1.path, 'example', 'pubspec.yaml'))
+            ..createSync(recursive: true);
+          example.writeAsStringSync(
+            'name: project1_example\n'
+            'environment:\n'
+            '  sdk: ^3.6.0\n'
+            'dependencies:\n'
+            '  project1:\n'
+            '    path: ..\n',
+          );
+          File(p.join(project2.path, 'pubspec.yaml')).writeAsStringSync(
+            'name: project2\n'
+            'version: 1.0.0\n',
+          );
+          Process.runSync('git', <String>[
+            'remote',
+            'set-url',
+            'origin',
+            'git@github.com:user/project2.git',
+          ], workingDirectory: project2.path);
+
+          await ChangeRefsToGitFeatureBranch(ggLog: messages.add).get(
+            directory: project1,
+            ggLog: messages.add,
+            gitRef: 'feature/example',
+          );
+
+          expect(
+            File(p.join(project1.path, 'pubspec.yaml')).readAsStringSync(),
+            contains('workspace:\n  - example\n'),
+          );
+          expect(example.readAsStringSync(), contains('resolution: workspace'));
+          expect(
+            File(p.join(project1.path, 'pubspec_overrides.yaml'))
+                .readAsStringSync(),
+            contains('ref: feature/example'),
+          );
+
+          deleteDirs(<Directory>[workspace]);
+        });
+
         test('replaces the local path overrides with git refs', () async {
           final dProject1 = Directory(
             p.join(dWorkspaceOverridesPresent.path, 'project1'),

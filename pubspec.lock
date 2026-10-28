@@ -346,7 +346,7 @@ packages:
     source: hosted
     version: "5.7.2"
   glob:
-    dependency: transitive
+    dependency: "direct main"
     description:
       name: glob
       sha256: "218aeb56050c714f62a3182775320dfa04602b55074873e24e31bbd39bda96fb"
@@ -482,7 +482,7 @@ packages:
     source: hosted
     version: "1.5.3"
   pub_semver:
-    dependency: transitive
+    dependency: "direct main"
     description:
       name: pub_semver
       sha256: "261236774e8b1d69cfc6b9eabbc96c40f25e7a2d6b171f3385d4f65d5734fb24"

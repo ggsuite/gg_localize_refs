@@ -13,6 +13,7 @@ import 'package:gg_localize_refs/src/backend/local_overrides.dart';
 import 'package:gg_localize_refs/src/backend/manifest_command_support.dart';
 import 'package:gg_localize_refs/src/backend/pnpm_workspace_io.dart';
 import 'package:gg_localize_refs/src/backend/process_dependencies.dart';
+import 'package:gg_localize_refs/src/backend/pub_workspace_io.dart';
 import 'package:gg_localize_refs/src/backend/pubspec_overrides_io.dart';
 import 'package:gg_localize_refs/src/backend/ts_link_shims.dart';
 import 'package:gg_log/gg_log.dart';
@@ -24,6 +25,10 @@ enum UnlocalizedRefKind {
 
   /// An override still points at a sibling the project no longer needs.
   stale,
+
+  /// An embedded package (`example/`) is no member of the project's pub
+  /// workspace, so it resolves on its own, without the project's overrides.
+  notWorkspaceMember,
 }
 
 /// One workspace reference that `change-refs-to-local` would rewrite.
@@ -38,7 +43,9 @@ class UnlocalizedRef {
   /// The project whose overrides are out of sync.
   final String project;
 
-  /// The dependency the override is missing or stale for.
+  /// The dependency the override is missing or stale for - for
+  /// [UnlocalizedRefKind.notWorkspaceMember] the embedded package, relative
+  /// to the project.
   final String dependency;
 
   /// Whether the override is missing or stale.
@@ -50,6 +57,9 @@ class UnlocalizedRef {
       '$project uses the published $dependency instead of its checkout',
     UnlocalizedRefKind.stale =>
       '$project still overrides $dependency, which it no longer needs',
+    UnlocalizedRefKind.notWorkspaceMember =>
+      '$project does not share its resolution with $dependency, which is '
+          'no member of its pub workspace',
   };
 }
 
@@ -125,12 +135,23 @@ class UnlocalizedRefs extends DirCommand<List<UnlocalizedRef>> {
     }
 
     final ({List<String> missing, List<String> stale}) diff;
+    var notMembers = const <String>[];
     if (node.language.id == ProjectLanguageId.dart) {
+      final pathsByDependency = _localOverrides.dartPaths(node);
       diff = const PubspecOverridesIo().diffPathOverrides(
         projectDir: node.directory,
-        pathsByDependency: _localOverrides.dartPaths(node),
+        pathsByDependency: pathsByDependency,
         inheritedOverrides: _support.dependencyOverridesOf(manifest.parsed),
       );
+      // Only what change-refs-to-local would join: a package it has to skip
+      // must not fail the check with a hint that cannot fix it.
+      notMembers = const PubWorkspaceIo()
+          .join(
+            projectDir: node.directory,
+            pubspecContent: manifest.content,
+            overriddenNames: pathsByDependency.keys,
+          )
+          .joined;
     } else if (PnpmWorkspaceIo.isPnpmManaged(node.directory)) {
       final yamlDiff = const PnpmWorkspaceIo().diffLinkOverrides(
         projectDir: node.directory,
@@ -168,6 +189,12 @@ class UnlocalizedRefs extends DirCommand<List<UnlocalizedRef>> {
           project: node.name,
           dependency: name,
           kind: UnlocalizedRefKind.stale,
+        ),
+      for (final member in notMembers)
+        UnlocalizedRef(
+          project: node.name,
+          dependency: member,
+          kind: UnlocalizedRefKind.notWorkspaceMember,
         ),
     ];
   }
