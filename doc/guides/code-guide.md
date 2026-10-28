@@ -15,8 +15,7 @@ one of them live next door: [Dart](./code-guide-dart.md),
 
 ## Lay out the package
 
-- Name the package after the repo, and prefix its types with the same
-  name
+- Name the package after the repo
 - Keep one top level concept per package
 - Expose the package through a single entry point that re-exports and
   holds no implementation of its own
@@ -102,7 +101,7 @@ Keep the style as it is — do not invent variants.
 
 ## Name things consistently
 
-- Types in PascalCase, carrying the package prefix
+- Types in PascalCase
 - Private members marked the way the language marks them
 - Constants and enum values in lowerCamelCase
 - A test file named after the file it covers
