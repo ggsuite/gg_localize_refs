@@ -53,6 +53,22 @@ void main() {
       });
     });
 
+    group('contentOf()', () {
+      test('returns the content queued last for the file', () {
+        final file = File('${tempDir.path}/test.txt');
+        buffer
+          ..add(file, 'first')
+          ..add(File('${tempDir.path}/other.txt'), 'other')
+          ..add(File('${tempDir.path}/./test.txt'), 'second');
+
+        expect(buffer.contentOf(file), 'second');
+      });
+
+      test('returns null for a file nothing is queued for', () {
+        expect(buffer.contentOf(File('${tempDir.path}/test.txt')), isNull);
+      });
+    });
+
     group('addDeletion()', () {
       test('should queue the file and count as a change', () async {
         // Arrange

@@ -37,7 +37,7 @@ package. Read that one first; this only fills in the specifics.
 
 ## Start from the example
 
-- `final user = GgUser.example(age: 17);`
+- `final user = User.example(age: 17);`
 
 ## Prefer real types over mocks
 

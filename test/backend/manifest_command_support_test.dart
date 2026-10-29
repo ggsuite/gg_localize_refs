@@ -408,6 +408,112 @@ void main() {
       });
     });
 
+    group('joinPubWorkspace()', () {
+      const pubspec =
+          'name: project\n'
+          'environment:\n'
+          '  sdk: ^3.6.0\n';
+
+      /// Creates a project with the embedded packages [members], each
+      /// depending on the project through `path: ..`, and returns its node.
+      ProjectNode createProject(String suffix, Map<String, String> members) {
+        final workspace = createWorkspace(suffix);
+        final projectDir = Directory(p.join(workspace.path, 'project'))
+          ..createSync(recursive: true);
+        for (final MapEntry(key: name, value: sdk) in members.entries) {
+          File(p.join(projectDir.path, name, 'pubspec.yaml'))
+            ..createSync(recursive: true)
+            ..writeAsStringSync(
+              'name: $name\n'
+              'environment:\n'
+              '  sdk: $sdk\n'
+              'dependencies:\n'
+              '  project:\n'
+              '    path: ..\n',
+            );
+        }
+        File(p.join(projectDir.path, 'pubspec.yaml'))
+            .writeAsStringSync(pubspec);
+        return createNode(
+          name: 'project',
+          directory: projectDir,
+          language: DartProjectLanguage(),
+        );
+      }
+
+      test('queues the root and the members and logs both the joined '
+          'and the skipped packages', () {
+        final node = createProject('manifest_support_join', <String, String>{
+          'example': '^3.6.0',
+          'legacy': '^3.0.0',
+        });
+        final messages = <String>[];
+        final buffer = FileChangesBuffer();
+
+        support.joinPubWorkspace(
+          node: node,
+          overriddenNames: const <String>[],
+          fileChangesBuffer: buffer,
+          ggLog: messages.add,
+        );
+
+        final rootFile = File(p.join(node.directory.path, 'pubspec.yaml'));
+        expect(
+          buffer.contentOf(rootFile),
+          '${pubspec}workspace:\n  - example\n',
+        );
+        expect(
+          buffer.contentOf(
+            File(p.join(node.directory.path, 'example', 'pubspec.yaml')),
+          ),
+          contains('resolution: workspace'),
+        );
+        expect(buffer.files, hasLength(2));
+        expect(messages, hasLength(2));
+        expect(messages.first, contains('Cannot make legacy a pub workspace'));
+        expect(
+          messages.last,
+          'Make example of project pub workspace member(s)',
+        );
+      });
+
+      test('builds on the root content the buffer already holds', () {
+        final node = createProject('manifest_support_join_queued', {
+          'example': '^3.6.0',
+        });
+        final rootFile = File(p.join(node.directory.path, 'pubspec.yaml'));
+        final buffer = FileChangesBuffer()
+          ..add(rootFile, '${pubspec}version: 2.0.0\n');
+
+        support.joinPubWorkspace(
+          node: node,
+          overriddenNames: const <String>[],
+          fileChangesBuffer: buffer,
+          ggLog: (_) {},
+        );
+
+        expect(
+          buffer.contentOf(rootFile),
+          '${pubspec}version: 2.0.0\nworkspace:\n  - example\n',
+        );
+      });
+
+      test('queues and logs nothing without embedded packages', () {
+        final messages = <String>[];
+        final buffer = FileChangesBuffer();
+
+        support.joinPubWorkspace(
+          node: createProject('manifest_support_join_none', <String, String>{}),
+          overriddenNames: const <String>[],
+          fileChangesBuffer: buffer,
+          ggLog: messages.add,
+        );
+
+        expect(buffer.isEmpty, isTrue);
+        expect(messages, isEmpty);
+      });
+    });
+
     group('writeTypeScriptBackup()', () {
       test('writes backup file into the .gg directory', () async {
         final workspace = createWorkspace('manifest_support_ts_backup');

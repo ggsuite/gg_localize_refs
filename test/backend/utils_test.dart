@@ -33,6 +33,13 @@ void main() {
       return directory;
     }
 
+    group('withTrailingNewline()', () {
+      test('adds a missing trailing newline and keeps an existing one', () {
+        expect(Utils.withTrailingNewline('a'), 'a\n');
+        expect(Utils.withTrailingNewline('a\n'), 'a\n');
+      });
+    });
+
     group('findLanguage()', () {
       test('returns DartProjectLanguage when pubspec.yaml exists', () {
         final workspace = createWorkspace('utils_find_language_dart');

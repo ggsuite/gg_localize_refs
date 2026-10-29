@@ -176,6 +176,15 @@ class ChangeRefsToGitFeatureBranch extends DirCommand<dynamic> {
       );
     }
 
+    // The overrides apply to the embedded packages only as members of the
+    // project's pub workspace.
+    _support.joinPubWorkspace(
+      node: node,
+      overriddenNames: gitUrls.keys,
+      fileChangesBuffer: fileChangesBuffer,
+      ggLog: ggLog,
+    );
+
     final edit = _overrides.addGitOverrides(
       projectDir: projectDir,
       gitUrlsByDependency: gitUrls,

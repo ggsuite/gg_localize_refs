@@ -10,6 +10,7 @@ import 'dart:io';
 import 'package:gg_localize_refs/src/backend/pubspec_overrides_io.dart';
 import 'package:gg_localize_refs/src/backend/ts_link_shims.dart';
 import 'package:gg_localize_refs/src/backend/typescript_npm_spec.dart';
+import 'package:gg_localize_refs/src/backend/utils.dart';
 import 'package:path/path.dart' as p;
 import 'package:yaml/yaml.dart';
 import 'package:yaml_edit/yaml_edit.dart';
@@ -225,7 +226,7 @@ class PnpmWorkspaceIo {
         'overrides': specsByDependency,
       });
       return PubspecOverridesEdit.write(
-        _withTrailingNewline('$headerComment$editor'),
+        Utils.withTrailingNewline('$headerComment$editor'),
       );
     }
 
@@ -246,7 +247,7 @@ class PnpmWorkspaceIo {
       }
     }
 
-    final updated = _withTrailingNewline(editor.toString());
+    final updated = Utils.withTrailingNewline(editor.toString());
     if (updated == existing) {
       return const PubspecOverridesEdit.unchanged();
     }
@@ -366,7 +367,7 @@ class PnpmWorkspaceIo {
       return edit;
     }
 
-    return PubspecOverridesEdit.write(_withTrailingNewline(updated));
+    return PubspecOverridesEdit.write(Utils.withTrailingNewline(updated));
   }
 
   /// Returns a delete edit when [parsed] carries nothing worth keeping and
@@ -560,10 +561,5 @@ class PnpmWorkspaceIo {
     }
 
     return parsed;
-  }
-
-  /// Returns [content] with exactly one trailing newline.
-  String _withTrailingNewline(String content) {
-    return content.endsWith('\n') ? content : '$content\n';
   }
 }

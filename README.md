@@ -37,12 +37,40 @@ dependencies the project dropped, including the very last one: the file is
 then deleted (or, for a `pnpm-workspace.yaml` holding your settings, only its
 `overrides` section goes).
 
+## Embedded packages such as `example/`
+
+An `example/` app with a `pubspec.yaml` of its own is a pub package of its
+own. Pub resolves it on its own and ignores the `pubspec_overrides.yaml` of the
+package it lives in — a localized sibling would come from pub.dev there.
+`change-refs-to-local` and `change-refs-to-git-feature-branch` therefore make
+every embedded package that depends on the project through `path:` a member
+of the project's [pub workspace](https://dart.dev/tools/pub/workspaces):
+
+```yaml
+# pubspec.yaml                 # example/pubspec.yaml
+workspace:                     resolution: workspace
+  - example
+```
+
+A workspace member shares the resolution of the project and with it every
+override. Unlike the overrides this is a permanent change of the repository:
+`change-refs-to-pub-dev` keeps it, because it holds for published refs just as
+well. Pub replaces the lock file of the member by the one of the project.
+
+An embedded package is left alone, with a warning, when joining would break
+its resolution: an SDK constraint that allows Dart below 3.6, a `resolution`
+other than `workspace`, a Flutter app inside a package that does not depend on
+Flutter, or an override the member declares for a package the project
+overrides too — pub allows a single override per package in a workspace.
+
 ## Checking whether a project is localized
 
 `unlocalized-refs` is the read-only counterpart of `change-refs-to-local`. It
 lists every workspace dependency of the project whose override is missing or
 different (`missing` — the published version is resolved instead of the
-checkout) and every override `change-refs-to-local` would remove (`stale`).
+checkout), every override `change-refs-to-local` would remove (`stale`) and
+every embedded package it would add to the pub workspace
+(`notWorkspaceMember`).
 Run on the command line, it prints one line per ref and fails when there is
 any; an empty result means `change-refs-to-local` would change nothing. A
 dependency added to `pubspec.yaml`/`package.json` by hand shows up here.

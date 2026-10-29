@@ -452,6 +452,112 @@ void main() {
           deleteDirs(<Directory>[workspace]);
         });
 
+        group('with an embedded example package', () {
+          Directory workspace = Directory('');
+
+          setUp(() {
+            workspace = createTempDir('embedded_example');
+            copyLocalizeScenario('embedded_example', workspace);
+          });
+
+          tearDown(() {
+            deleteDirs(<Directory>[workspace]);
+          });
+
+          String read(List<String> segments) =>
+              File(p.joinAll(<String>[workspace.path, ...segments]))
+                  .readAsStringSync();
+
+          test('makes it a pub workspace member', () async {
+            // Pub resolves example/ on its own and ignores the overrides of
+            // project1 - test2 would come from pub.dev there. As a workspace
+            // member example/ shares the resolution of project1.
+            final dProject1 = Directory(p.join(workspace.path, 'project1'));
+
+            final local = ChangeRefsToLocal(ggLog: messages.add);
+            await local.get(directory: dProject1, ggLog: messages.add);
+
+            expect(
+              read(<String>['project1', 'pubspec.yaml']),
+              contains('workspace:\n  - example\n'),
+            );
+            expect(
+              read(<String>['project1', 'example', 'pubspec.yaml']),
+              contains('resolution: workspace\n'),
+            );
+            expect(
+              read(<String>['project1', 'pubspec_overrides.yaml']),
+              contains('path: ../project2'),
+            );
+            expect(
+              messages,
+              contains('Make example of test1 pub workspace member(s)'),
+            );
+
+            final secondMessages = <String>[];
+            await local.get(directory: dProject1, ggLog: secondMessages.add);
+            expect(secondMessages.last, contains('No files were changed.'));
+          });
+
+          test('combines it with the migration of a legacy pubspec', () async {
+            // Both steps rewrite pubspec.yaml; the second must build on the
+            // first instead of overwriting it.
+            final legacy = createTempDir('embedded_example_legacy');
+            copyLocalizeScenario('legacy_localized', legacy);
+            final dProject1 = Directory(p.join(legacy.path, 'project1'));
+            final pubspec = File(p.join(dProject1.path, 'pubspec.yaml'));
+            pubspec.writeAsStringSync(
+              pubspec.readAsStringSync().replaceFirst(
+                'version: 1.0.0\n',
+                'version: 1.0.0\nenvironment:\n  sdk: ^3.6.0\n',
+              ),
+            );
+            File(p.join(dProject1.path, 'example', 'pubspec.yaml'))
+              ..createSync(recursive: true)
+              ..writeAsStringSync(
+                'name: test1_example\n'
+                'environment:\n'
+                '  sdk: ^3.6.0\n'
+                'dependencies:\n'
+                '  test1:\n'
+                '    path: ..\n',
+              );
+
+            await ChangeRefsToLocal(ggLog: messages.add)
+                .get(directory: dProject1, ggLog: messages.add);
+
+            final result = pubspec.readAsStringSync();
+            expect(result, contains('test2: ^1.0.0'));
+            expect(result, isNot(contains('publish_to')));
+            expect(result, contains('workspace:\n  - example\n'));
+
+            deleteDirs(<Directory>[legacy]);
+          });
+
+          test('warns and leaves it alone when it cannot join', () async {
+            final dProject1 = Directory(p.join(workspace.path, 'project1'));
+            final pubspec = File(p.join(dProject1.path, 'pubspec.yaml'));
+            final lowSdk = pubspec.readAsStringSync().replaceFirst(
+              'sdk: ^3.6.0',
+              'sdk: ^3.5.0',
+            );
+            pubspec.writeAsStringSync(lowSdk);
+
+            await ChangeRefsToLocal(ggLog: messages.add)
+                .get(directory: dProject1, ggLog: messages.add);
+
+            expect(pubspec.readAsStringSync(), lowSdk);
+            expect(
+              read(<String>['project1', 'example', 'pubspec.yaml']),
+              isNot(contains('resolution')),
+            );
+            expect(
+              messages.join('\n'),
+              contains('Cannot make example a pub workspace member'),
+            );
+          });
+        });
+
         test('does not create an empty .gg directory', () async {
           final dProject1 = Directory(
             p.join(dWorkspaceSucceed.path, 'project1'),

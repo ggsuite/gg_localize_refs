@@ -117,6 +117,11 @@ class Utils {
     return result.stdout.toString().trim();
   }
 
+  /// Returns [content] with exactly one trailing newline.
+  static String withTrailingNewline(String content) {
+    return content.endsWith('\n') ? content : '$content\n';
+  }
+
   /// Reads a dependency backup JSON from [filePath].
   static Map<String, dynamic> readDependenciesFromJson(String filePath) {
     final file = File(filePath);

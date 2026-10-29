@@ -1,0 +1,8 @@
+name: test1_example
+publish_to: none
+environment:
+  sdk: ^3.6.0
+dependencies:
+  test1:
+    path: ..
+  test2: ^1.0.0

@@ -6,6 +6,7 @@
 
 import 'dart:io';
 
+import 'package:gg_localize_refs/src/backend/utils.dart';
 import 'package:path/path.dart' as p;
 import 'package:yaml/yaml.dart';
 import 'package:yaml_edit/yaml_edit.dart';
@@ -195,7 +196,9 @@ class PubspecOverridesIo {
       editor.update(<Object>[], <String, dynamic>{
         'dependency_overrides': newSectionEntries,
       });
-      return PubspecOverridesEdit.write(_withTrailingNewline('$header$editor'));
+      return PubspecOverridesEdit.write(
+        Utils.withTrailingNewline('$header$editor'),
+      );
     }
 
     final editor = YamlEditor(existing!);
@@ -212,7 +215,7 @@ class PubspecOverridesIo {
       }
     }
 
-    final updated = _withTrailingNewline(editor.toString());
+    final updated = Utils.withTrailingNewline(editor.toString());
     if (updated == existing) {
       return const PubspecOverridesEdit.unchanged();
     }
@@ -315,7 +318,7 @@ class PubspecOverridesIo {
       return const PubspecOverridesEdit.delete();
     }
 
-    return PubspecOverridesEdit.write(_withTrailingNewline(updated));
+    return PubspecOverridesEdit.write(Utils.withTrailingNewline(updated));
   }
 
   // ...........................................................................
@@ -513,10 +516,5 @@ class PubspecOverridesIo {
     }
 
     return parsed;
-  }
-
-  /// Returns [content] with exactly one trailing newline.
-  String _withTrailingNewline(String content) {
-    return content.endsWith('\n') ? content : '$content\n';
   }
 }
