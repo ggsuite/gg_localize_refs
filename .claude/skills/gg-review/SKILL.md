@@ -22,10 +22,13 @@ follow-up ticket. Section "Keep every repo in its scope" of
 
 ## 2. Document the change in every repo
 
-Look for `doc/guides/blog-guide.md` in every repo of the ticket, the
-project management repo included. It comes from the `dna_blog` layer.
+Look for `doc/guides/blog-guide.md` in the project management repo and in
+every other repo the ticket changed. It comes from the `dna_blog` layer.
 
 - Run `/blog` in each repo that has it; skip the others
+- Skip a code repo the ticket only passes through — one nobody changed,
+  whatever gg committed there. gg does not release it, and a blog post
+  alone would force a release without a change
 - A dependency's post describes its own change only: it never names the
   repos of the ticket that use it, nor their goal — section "Describe
   every repo in its own terms" of `doc/guides/for-ai/ai-dev-guide.md`
@@ -61,4 +64,6 @@ describes.
 ## Important
 
 - Never write a blog post in a repo without `doc/guides/blog-guide.md`.
+- Never write a blog post in a repo the ticket did not change, apart from
+  the project management repo.
 - Never start `gg do review` without the user's confirmation.

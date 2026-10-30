@@ -93,9 +93,9 @@
       "name": "dna-gg",
       "package": "dna_gg",
       "ecosystem": "pub",
-      "resolvedVersion": "1.1.0",
+      "resolvedVersion": "1.1.1",
       "via": "dna-ggsuite",
-      "hash": "0x8654064a14538e39"
+      "hash": "0xa4329d4ad27ccd8a"
     },
     {
       "name": "dna-ggsuite",
@@ -195,7 +195,7 @@
     },
     {
       "path": ".claude/skills/gg-review/SKILL.md",
-      "hash": "0x9f7bbbe511238684"
+      "hash": "0x8583deb0630bba47"
     },
     {
       "path": ".claude/skills/gg-ticket/SKILL.md",
