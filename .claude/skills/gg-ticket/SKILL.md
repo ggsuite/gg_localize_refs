@@ -8,23 +8,32 @@ description: Creates a gg ticket and adds the repos it needs. Use when the user 
 All `gg do` commands run inside the workspace. Ask for the workspace
 directory if none is known.
 
-## 1. Ask for the ticket data
+## 1. Ask what the ticket should do
 
-Ask for these three, one after the other, and give the user a single input
-field per answer — one question per field, never all three in one question
-and never as a plain prose question:
-
-- Ticket ID, e.g. `GGS-145`
-- Title, one imperative line, e.g. `Fix issue abc`
-- Description, one or two sentences on what the ticket changes
+Ask a single question: what should the ticket do? One free-text answer is
+enough — never ask for a ticket id, a title or a description separately.
 
 ## 2. Create the ticket
 
+Derive from the answer, without asking anything else:
+
+- **id** — a short, descriptive slug in `snake_case`, 2-5 words, e.g.
+  `fix_login_crash`. Never a sequential number: several tickets are usually
+  worked on in parallel, and a counter collides between them. List the
+  existing ticket folders of the workspace root and, if the slug is taken,
+  append `_2`, `_3`, … until it is free.
+- **message** — one imperative line to one short sentence describing the
+  change, for `-m`.
+
 ```bash
 cd ~/dev/ # workspace
-gg do create ticket GGS-145 -m"Fix issue abc"
-cd tickets/GGS-145
+gg do create ticket fix_login_crash -m"Fix issue abc"
+cd tickets/fix_login_crash
 ```
+
+Tell the user the id and the message right after creating the ticket — both
+can be changed any time, e.g. by renaming the folder before anything else is
+added to it, or by editing `ticket.json`.
 
 ## 3. Choose the project management repo — or work without one
 
@@ -52,8 +61,9 @@ Call it the "project management repo" whenever you write to the user, never
 
 ## 4. Choose the code repos
 
-Ask the user how the code repos are chosen, as a single question with two
-options:
+Ask the user how the code repos are chosen, as a single question with the
+options below. Offer **only the project management repo** only when one was
+added in step 3 — without one there is nothing to be "only" about.
 
 - **automatically** — Claude finds the repos. Read the `index.jsonc` of
   the candidate repos in `.ocean`. Tell the user which repos the ticket
@@ -65,6 +75,9 @@ options:
   field which repos the ticket needs, e.g. `repo1 repo2`. Check each name
   against the repos in `.ocean` and ask again for names that do not exist
   there. The entered list is the confirmation.
+- **only the project management repo** — no code repo at all; the ticket
+  stays pure planning, and the project management repo added in step 3 is
+  everything it carries.
 
 A ticket that is only planned may need no code repo at all.
 

@@ -11,91 +11,91 @@
     },
     {
       "name": "dna-readme",
-      "package": "dna_readme",
-      "ecosystem": "pub",
+      "package": "@ggdna/dna-readme",
+      "ecosystem": "node",
       "resolvedVersion": "0.3.1",
       "via": "dna-ggsuite",
       "hash": "0x6678ec2e509f3dd9"
     },
     {
       "name": "dna-guides",
-      "package": "dna_guides",
-      "ecosystem": "pub",
+      "package": "@ggdna/dna-guides",
+      "ecosystem": "node",
       "resolvedVersion": "0.2.0",
       "via": "dna-ggsuite",
       "hash": "0x3bd4be7c009270a6"
     },
     {
       "name": "dna-translate",
-      "package": "dna_translate",
-      "ecosystem": "pub",
+      "package": "@ggdna/dna-translate",
+      "ecosystem": "node",
       "resolvedVersion": "0.3.0",
       "via": "dna-ggsuite",
       "hash": "0xfec6f71367d12db6"
     },
     {
       "name": "dna-index",
-      "package": "dna_index",
-      "ecosystem": "pub",
+      "package": "@ggdna/dna-index",
+      "ecosystem": "node",
       "resolvedVersion": "0.2.0",
       "via": "dna-ggsuite",
       "hash": "0x1d92b0add37a1ac7"
     },
     {
       "name": "dna-blog",
-      "package": "dna_blog",
-      "ecosystem": "pub",
+      "package": "@ggdna/dna-blog",
+      "ecosystem": "node",
       "resolvedVersion": "0.3.0",
       "via": "dna-ggsuite",
       "hash": "0x49bf0909e92d37bb"
     },
     {
       "name": "dna-install",
-      "package": "dna_install",
-      "ecosystem": "pub",
+      "package": "@ggdna/dna-install",
+      "ecosystem": "node",
       "resolvedVersion": "0.2.0",
       "via": "dna-ggsuite",
       "hash": "0xbe88eb4256745ee1"
     },
     {
       "name": "dna-vscode",
-      "package": "dna_vscode",
-      "ecosystem": "pub",
+      "package": "@ggdna/dna-vscode",
+      "ecosystem": "node",
       "resolvedVersion": "0.4.0",
       "via": "dna-ggsuite",
       "hash": "0xb1b916118eb63333"
     },
     {
       "name": "dna-clean-code",
-      "package": "dna_clean_code",
-      "ecosystem": "pub",
+      "package": "@ggdna/dna-clean-code",
+      "ecosystem": "node",
       "resolvedVersion": "0.2.2",
       "via": "dna-ggsuite",
       "hash": "0x7c836197d11ccd60"
     },
     {
       "name": "dna-scripts",
-      "package": "dna_scripts",
-      "ecosystem": "pub",
+      "package": "@ggdna/dna-scripts",
+      "ecosystem": "node",
       "resolvedVersion": "0.3.0",
       "via": "dna-ggsuite",
       "hash": "0xe3092339b83504a1"
     },
     {
       "name": "dna-github",
-      "package": "dna_github",
-      "ecosystem": "pub",
+      "package": "@ggdna/dna-github",
+      "ecosystem": "node",
       "resolvedVersion": "0.1.1",
       "via": "dna-gg",
       "hash": "0xf541b93b3dc7995d"
     },
     {
       "name": "dna-gg",
-      "package": "dna_gg",
-      "ecosystem": "pub",
-      "resolvedVersion": "1.1.0",
+      "package": "@ggdna/dna-gg",
+      "ecosystem": "node",
+      "resolvedVersion": "1.4.0",
       "via": "dna-ggsuite",
-      "hash": "0x8654064a14538e39"
+      "hash": "0x10e35c3c4cb97369"
     },
     {
       "name": "dna-ggsuite",
@@ -133,7 +133,7 @@
       "name": "gg-git",
       "package": "gg_git",
       "ecosystem": "pub",
-      "resolvedVersion": "4.5.5",
+      "resolvedVersion": "4.8.0",
       "via": null,
       "hash": "0x32b3537fa5495175"
     },
@@ -163,7 +163,7 @@
     },
     {
       "path": ".claude/hooks/pm-prompts.mjs",
-      "hash": "0x988aed96a8073727"
+      "hash": "0xf4266eea17b3b9c1"
     },
     {
       "path": ".claude/settings.json",
@@ -195,11 +195,11 @@
     },
     {
       "path": ".claude/skills/gg-review/SKILL.md",
-      "hash": "0x9f7bbbe511238684"
+      "hash": "0x3a4506ccd5c8e1be"
     },
     {
       "path": ".claude/skills/gg-ticket/SKILL.md",
-      "hash": "0x0532d8ac37060521"
+      "hash": "0xc71e2fee20970d85"
     },
     {
       "path": ".claude/skills/gg/SKILL.md",
@@ -283,7 +283,7 @@
     },
     {
       "path": "doc/guides/develop-guide.md",
-      "hash": "0x39718de56fdb48f0"
+      "hash": "0xed4328d138fe76ef"
     },
     {
       "path": "doc/guides/develop-without-ai-guide.md",
@@ -299,7 +299,7 @@
     },
     {
       "path": "doc/guides/for-ai/ai-dev-guide.md",
-      "hash": "0x5ac430cba252b5bc"
+      "hash": "0xb6eecdb4c7a1ebe8"
     },
     {
       "path": "doc/guides/for-ai/ai-review-guide.md",

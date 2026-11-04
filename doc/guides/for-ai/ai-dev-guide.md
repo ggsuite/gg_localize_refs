@@ -169,7 +169,9 @@ ticket.
   [Describe every repo in its own terms](#describe-every-repo-in-its-own-terms)).
   Keep every repo in its scope while you code: stop and propose a split,
   a new repo or a move as soon as code does not fit (see
-  [Keep every repo in its scope](#keep-every-repo-in-its-scope))
+  [Keep every repo in its scope](#keep-every-repo-in-its-scope)).
+  Before each change, if the repo has `doc/guides/architecture-guide.md`,
+  decide where the code goes as its `@placement` describes
 - Plan only: skip this step. The following steps then apply to the project
   management repo only.
 
@@ -319,7 +321,8 @@ gg do review
 ```
 
 gg creates pull requests for each repo and prints the URLs to the
-terminal.
+terminal. Print every URL to the user, one line per repo, and open each
+pull request without auto-merge in the browser.
 
 Afterwards load the review-light skill and execute it.
 
