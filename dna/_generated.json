@@ -69,9 +69,9 @@
       "name": "dna-clean-code",
       "package": "@ggdna/dna-clean-code",
       "ecosystem": "node",
-      "resolvedVersion": "0.2.2",
+      "resolvedVersion": "0.4.0",
       "via": "dna-ggsuite",
-      "hash": "0x7c836197d11ccd60"
+      "hash": "0x8e7b9f31d43721ab"
     },
     {
       "name": "dna-scripts",
@@ -175,7 +175,7 @@
     },
     {
       "path": ".claude/skills/code/SKILL.md",
-      "hash": "0x94819046c5ce41f3"
+      "hash": "0xf145a73581189b53"
     },
     {
       "path": ".claude/skills/gg-cleanup/SKILL.md",
@@ -192,6 +192,10 @@
     {
       "path": ".claude/skills/gg-push/SKILL.md",
       "hash": "0x140e1b8d6cbe222e"
+    },
+    {
+      "path": ".claude/skills/gg-review-architecture/SKILL.md",
+      "hash": "0xa7a4482774cf24d5"
     },
     {
       "path": ".claude/skills/gg-review/SKILL.md",
@@ -266,6 +270,10 @@
       "hash": "0x56f3eedd72c6218f"
     },
     {
+      "path": "doc/guides/architecture-guide.md",
+      "hash": "0x418a3568112ae52f"
+    },
+    {
       "path": "doc/guides/blog-guide.md",
       "hash": "0xd1366e3383701d0e"
     },
@@ -279,7 +287,7 @@
     },
     {
       "path": "doc/guides/code-guide.md",
-      "hash": "0x02fc4de9e1155b74"
+      "hash": "0x7a61f5b227ec9067"
     },
     {
       "path": "doc/guides/develop-guide.md",
@@ -303,7 +311,7 @@
     },
     {
       "path": "doc/guides/for-ai/ai-review-guide.md",
-      "hash": "0x76b2e9fb473bd380"
+      "hash": "0x5c7f7a556fcd485e"
     },
     {
       "path": "doc/guides/for-ai/review-heavy-guide.md",
