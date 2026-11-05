@@ -117,10 +117,10 @@ packages:
     dependency: transitive
     description:
       name: dna_clean_code
-      sha256: "18299d5e4a01e56c9a51629ad70646f28a638bb866c88122c5c4f47bd5828e6c"
+      sha256: "19900569769dc4a32b43d99fa6a6b9180a9136ba805ec202778b0c3006d03162"
       url: "https://pub.dev"
     source: hosted
-    version: "0.2.2"
+    version: "0.4.0"
   dna_gg:
     dependency: "direct overridden"
     description:
