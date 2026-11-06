@@ -69,9 +69,9 @@
       "name": "dna-clean-code",
       "package": "dna_clean_code",
       "ecosystem": "pub",
-      "resolvedVersion": "0.2.2",
+      "resolvedVersion": "0.4.0",
       "via": "dna-ggsuite",
-      "hash": "0x7c836197d11ccd60"
+      "hash": "0x8e7b9f31d43721ab"
     },
     {
       "name": "dna-scripts",
@@ -93,15 +93,15 @@
       "name": "dna-gg",
       "package": "dna_gg",
       "ecosystem": "pub",
-      "resolvedVersion": "1.1.0",
+      "resolvedVersion": "1.4.1",
       "via": "dna-ggsuite",
-      "hash": "0x8654064a14538e39"
+      "hash": "0x958d0143021b2328"
     },
     {
       "name": "dna-ggsuite",
       "package": "dna_ggsuite",
       "ecosystem": "pub",
-      "resolvedVersion": "1.0.0",
+      "resolvedVersion": "1.0.1",
       "via": "gg-log",
       "hash": "0x309b9f27627022e1"
     },
@@ -133,7 +133,7 @@
       "name": "gg-git",
       "package": "gg_git",
       "ecosystem": "pub",
-      "resolvedVersion": "4.5.5",
+      "resolvedVersion": "4.8.0",
       "via": null,
       "hash": "0x32b3537fa5495175"
     },
@@ -163,7 +163,7 @@
     },
     {
       "path": ".claude/hooks/pm-prompts.mjs",
-      "hash": "0x988aed96a8073727"
+      "hash": "0xf4266eea17b3b9c1"
     },
     {
       "path": ".claude/settings.json",
@@ -175,7 +175,7 @@
     },
     {
       "path": ".claude/skills/code/SKILL.md",
-      "hash": "0x94819046c5ce41f3"
+      "hash": "0xf145a73581189b53"
     },
     {
       "path": ".claude/skills/gg-cleanup/SKILL.md",
@@ -194,12 +194,16 @@
       "hash": "0x140e1b8d6cbe222e"
     },
     {
+      "path": ".claude/skills/gg-review-architecture/SKILL.md",
+      "hash": "0xa7a4482774cf24d5"
+    },
+    {
       "path": ".claude/skills/gg-review/SKILL.md",
-      "hash": "0x9f7bbbe511238684"
+      "hash": "0x3a4506ccd5c8e1be"
     },
     {
       "path": ".claude/skills/gg-ticket/SKILL.md",
-      "hash": "0x0532d8ac37060521"
+      "hash": "0xb1095b91b3531897"
     },
     {
       "path": ".claude/skills/gg/SKILL.md",
@@ -266,6 +270,10 @@
       "hash": "0x56f3eedd72c6218f"
     },
     {
+      "path": "doc/guides/architecture-guide.md",
+      "hash": "0x418a3568112ae52f"
+    },
+    {
       "path": "doc/guides/blog-guide.md",
       "hash": "0xd1366e3383701d0e"
     },
@@ -279,11 +287,11 @@
     },
     {
       "path": "doc/guides/code-guide.md",
-      "hash": "0x02fc4de9e1155b74"
+      "hash": "0x7a61f5b227ec9067"
     },
     {
       "path": "doc/guides/develop-guide.md",
-      "hash": "0x39718de56fdb48f0"
+      "hash": "0xed4328d138fe76ef"
     },
     {
       "path": "doc/guides/develop-without-ai-guide.md",
@@ -299,11 +307,11 @@
     },
     {
       "path": "doc/guides/for-ai/ai-dev-guide.md",
-      "hash": "0x5ac430cba252b5bc"
+      "hash": "0xe8182903f11a1766"
     },
     {
       "path": "doc/guides/for-ai/ai-review-guide.md",
-      "hash": "0x76b2e9fb473bd380"
+      "hash": "0x5c7f7a556fcd485e"
     },
     {
       "path": "doc/guides/for-ai/review-heavy-guide.md",

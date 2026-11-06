@@ -238,7 +238,7 @@ export function onPrompt(input) {
       started: new Date().toISOString(),
       folder: path.basename(projectDir),
       repos,
-      email: git(['-C', projectDir, 'config', 'user.email']).out,
+      name: git(['-C', projectDir, 'config', 'user.name']).out,
       targets,
     });
   }
@@ -299,28 +299,35 @@ export function slug(name) {
     .replace(/^-+|-+$/g, '');
 }
 
-/** The first name in [peopleMd] whose `Git` line lists [email]. */
-export function personOf(email, peopleMd) {
-  if (!email) return '';
+/**
+ * The first name in [peopleMd] for the git user name [gitName]: the person
+ * whose `Git` line lists it, else the person whose first name is the git
+ * name or its first word. E-mail addresses play no part.
+ */
+export function personOf(gitName, peopleMd) {
+  const wanted = (gitName ?? '').trim().toLowerCase();
+  if (!wanted) return '';
+  const byFirstName = new Map();
   let name = '';
   for (const line of peopleMd.split(/\r?\n/)) {
     const heading = line.match(/^##\s+(.+?)\s*$/);
     if (heading) {
       name = heading[1];
+      byFirstName.set(name.toLowerCase(), name);
       continue;
     }
-    const emails = line.match(/^\s*-\s*Git:\s*(.+)$/i);
+    const names = line.match(/^\s*-\s*Git:\s*(.+)$/i);
     if (
       name &&
-      emails &&
-      emails[1]
-        .split(/[,;\s]+/)
-        .some((e) => e.toLowerCase() === email.toLowerCase())
+      names &&
+      names[1].split(/[,;]/).some((n) => n.trim().toLowerCase() === wanted)
     ) {
       return name;
     }
   }
-  return '';
+  return (
+    byFirstName.get(wanted) ?? byFirstName.get(wanted.split(/\s+/)[0]) ?? ''
+  );
 }
 
 /** Where the prompts of a session go in the project management repo. */
@@ -336,7 +343,7 @@ export function renderHead(meta, person) {
   const lines = [
     `# ${localDate(meta.started)} · ${meta.folder} · ${String(meta.session).slice(0, 8)}`,
     '',
-    `- Person: ${person || meta.email || 'unknown'}`,
+    `- Person: ${person || meta.name || 'unknown'}`,
   ];
   const repos = meta.repos ?? [];
   if (repos.length === 1 && repos[0] === meta.folder) {
@@ -399,16 +406,15 @@ function fetchBranch(dir) {
   return git(['-C', dir, 'rev-parse', ref]).out;
 }
 
-function identityEnv(dir) {
-  const env = { ...gitEnv };
-  if (!git(['-C', dir, 'config', 'user.name']).out) {
-    env.GIT_AUTHOR_NAME = env.GIT_COMMITTER_NAME = 'pm-prompts';
-  }
-  if (!git(['-C', dir, 'config', 'user.email']).out) {
-    env.GIT_AUTHOR_EMAIL = env.GIT_COMMITTER_EMAIL = 'pm-prompts@localhost';
-  }
-  return env;
-}
+// The prompts are committed under a neutral identity, so the e-mail address
+// of the developer never reaches the project management repo.
+const identityEnv = {
+  ...gitEnv,
+  GIT_AUTHOR_NAME: 'pm-prompts',
+  GIT_COMMITTER_NAME: 'pm-prompts',
+  GIT_AUTHOR_EMAIL: 'pm-prompts@localhost',
+  GIT_COMMITTER_EMAIL: 'pm-prompts@localhost',
+};
 
 // Commits the not yet pushed prompts of [sessions] to the prompts branch of
 // [url]. Returns how many prompts of each session the branch now holds.
@@ -421,7 +427,7 @@ function pushTarget(url, sessions) {
       os.tmpdir(),
       `pm-prompts-${process.pid}-${Date.now()}.index`,
     );
-    const env = { ...identityEnv(dir), GIT_INDEX_FILE: index };
+    const env = { ...identityEnv, GIT_INDEX_FILE: index };
     try {
       const read = base
         ? git(['-C', dir, 'read-tree', base], { env })
@@ -433,8 +439,8 @@ function pushTarget(url, sessions) {
         const fresh = session.prompts.slice(pushed);
         done.set(file, session.prompts.length);
         if (!fresh.length) continue;
-        const person = personOf(session.meta.email, people);
-        names.add(person || session.meta.email || 'unknown');
+        const person = personOf(session.meta.name, people);
+        names.add(person || session.meta.name || 'unknown');
         const target = promptsPath(session.meta, person);
         const existing = base
           ? git(['-C', dir, 'cat-file', '-p', `${base}:${target}`])
