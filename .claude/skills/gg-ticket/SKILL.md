@@ -17,18 +17,21 @@ enough — never ask for a ticket id, a title or a description separately.
 
 Derive from the answer, without asking anything else:
 
-- **id** — a short, descriptive slug in `snake_case`, 2-5 words, e.g.
+- **id** — a short, descriptive slug in `snake_case`, 2-5 plain ASCII words
+  (transliterate non-ASCII, drop punctuation and emoji), e.g.
   `fix_login_crash`. Never a sequential number: several tickets are usually
   worked on in parallel, and a counter collides between them. List the
   existing ticket folders of the workspace root and, if the slug is taken,
-  append `_2`, `_3`, … until it is free.
+  append `_2`, `_3`, … until it is free. If `gg do create ticket` still
+  rejects it as taken (e.g. another agent just created the same slug),
+  bump the suffix and retry.
 - **message** — one imperative line to one short sentence describing the
   change, for `-m`.
 
 ```bash
 cd ~/dev/ # workspace
 gg do create ticket fix_login_crash -m"Fix issue abc"
-cd tickets/fix_login_crash
+cd fix_login_crash
 ```
 
 Tell the user the id and the message right after creating the ticket — both

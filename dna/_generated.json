@@ -11,97 +11,97 @@
     },
     {
       "name": "dna-readme",
-      "package": "@ggdna/dna-readme",
-      "ecosystem": "node",
+      "package": "dna_readme",
+      "ecosystem": "pub",
       "resolvedVersion": "0.3.1",
       "via": "dna-ggsuite",
       "hash": "0x6678ec2e509f3dd9"
     },
     {
       "name": "dna-guides",
-      "package": "@ggdna/dna-guides",
-      "ecosystem": "node",
+      "package": "dna_guides",
+      "ecosystem": "pub",
       "resolvedVersion": "0.2.0",
       "via": "dna-ggsuite",
       "hash": "0x3bd4be7c009270a6"
     },
     {
       "name": "dna-translate",
-      "package": "@ggdna/dna-translate",
-      "ecosystem": "node",
+      "package": "dna_translate",
+      "ecosystem": "pub",
       "resolvedVersion": "0.3.0",
       "via": "dna-ggsuite",
       "hash": "0xfec6f71367d12db6"
     },
     {
       "name": "dna-index",
-      "package": "@ggdna/dna-index",
-      "ecosystem": "node",
+      "package": "dna_index",
+      "ecosystem": "pub",
       "resolvedVersion": "0.2.0",
       "via": "dna-ggsuite",
       "hash": "0x1d92b0add37a1ac7"
     },
     {
       "name": "dna-blog",
-      "package": "@ggdna/dna-blog",
-      "ecosystem": "node",
+      "package": "dna_blog",
+      "ecosystem": "pub",
       "resolvedVersion": "0.3.0",
       "via": "dna-ggsuite",
       "hash": "0x49bf0909e92d37bb"
     },
     {
       "name": "dna-install",
-      "package": "@ggdna/dna-install",
-      "ecosystem": "node",
+      "package": "dna_install",
+      "ecosystem": "pub",
       "resolvedVersion": "0.2.0",
       "via": "dna-ggsuite",
       "hash": "0xbe88eb4256745ee1"
     },
     {
       "name": "dna-vscode",
-      "package": "@ggdna/dna-vscode",
-      "ecosystem": "node",
+      "package": "dna_vscode",
+      "ecosystem": "pub",
       "resolvedVersion": "0.4.0",
       "via": "dna-ggsuite",
       "hash": "0xb1b916118eb63333"
     },
     {
       "name": "dna-clean-code",
-      "package": "@ggdna/dna-clean-code",
-      "ecosystem": "node",
+      "package": "dna_clean_code",
+      "ecosystem": "pub",
       "resolvedVersion": "0.4.0",
       "via": "dna-ggsuite",
       "hash": "0x8e7b9f31d43721ab"
     },
     {
       "name": "dna-scripts",
-      "package": "@ggdna/dna-scripts",
-      "ecosystem": "node",
+      "package": "dna_scripts",
+      "ecosystem": "pub",
       "resolvedVersion": "0.3.0",
       "via": "dna-ggsuite",
       "hash": "0xe3092339b83504a1"
     },
     {
       "name": "dna-github",
-      "package": "@ggdna/dna-github",
-      "ecosystem": "node",
+      "package": "dna_github",
+      "ecosystem": "pub",
       "resolvedVersion": "0.1.1",
       "via": "dna-gg",
       "hash": "0xf541b93b3dc7995d"
     },
     {
       "name": "dna-gg",
-      "package": "@ggdna/dna-gg",
-      "ecosystem": "node",
-      "resolvedVersion": "1.4.0",
+      "package": "dna_gg",
+      "ecosystem": "pub",
+      "resolvedVersion": "1.4.1",
       "via": "dna-ggsuite",
-      "hash": "0x10e35c3c4cb97369"
+      "hash": "0x958d0143021b2328"
     },
     {
       "name": "dna-ggsuite",
       "package": "dna_ggsuite",
       "ecosystem": "pub",
-      "resolvedVersion": "1.0.0",
+      "resolvedVersion": "1.0.1",
       "via": "gg-log",
       "hash": "0x309b9f27627022e1"
     },
@@ -203,7 +203,7 @@
     },
     {
       "path": ".claude/skills/gg-ticket/SKILL.md",
-      "hash": "0xc71e2fee20970d85"
+      "hash": "0xb1095b91b3531897"
     },
     {
       "path": ".claude/skills/gg/SKILL.md",
@@ -307,7 +307,7 @@
     },
     {
       "path": "doc/guides/for-ai/ai-dev-guide.md",
-      "hash": "0xb6eecdb4c7a1ebe8"
+      "hash": "0xe8182903f11a1766"
     },
     {
       "path": "doc/guides/for-ai/ai-review-guide.md",

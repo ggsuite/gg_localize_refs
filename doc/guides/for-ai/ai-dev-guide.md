@@ -8,30 +8,42 @@ found in the LICENSE file in the root of this package.
 
 # Development guide for AIs
 
-## Ask the developer for the ticket infos
+## Ask the developer what the ticket should do
 
-Ask for these one after the other and give the developer a single input
-field per answer — one question per field, never all of them in one
-question and never as a plain prose question:
+Ask a single question: what should the ticket do? One free-text answer is
+enough — never ask for a ticket id, a title or a description separately.
 
-- Ask for the ticket ID
-- Ask for the ticket title
-- Ask for the ticket description
+## Create a ticket
+
+Derive from the answer, without asking anything else:
+
+- **id** — a short, descriptive slug in `snake_case`, 2-5 plain ASCII words
+  (transliterate non-ASCII, drop punctuation and emoji), e.g.
+  `fix_login_crash`. Never a sequential number: several tickets are usually
+  worked on in parallel, and a counter collides between them. List the
+  existing ticket folders of the workspace root and, if the slug is taken,
+  append `_2`, `_3`, … until it is free. If `gg do create ticket` still
+  rejects it as taken (e.g. another agent just created the same slug),
+  bump the suffix and retry.
+- **message** — one imperative line to one short sentence describing the
+  change, for `-m`.
+
+```bash
+cd ~/dev/ # workspace
+gg do create ticket fix_login_crash -m"Fix issue abc"
+cd fix_login_crash
+```
+
+Tell the developer the id and the message right after creating the ticket —
+both can be changed any time, e.g. by renaming the folder before anything
+else is added to it, or by editing `ticket.json`.
 
 ## Replace in this document
 
 - Replace `~/dev/` by the workspace directory from the memory
 - Ask for the workspace directory if none is known
-- Replace `GGS-145` by the ticket ID you asked for
-- Replace `Fix issue abc` by the ticket title you asked for
-
-## Create a ticket
-
-```bash
-cd ~/dev/ # workspace
-gg do create ticket GGS-145 -m"Fix issue abc"
-cd tickets/GGS-145
-```
+- Replace `fix_login_crash` by the ticket id you derived
+- Replace `Fix issue abc` by the ticket message you derived
 
 ## Choose the project management repo — or work without one
 
@@ -62,8 +74,9 @@ repositories. The ticket then carries no plan of its own.
 
 ## Add git repositories
 
-Ask the user how the repos are chosen, as a single question with two
-options: automatically or manually.
+Ask the user how the repos are chosen, as a single question with the
+options below. Offer **only the project management repo** only when one was
+added above — without one there is nothing to be "only" about.
 
 Manually: ask in a second single input field which repos the ticket needs,
 e.g. `repo1 repo2`. Check each name against the repos in .ocean and ask
@@ -80,8 +93,10 @@ Also explain to the user what you roughly want to change in which repo to
 implement the ticket and let them confirm that the corresponding repos are
 added to the ticket.
 
-If the ticket is only planned (see below), the project management repo may
-be the only repo of the ticket.
+Only the project management repo: no code repo at all; the ticket stays
+pure planning, and the project management repo added above is everything
+it carries. If the ticket is only planned (see below), this is the way to
+go — the project management repo may be the only repo of the ticket.
 
 After the user's confirmation, add the repos to the ticket:
 
@@ -321,8 +336,8 @@ gg do review
 ```
 
 gg creates pull requests for each repo and prints the URLs to the
-terminal. Print every URL to the user, one line per repo, and open each
-pull request without auto-merge in the browser.
+terminal. Print every URL to the user, one line per repo. Do not open the
+pull requests in the browser — leave that to the user.
 
 Afterwards load the review-light skill and execute it.
 
