@@ -105,6 +105,23 @@ void main() {
           expect(await refsOf(project), isEmpty);
         });
 
+        test('reports the ticket projects reached through the ocean, '
+            'nothing after change-refs-to-local', () async {
+          final project = Directory(
+            p.join(scenario('through_ocean').parent.path, 'ticket', 'project1'),
+          );
+
+          expect(await refsOf(project), <String>[
+            'test1 uses the published test2 instead of its checkout',
+            'test1 uses the published test7 instead of its checkout',
+            'test1 uses the published test3 instead of its checkout',
+            'test1 uses the published test6 instead of its checkout',
+          ]);
+
+          await localize(project);
+          expect(await refsOf(project), isEmpty);
+        });
+
         test('reports an override with another value as missing', () async {
           final project = scenario('already_localized');
           File(p.join(project.path, 'pubspec_overrides.yaml'))

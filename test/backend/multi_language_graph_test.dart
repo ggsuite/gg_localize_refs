@@ -620,6 +620,198 @@ void main() {
         expect(result.allNodes.keys, isNot(contains('test2_example')));
       });
     });
+
+    group('oceanOf()', () {
+      final graph = MultiLanguageGraph(
+        languages: <ProjectLanguage>[DartProjectLanguage()],
+      );
+
+      // Creates `<parent>/<ticketPath>` with a ticket.json and the folders
+      // [oceans] in `<parent>`. Returns the ticket.
+      Directory createTicket(
+        String suffix, {
+        String ticketPath = 'ticket',
+        List<String> oceans = const <String>[],
+      }) {
+        final parent = createWorkspace(suffix);
+        for (final ocean in oceans) {
+          Directory(p.join(parent.path, ocean)).createSync();
+        }
+        final ticket = Directory(p.join(parent.path, ticketPath))
+          ..createSync(recursive: true);
+        File(p.join(ticket.path, 'ticket.json')).writeAsStringSync('{}');
+        return ticket;
+      }
+
+      test('returns the ocean beside the ticket', () {
+        final ticket = createTicket('mlg_ocean', oceans: <String>['.ocean']);
+
+        expect(
+          graph.oceanOf(ticket)?.path,
+          p.join(ticket.parent.path, '.ocean'),
+        );
+      });
+
+      test('returns a legacy ».master« ocean', () {
+        final ticket = createTicket('mlg_master', oceans: <String>['.master']);
+
+        expect(
+          graph.oceanOf(ticket)?.path,
+          p.join(ticket.parent.path, '.master'),
+        );
+      });
+
+      test('prefers ».ocean« over ».master«', () {
+        final ticket = createTicket(
+          'mlg_both',
+          oceans: <String>['.master', '.ocean'],
+        );
+
+        expect(
+          graph.oceanOf(ticket)?.path,
+          p.join(ticket.parent.path, '.ocean'),
+        );
+      });
+
+      test('finds the ocean of a ticket in a legacy tickets folder', () {
+        final ticket = createTicket(
+          'mlg_tickets_folder',
+          ticketPath: p.join('tickets', 'ticket'),
+          oceans: <String>['.ocean'],
+        );
+
+        expect(
+          graph.oceanOf(ticket)?.path,
+          p.join(ticket.parent.parent.path, '.ocean'),
+        );
+      });
+
+      test('returns null for a ticket without an ocean', () {
+        expect(graph.oceanOf(createTicket('mlg_no_ocean')), isNull);
+      });
+
+      test('returns null outside a ticket', () {
+        // The ocean itself and a plain folder of siblings hold every
+        // package already.
+        final parent = createWorkspace('mlg_not_a_ticket');
+        final ocean = Directory(p.join(parent.path, '.ocean'))..createSync();
+        final plain = Directory(p.join(parent.path, 'plain'))..createSync();
+
+        expect(graph.oceanOf(ocean), isNull);
+        expect(graph.oceanOf(plain), isNull);
+      });
+    });
+
+    group('dependencies through the ocean', () {
+      // Copies the scenario `through_ocean`: a ticket next to its ocean.
+      //
+      // test1 -> middle (ocean) -> deep (ocean) -> test3
+      //                         -> test2 -> test7
+      //                         -> path (neither ticket nor ocean)
+      //                         -> (dev) test5
+      // test1 -> (dev) tool (ocean) -> test6
+      // test2 -> (dev) test5
+      // The ocean copy of test2 depends on test4, the ticket copy does not.
+      // The ocean also holds a repo with a broken pubspec.yaml.
+      Directory createScenario(String suffix) {
+        final workspace = createWorkspace(suffix);
+        copyDirectory(
+          Directory(
+            p.join('test', 'sample_folder', 'localize_refs', 'through_ocean'),
+          ),
+          workspace,
+        );
+        return Directory(p.join(workspace.path, 'ticket'));
+      }
+
+      test('links the ticket projects reached through the ocean', () async {
+        final ticket = createScenario('mlg_through_ocean');
+
+        final result = await MultiLanguageGraph(
+          languages: <ProjectLanguage>[DartProjectLanguage()],
+        ).buildGraph(directory: Directory(p.join(ticket.path, 'project1')));
+
+        final root = result.rootNode;
+        final nodes = result.allNodes;
+        expect(root.dependencies, isEmpty);
+        expect(root.indirectDependencies, <String, ProjectNode>{
+          'test2': nodes['test2']!,
+          'test3': nodes['test3']!,
+          'test6': nodes['test6']!,
+        });
+        expect(root.devOnlyIndirectDependencies, <String>{'test6'});
+
+        // Reached through the ticket copy of test2, not through its ocean
+        // copy; dev dependencies of a dependency are left out.
+        expect(root.transitiveDependencies.keys, <String>[
+          'test2',
+          'test7',
+          'test3',
+          'test6',
+        ]);
+
+        // The edges are no manifest dependencies, so no dependents.
+        expect(nodes['test2']!.dependents, isEmpty);
+      });
+
+      test('does not link a ticket project back to itself', () async {
+        final ticket = createScenario('mlg_through_ocean_self');
+        // middle now also depends on test1, which depends on middle.
+        File(
+          p.join(
+            ticket.parent.path,
+            '.ocean',
+            'org_a',
+            'middle',
+            'pubspec.yaml',
+          ),
+        ).writeAsStringSync(
+          'name: middle\nversion: 1.0.0\n'
+          'dependencies:\n  test1: ^1.0.0\n  test2: ^1.0.0\n',
+        );
+
+        final result = await MultiLanguageGraph(
+          languages: <ProjectLanguage>[DartProjectLanguage()],
+        ).buildGraph(directory: Directory(p.join(ticket.path, 'project1')));
+
+        expect(result.rootNode.indirectDependencies.keys, <String>[
+          'test2',
+          'test6',
+        ]);
+      });
+
+      test('keeps the first of two ocean packages with one name', () async {
+        final ticket = createScenario('mlg_through_ocean_duplicate');
+        // A second »deep« sorts after org_a/deep and leads to test4.
+        final duplicate = Directory(
+          p.join(ticket.parent.path, '.ocean', 'org_c', 'deep'),
+        )..createSync(recursive: true);
+        File(p.join(duplicate.path, 'pubspec.yaml')).writeAsStringSync(
+          'name: deep\nversion: 1.0.0\ndependencies:\n  test4: ^1.0.0\n',
+        );
+
+        final result = await MultiLanguageGraph(
+          languages: <ProjectLanguage>[DartProjectLanguage()],
+        ).buildGraph(directory: Directory(p.join(ticket.path, 'project1')));
+
+        expect(
+          result.rootNode.indirectDependencies.keys,
+          isNot(contains('test4')),
+        );
+      });
+
+      test('links nothing outside a ticket', () async {
+        final ticket = createScenario('mlg_through_ocean_no_ticket');
+        File(p.join(ticket.path, 'ticket.json')).deleteSync();
+
+        final result = await MultiLanguageGraph(
+          languages: <ProjectLanguage>[DartProjectLanguage()],
+        ).buildGraph(directory: Directory(p.join(ticket.path, 'project1')));
+
+        expect(result.rootNode.indirectDependencies, isEmpty);
+        expect(result.rootNode.transitiveDependencies, isEmpty);
+      });
+    });
   });
 }
 

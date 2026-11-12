@@ -127,6 +127,58 @@ void main() {
 
         expect(a.transitiveDependencies, <String, ProjectNode>{'b': b});
       });
+
+      test('follows indirect dependencies, also from the nodes they reach', () {
+        // a -(through a package outside the workspace)-> b -> c,
+        // b -(through a package outside the workspace)-> d
+        final a = node('a');
+        final b = node('b');
+        final c = node('c');
+        final d = node('d');
+        a.indirectDependencies['b'] = b;
+        b.dependencies['c'] = c;
+        b.indirectDependencies['d'] = d;
+
+        expect(a.transitiveDependencies, <String, ProjectNode>{
+          'b': b,
+          'c': c,
+          'd': d,
+        });
+      });
+
+      test('follows the dev dependencies of the root only', () {
+        // Pub and pnpm resolve the dev dependencies of the root package,
+        // never those of a dependency.
+        final a = node('a');
+        final b = node('b');
+        final c = node('c');
+        final d = node('d');
+        final e = node('e');
+        a.dependencies['b'] = b;
+        a.devOnlyDependencies.add('b');
+        b.dependencies['c'] = c;
+        b.devOnlyDependencies.add('c');
+        b.indirectDependencies['d'] = d;
+        b.devOnlyIndirectDependencies.add('d');
+        a.indirectDependencies['e'] = e;
+        a.devOnlyIndirectDependencies.add('e');
+
+        expect(a.transitiveDependencies, <String, ProjectNode>{'b': b, 'e': e});
+      });
+
+      test('follows a dependency that is dev-only on one path only', () {
+        // b declares c as a dev dependency, but reaches it through a
+        // package outside the workspace as a regular one as well.
+        final a = node('a');
+        final b = node('b');
+        final c = node('c');
+        a.dependencies['b'] = b;
+        b.dependencies['c'] = c;
+        b.devOnlyDependencies.add('c');
+        b.indirectDependencies['c'] = c;
+
+        expect(a.transitiveDependencies, <String, ProjectNode>{'b': b, 'c': c});
+      });
     });
 
     test('DependencyReference stores section, name and value', () {

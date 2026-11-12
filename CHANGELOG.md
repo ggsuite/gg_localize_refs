@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+### Changed
+
+- Override workspace projects reached through the ocean
+
 ## 5.2.1 - 2026-11-06
 
 ### Changed

@@ -83,6 +83,20 @@ class ProjectNode {
   /// of `MultiLanguageGraph`.
   final Set<String> devOnlyDependencies = <String>{};
 
+  /// Workspace projects this one reaches only through packages outside the
+  /// workspace: a dependency that is no workspace project, but whose
+  /// manifest - found in the ocean of the gg workspace - leads, directly or
+  /// through further such packages, to a workspace project.
+  ///
+  /// Filled by `MultiLanguageGraph`. Unlike [dependencies], these edges are
+  /// not part of the manifest of this project, so nothing rewrites a
+  /// reference for them - they only widen [transitiveDependencies].
+  final Map<String, ProjectNode> indirectDependencies = <String, ProjectNode>{};
+
+  /// Names of [indirectDependencies] reached only through a dev dependency
+  /// of this project.
+  final Set<String> devOnlyIndirectDependencies = <String>{};
+
   /// Every workspace project this one needs, directly or indirectly.
   ///
   /// Pub honors `dependency_overrides` only from the **root** package of a
@@ -93,23 +107,39 @@ class ProjectNode {
   /// its siblings come from the ticket, and the published version has to
   /// satisfy the local sources.
   ///
+  /// The walk follows [dependencies] and [indirectDependencies], so a chain
+  /// passing through packages outside the workspace is covered too. It
+  /// mirrors what pub and pnpm resolve: the dev dependencies of this project
+  /// count, those of every other package do not - an override for a project
+  /// the resolution does not need would still pull that project and its
+  /// whole dependency tree into it.
+  ///
   /// The walk terminates on any graph: the visited set collapses a diamond
-  /// and stops a cycle a dev dependency closes - `MultiLanguageGraph`
-  /// rejects only cycles of regular dependencies.
+  /// and stops a cycle - `MultiLanguageGraph` rejects only cycles of regular
+  /// dependencies between workspace projects.
   Map<String, ProjectNode> get transitiveDependencies {
     final result = <String, ProjectNode>{};
 
-    void visit(ProjectNode node) {
-      for (final entry in node.dependencies.entries) {
+    void visit(ProjectNode node, {required bool isRoot}) {
+      final reached = <String, ProjectNode>{
+        for (final entry in node.dependencies.entries)
+          if (isRoot || !node.devOnlyDependencies.contains(entry.key))
+            entry.key: entry.value,
+        for (final entry in node.indirectDependencies.entries)
+          if (isRoot || !node.devOnlyIndirectDependencies.contains(entry.key))
+            entry.key: entry.value,
+      };
+
+      for (final entry in reached.entries) {
         if (entry.key == name || result.containsKey(entry.key)) {
           continue;
         }
         result[entry.key] = entry.value;
-        visit(entry.value);
+        visit(entry.value, isRoot: false);
       }
     }
 
-    visit(this);
+    visit(this, isRoot: true);
     return result;
   }
 

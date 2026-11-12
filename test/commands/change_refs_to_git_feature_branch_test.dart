@@ -440,6 +440,57 @@ void main() {
           deleteDirs(<Directory>[workspace]);
         });
 
+        test('writes a git ref for a ticket project reached through the '
+            'ocean', () async {
+          // test1 -> middle (ocean only) -> test2 -> test7, see the scenario
+          // through_ocean. test1 resolves test2 and test7 through middle, so
+          // it has to pin them to the feature branch itself.
+          final workspace = createTempDir('git_feature_through_ocean');
+          copyDirectory(
+            Directory(
+              p.join('test', 'sample_folder', 'localize_refs', 'through_ocean'),
+            ),
+            workspace,
+          );
+          final ticket = Directory(p.join(workspace.path, 'ticket'));
+          final reached = <String>['2', '3', '6', '7'];
+          for (final project in reached) {
+            final dir = Directory(p.join(ticket.path, 'project$project'));
+            await initGit(dir);
+            Process.runSync('git', <String>[
+              'remote',
+              'set-url',
+              'origin',
+              'git@github.com:user/project$project.git',
+            ], workingDirectory: dir.path);
+          }
+          final project1 = Directory(p.join(ticket.path, 'project1'));
+
+          await ChangeRefsToGitFeatureBranch(ggLog: messages.add).get(
+            directory: project1,
+            ggLog: messages.add,
+            gitRef: 'feature/through_ocean',
+          );
+
+          final overrides = File(
+            p.join(project1.path, 'pubspec_overrides.yaml'),
+          ).readAsStringSync();
+          for (final project in reached) {
+            expect(
+              overrides,
+              contains('url: git@github.com:user/project$project.git'),
+            );
+          }
+          expect(overrides, isNot(contains('test4')));
+          expect(overrides, isNot(contains('test5')));
+          expect(
+            RegExp(r'ref: feature/through_ocean').allMatches(overrides).length,
+            reached.length,
+          );
+
+          deleteDirs(<Directory>[workspace]);
+        });
+
         test('makes an embedded example a pub workspace member', () async {
           // The git overrides reach example/ only as a workspace member, just
           // like the local paths.

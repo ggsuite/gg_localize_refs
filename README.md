@@ -37,6 +37,20 @@ dependencies the project dropped, including the very last one: the file is
 then deleted (or, for a `pnpm-workspace.yaml` holding your settings, only its
 `overrides` section goes).
 
+## Which packages are overridden
+
+Pub and pnpm read overrides from the root package only. A package therefore
+overrides every sibling it reaches — the ones it names, and the ones its
+dependencies lead to. In a gg ticket the chain may also pass through packages
+that are not part of the ticket: their manifests are read from the ocean of
+the gg workspace (`.ocean`, or the legacy `.master`), so a ticket repo behind
+them is overridden as well.
+
+Only what the resolution really contains counts: the dev dependencies of the
+package itself, but never those of a dependency. An override for a package
+nothing needs would still pull it — and its own dependencies — into the
+resolution.
+
 ## Embedded packages such as `example/`
 
 An `example/` app with a `pubspec.yaml` of its own is a pub package of its

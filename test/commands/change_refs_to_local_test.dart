@@ -307,6 +307,39 @@ void main() {
           );
         });
 
+        test(
+          'overriding the ticket projects reached through the ocean',
+          () async {
+            // test1 names no ticket project, only packages of the ocean that
+            // lead to them (see the scenario through_ocean):
+            //   test1 -> middle -> deep -> test3, middle -> test2 -> test7,
+            //   test1 -> (dev) tool -> test6.
+            // Not reached: test4 (only the ocean copy of test2 depends on it)
+            // and test5 (a dev dependency of middle and of test2).
+            final workspace = createTempDir('through_ocean');
+            copyLocalizeScenario('through_ocean', workspace);
+            final dProject1 = Directory(
+              p.join(workspace.path, 'ticket', 'project1'),
+            );
+
+            await ChangeRefsToLocal(ggLog: messages.add)
+                .get(directory: dProject1, ggLog: messages.add);
+
+            final overrides = File(
+              p.join(dProject1.path, 'pubspec_overrides.yaml'),
+            ).readAsStringSync();
+            for (final project in <String>['2', '3', '6', '7']) {
+              expect(overrides, contains('test$project:\n'));
+              expect(overrides, contains('path: ../project$project\n'));
+            }
+            for (final unused in <String>['test4', 'test5', 'middle', 'deep']) {
+              expect(overrides, isNot(contains(unused)));
+            }
+
+            deleteDirs(<Directory>[workspace]);
+          },
+        );
+
         test('when pubspec is correct', () async {
           final dProject1 = Directory(
             p.join(dWorkspaceSucceed.path, 'project1'),
@@ -1312,6 +1345,29 @@ void main() {
             ).existsSync(),
             isFalse,
           );
+        });
+
+        test('TypeScript pnpm: overrides a ticket project reached through '
+            'the ocean', () async {
+          // test1_ts -> middle (ocean only) -> test2_ts. middle also
+          // dev-depends on test3_ts, which pnpm does not install for a
+          // dependency.
+          final workspace = createTempDir('ts_pnpm_through_ocean');
+          copyLocalizeScenarioTs('pnpm_through_ocean', workspace);
+          final dProject1 = Directory(
+            p.join(workspace.path, 'ticket', 'project1'),
+          );
+
+          await ChangeRefsToLocal(ggLog: messages.add)
+              .get(directory: dProject1, ggLog: messages.add);
+
+          final overrides = File(p.join(dProject1.path, 'pnpm-workspace.yaml'))
+              .readAsStringSync();
+          expect(overrides, contains('test2_ts: link:../project2'));
+          expect(overrides, isNot(contains('test3_ts')));
+          expect(overrides, isNot(contains('middle')));
+
+          deleteDirs(<Directory>[workspace]);
         });
 
         test('TypeScript pnpm: links a sibling with sources through a shim '
