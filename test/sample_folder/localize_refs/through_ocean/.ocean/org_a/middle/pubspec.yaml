@@ -1,0 +1,8 @@
+name: middle
+version: 1.0.0
+dependencies:
+  deep: ^1.0.0
+  test2: ^1.0.0
+  path: ^1.9.0
+dev_dependencies:
+  test5: ^1.0.0

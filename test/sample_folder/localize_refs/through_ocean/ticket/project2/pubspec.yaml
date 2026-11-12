@@ -1,0 +1,6 @@
+name: test2
+version: 1.0.0
+dependencies:
+  test7: ^1.0.0
+dev_dependencies:
+  test5: ^1.0.0

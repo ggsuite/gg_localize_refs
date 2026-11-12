@@ -45,10 +45,12 @@ Use the following skills in Claude
 ## Your prompts
 
 When the repo belongs to a project management repo, every prompt you write
-to Claude Code is kept there, under `doc/prompts/<your first name>/` on the
-branch `prompts`. Only the prompts, not the answers. Tokens and passwords
+to Claude Code is kept there, under
+`doc/<yyyy>-Q<n>/prompts/<your first name>/` on the branch `prompts`. Only the prompts, not the answers. Tokens and passwords
 are replaced by `[redacted]`. Your first name comes from
-`doc/team/people.md` in the project management repo: the person whose
+`team/people.md` of the newest quarter folder `doc/<yyyy>-Q<n>` in the
+project management repo: the person whose
 first name is your git user name or its first word, or whose `Git` line
 lists your git user name. Otherwise your prompts land in
-`doc/prompts/_unknown/`. Your e-mail address never goes there.
+`doc/<yyyy>-Q<n>/prompts/_unknown/`. Your e-mail address never goes
+there.

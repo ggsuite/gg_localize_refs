@@ -14,7 +14,7 @@
   // 1-3 bullet points: the problem space.
   "domain": [
     "ref modes: change-refs-to-local, change-refs-to-git-feature-branch, change-refs-to-pub-dev, via pubspec_overrides.yaml and pnpm-workspace.yaml",
-    "embedded packages such as example/ as members of the project's pub workspace, so the overrides reach them",
+    "override scope: every workspace project reached, also through non-ticket packages read from the gg ocean (dev deps of the root only); embedded packages such as example/ as pub workspace members",
     "checks and helpers: unlocalized-refs, ref versions, publish_to backups",
   ],
 

@@ -428,6 +428,42 @@ void main() {
           expect(overrides.existsSync(), isFalse);
         });
 
+        test('removes the git override of a ticket project reached through '
+            'the ocean', () async {
+          // test1 names no ticket project, it reaches test2 through the
+          // ocean package middle. A git override is only recognized as owned
+          // when its key names a workspace dependency, so test2 has to count
+          // as one - otherwise its feature branch ref would survive.
+          final workspace = createTempDir('unlocalize_through_ocean');
+          copyDirectory(
+            Directory(
+              join('test', 'sample_folder', 'localize_refs', 'through_ocean'),
+            ),
+            workspace,
+          );
+          final dProject1 = Directory(
+            join(workspace.path, 'ticket', 'project1'),
+          );
+
+          final overrides = File(
+            join(dProject1.path, 'pubspec_overrides.yaml'),
+          );
+          overrides.writeAsStringSync(
+            'dependency_overrides:\n'
+            '  test2:\n'
+            '    git:\n'
+            '      url: git@github.com:user/project2.git\n'
+            '      ref: feature123\n',
+          );
+
+          await ChangeRefsToPubDev(ggLog: messages.add)
+              .get(directory: dProject1, ggLog: messages.add);
+
+          expect(overrides.existsSync(), isFalse);
+
+          deleteDirs(<Directory>[workspace]);
+        });
+
         test('keeps hand written entries of pubspec_overrides.yaml', () async {
           final dProject1 = Directory(
             join(dWorkspaceOverridesPresent.path, 'project1'),

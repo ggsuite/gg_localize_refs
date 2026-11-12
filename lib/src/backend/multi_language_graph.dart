@@ -46,7 +46,8 @@ class MultiLanguageGraph {
     final rootDir = rootInfo.$1;
     final language = rootInfo.$2;
 
-    final allDirs = projectCandidateDirs(workspaceRootOf(rootDir));
+    final workspaceRoot = workspaceRootOf(rootDir);
+    final allDirs = projectCandidateDirs(workspaceRoot);
 
     final nodes = <String, ProjectNode>{};
 
@@ -64,25 +65,42 @@ class MultiLanguageGraph {
       nodes[node.name] = node;
     }
 
-    // Resolve dependencies within the workspace.
+    // Resolve dependencies within the workspace. The declared names that are
+    // no workspace project are kept for the walk through the ocean below.
+    final externalByNode = <ProjectNode, _ExternalDependencies>{};
     for (final node in nodes.values) {
       final declared = await language.readDeclaredDependencies(node);
-      for (final entry in declared.entries) {
-        final depName = entry.key;
+      final devOnly = await language.readDeclaredDevOnlyDependencies(node);
+      final external = _ExternalDependencies();
+
+      for (final depName in declared.keys) {
         final depNode = nodes[depName];
         if (depNode == null) {
+          (devOnly.contains(depName) ? external.devOnly : external.regular).add(
+            depName,
+          );
           continue;
         }
         node.dependencies[depName] = depNode;
         depNode.dependents[node.name] = node;
       }
 
-      final devOnly = await language.readDeclaredDevOnlyDependencies(node);
       node.devOnlyDependencies.addAll(devOnly.where(nodes.containsKey));
+      externalByNode[node] = external;
     }
 
     // Detect circular dependencies.
     _checkCircularDependencies(nodes, ggLog);
+
+    final ocean = oceanOf(workspaceRoot);
+    if (ocean != null) {
+      await _linkThroughOcean(
+        nodes: nodes,
+        externalByNode: externalByNode,
+        ocean: ocean,
+        language: language,
+      );
+    }
 
     ProjectNode? rootNode;
     final normalizedRoot = _correctDir(rootDir).path;
@@ -173,6 +191,120 @@ class MultiLanguageGraph {
       }
     }
     return result..sort((a, b) => a.path.compareTo(b.path));
+  }
+
+  /// Returns the ocean of the gg workspace that holds the ticket in
+  /// [workspaceRoot], or `null` when [workspaceRoot] is no ticket or no ocean
+  /// is found.
+  ///
+  /// The ocean is the folder with the clones of all repositories of a gg
+  /// workspace (`.ocean`, or the legacy `.master`). It sits in an ancestor of
+  /// the ticket — usually its parent — and is looked up the nearest first.
+  /// The ocean itself, or a plain folder of sibling checkouts, has no ocean
+  /// besides itself: every package there is a project of the workspace
+  /// already.
+  Directory? oceanOf(Directory workspaceRoot) {
+    if (!File(p.join(workspaceRoot.path, _ticketFileName)).existsSync()) {
+      return null;
+    }
+
+    var dir = workspaceRoot.absolute.parent;
+    while (true) {
+      for (final name in <String>[_oceanFolderName, _legacyMasterFolderName]) {
+        final ocean = Directory(p.join(dir.path, name));
+        if (ocean.existsSync()) {
+          return ocean;
+        }
+      }
+
+      final parent = dir.parent;
+      if (parent.path == dir.path) {
+        return null;
+      }
+      dir = parent;
+    }
+  }
+
+  /// Fills [ProjectNode.indirectDependencies] of every node of [nodes]: the
+  /// workspace projects it reaches through the packages of [ocean] that are
+  /// not part of the workspace.
+  ///
+  /// The walk starts at the declared dependencies that are no workspace
+  /// project ([externalByNode]) and follows the regular dependencies of the
+  /// ocean packages — the dev dependencies of a dependency are not part of a
+  /// resolution. It ends at a workspace project, which [nodes] resolve
+  /// further (its copy in the workspace wins over the one in the ocean), and
+  /// at a package found in neither of them.
+  Future<void> _linkThroughOcean({
+    required Map<String, ProjectNode> nodes,
+    required Map<ProjectNode, _ExternalDependencies> externalByNode,
+    required Directory ocean,
+    required ProjectLanguage language,
+  }) async {
+    final oceanPackages = await _readOceanPackages(ocean, language);
+
+    Set<String> reach(Iterable<String> names) {
+      final result = <String>{};
+      final visited = <String>{};
+      final pending = <String>[...names];
+      while (pending.isNotEmpty) {
+        final name = pending.removeLast();
+        if (!visited.add(name)) {
+          continue;
+        }
+        if (nodes.containsKey(name)) {
+          result.add(name);
+          continue;
+        }
+        pending.addAll(oceanPackages[name] ?? const <String>{});
+      }
+      return result;
+    }
+
+    for (final MapEntry(key: node, value: external) in externalByNode.entries) {
+      final regular = reach(external.regular);
+      final devOnly = reach(external.devOnly).difference(regular);
+
+      for (final name in <String>{...regular, ...devOnly}) {
+        if (name != node.name) {
+          node.indirectDependencies[name] = nodes[name]!;
+        }
+      }
+      node.devOnlyIndirectDependencies.addAll(
+        devOnly.where((name) => name != node.name),
+      );
+    }
+  }
+
+  /// Returns name → regular dependency names of every package of [language]
+  /// in [ocean]. A manifest that cannot be read is skipped, so a broken
+  /// repository of the ocean ends the walk like an unknown package instead
+  /// of failing it; of two packages with the same name the first by path
+  /// wins.
+  Future<Map<String, Set<String>>> _readOceanPackages(
+    Directory ocean,
+    ProjectLanguage language,
+  ) async {
+    final result = <String, Set<String>>{};
+    for (final dir in projectCandidateDirs(ocean)) {
+      if (!language.isProjectRoot(dir)) {
+        continue;
+      }
+      try {
+        final node = await language.createNode(dir);
+        if (result.containsKey(node.name)) {
+          continue;
+        }
+        final declared = await language.readDeclaredDependencies(node);
+        final devOnly = await language.readDeclaredDevOnlyDependencies(node);
+        result[node.name] = declared.keys
+            .where((name) => !devOnly.contains(name))
+            .toSet();
+      } catch (_) {
+        continue;
+      }
+    }
+    return result;
   }
 
   /// The name of the ocean of a gg workspace.
@@ -331,4 +463,13 @@ class MultiLanguageGraph {
     }
     return dir;
   }
+}
+
+/// The declared dependencies of a project that are no workspace project.
+class _ExternalDependencies {
+  /// Names declared as regular dependencies.
+  final Set<String> regular = <String>{};
+
+  /// Names declared as dev dependencies only.
+  final Set<String> devOnly = <String>{};
 }
