@@ -104,6 +104,12 @@ After the user's confirmation, add the repos to the ticket:
 gg do add repo1 repo2
 ```
 
+Name all code repos in this one call, never one `gg do add` per repo —
+not even for repos you find one after the other. Every call refreshes
+the ocean and builds the dependency graph again, and a ticket repo that
+depends on several new repos is resolved again for each call. The same
+goes for repos you find later, while implementing: add them together.
+
 ## Keep every repo in its scope
 
 Every repo covers one fixed scope: the `summary` and `domain` of its
@@ -121,7 +127,8 @@ as code does not fit the repo it is in or is about to land in:
   covers: propose creating one with `gg do create repo`, which adds it to
   the ticket
 - **Add an existing repo** — the code belongs to a repo in .ocean that is
-  not part of the ticket yet: propose adding it with `gg do add`
+  not part of the ticket yet: propose adding it with `gg do add`,
+  several repos in one call
 - **Move code** — existing code, or code you just wrote, belongs to another
   repo: propose moving it there
 
@@ -158,7 +165,8 @@ gg do code
 ## Plan (optional)
 
 Requirements come before the plan. If the project management repo keeps
-requirements (`doc/requirements`) and none of its accepted requirements
+requirements (`doc/<yyyy>-Q<n>/requirements`, in the newest quarter
+folder) and none of its accepted requirements
 covers the ticket, engineer them with the user first — with
 `/gg-plan-requirements` if the repo has it — and plan the ticket only after
 that. Bug tickets are the exception, they name their bug file.
@@ -347,11 +355,17 @@ Afterwards load the review-light skill and execute it.
   of each repo — `gg do publish` offers them as defaults
 - If the ticket was only planned, publish the project management repo only
 
-Ask the user to run the following command **manually**:
+Ask the user to run the following command **manually** from the workspace
+root, not from the ticket folder:
 
 ```bash
-gg do publish
+cd ~/dev/ # workspace root
+gg do publish -i fix_login_crash
 ```
+
+At the end gg moves the ticket folder to the trash. Windows refuses to move
+a folder a terminal sits in ("used by another process", errno 32), so the
+terminal must stay outside the ticket — `-i` names the ticket instead.
 
 gg triggers the pull request merge and publishes the changes to the
 registry. Finally the version tag is created and pushed.

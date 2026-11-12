@@ -17,8 +17,10 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 /** The branch of the project management repo holding the prompts. */
 export const promptsBranch = 'prompts';
 
-const promptsDir = 'doc/prompts';
-const peopleFile = 'doc/team/people.md';
+// Everything a project management repo plans lives in quarter folders
+// doc/<yyyy>-Q<n>; repos not moved yet keep doc/team.
+const quarterDir = /^doc\/(\d{4}-Q[1-4])$/;
+const legacyPeopleFile = 'doc/team/people.md';
 const configFile = path.join('.claude', 'hooks', 'pm-prompts.json');
 
 // A session that ended without an end event counts as ended after a week.
@@ -330,12 +332,32 @@ export function personOf(gitName, peopleMd) {
   );
 }
 
+/** The quarter folder name of a local date: 2026-11-06 → 2026-Q4. */
+export function quarterOf(date) {
+  const month = Number(date.slice(5, 7));
+  return `${date.slice(0, 4)}-Q${Math.floor((month - 1) / 3) + 1}`;
+}
+
 /** Where the prompts of a session go in the project management repo. */
 export function promptsPath(meta, person) {
   const date = localDate(meta.started);
   const folder = person ? slug(person) : '_unknown';
   const id = String(meta.session).slice(0, 8);
-  return `${promptsDir}/${folder}/${date.slice(0, 7)}/${date}_${slug(meta.folder) || 'session'}_${id}.md`;
+  const name = `${date}_${slug(meta.folder) || 'session'}_${id}.md`;
+  return `doc/${quarterOf(date)}/prompts/${folder}/${name}`;
+}
+
+/**
+ * The files people.md may be in, best first: the team of the newest quarter
+ * folder among the [entries] of doc, then the one of a repo not moved yet.
+ */
+export function peopleFiles(entries) {
+  const quarters = entries
+    .map((e) => quarterDir.exec(e.trim())?.[1])
+    .filter(Boolean)
+    .sort()
+    .reverse();
+  return [...quarters.map((q) => `doc/${q}/team/people.md`), legacyPeopleFile];
 }
 
 /** The head of the file a session's prompts start. */
@@ -392,7 +414,12 @@ function ensureCache(url) {
 function readPeople(dir) {
   const fetched = git(['-C', dir, 'fetch', '-q', '--depth=1', 'origin', 'HEAD']);
   if (!fetched.ok) throw new Error(`fetch HEAD: ${fetched.err}`);
-  return git(['-C', dir, 'show', `FETCH_HEAD:${peopleFile}`]).out;
+  const ls = git(['-C', dir, 'ls-tree', '--name-only', 'FETCH_HEAD', 'doc/']);
+  for (const file of peopleFiles(ls.ok ? ls.out.split('\n') : [])) {
+    const shown = git(['-C', dir, 'show', `FETCH_HEAD:${file}`]);
+    if (shown.ok) return shown.out;
+  }
+  return '';
 }
 
 // The tip of the prompts branch, '' while it does not exist yet.

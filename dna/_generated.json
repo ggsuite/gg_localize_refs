@@ -29,9 +29,9 @@
       "name": "dna-translate",
       "package": "dna_translate",
       "ecosystem": "pub",
-      "resolvedVersion": "0.3.0",
+      "resolvedVersion": "0.4.0",
       "via": "dna-ggsuite",
-      "hash": "0xfec6f71367d12db6"
+      "hash": "0x3039779d72fb105f"
     },
     {
       "name": "dna-index",
@@ -45,9 +45,9 @@
       "name": "dna-blog",
       "package": "dna_blog",
       "ecosystem": "pub",
-      "resolvedVersion": "0.3.0",
+      "resolvedVersion": "0.4.0",
       "via": "dna-ggsuite",
-      "hash": "0x49bf0909e92d37bb"
+      "hash": "0xc77340df452ebff4"
     },
     {
       "name": "dna-install",
@@ -93,15 +93,15 @@
       "name": "dna-gg",
       "package": "dna_gg",
       "ecosystem": "pub",
-      "resolvedVersion": "1.4.1",
+      "resolvedVersion": "1.6.0",
       "via": "dna-ggsuite",
-      "hash": "0x958d0143021b2328"
+      "hash": "0xf809b20d01f13cce"
     },
     {
       "name": "dna-ggsuite",
       "package": "dna_ggsuite",
       "ecosystem": "pub",
-      "resolvedVersion": "1.0.1",
+      "resolvedVersion": "1.0.2",
       "via": "gg-log",
       "hash": "0x309b9f27627022e1"
     },
@@ -133,7 +133,7 @@
       "name": "gg-git",
       "package": "gg_git",
       "ecosystem": "pub",
-      "resolvedVersion": "4.8.0",
+      "resolvedVersion": "4.8.1",
       "via": null,
       "hash": "0x32b3537fa5495175"
     },
@@ -163,7 +163,7 @@
     },
     {
       "path": ".claude/hooks/pm-prompts.mjs",
-      "hash": "0xf4266eea17b3b9c1"
+      "hash": "0x6b8fdf7bbbf7c1a5"
     },
     {
       "path": ".claude/settings.json",
@@ -171,7 +171,7 @@
     },
     {
       "path": ".claude/skills/blog/SKILL.md",
-      "hash": "0xee53d64ce8c0dd1f"
+      "hash": "0x9d2d2f0547050310"
     },
     {
       "path": ".claude/skills/code/SKILL.md",
@@ -179,7 +179,7 @@
     },
     {
       "path": ".claude/skills/gg-cleanup/SKILL.md",
-      "hash": "0x4a6903a51168486a"
+      "hash": "0x634921912309c933"
     },
     {
       "path": ".claude/skills/gg-commit/SKILL.md",
@@ -187,7 +187,7 @@
     },
     {
       "path": ".claude/skills/gg-publish/SKILL.md",
-      "hash": "0xcdef2684fcaaac5a"
+      "hash": "0x501ac99a5d586b58"
     },
     {
       "path": ".claude/skills/gg-push/SKILL.md",
@@ -203,7 +203,7 @@
     },
     {
       "path": ".claude/skills/gg-ticket/SKILL.md",
-      "hash": "0xb1095b91b3531897"
+      "hash": "0xa44f6e5ad54a6d0b"
     },
     {
       "path": ".claude/skills/gg/SKILL.md",
@@ -243,7 +243,7 @@
     },
     {
       "path": ".claude/skills/translate/SKILL.md",
-      "hash": "0x7935395ce42aedfa"
+      "hash": "0x3b34cef6c2b790a8"
     },
     {
       "path": ".claude/skills/vscode/SKILL.md",
@@ -275,7 +275,7 @@
     },
     {
       "path": "doc/guides/blog-guide.md",
-      "hash": "0xd1366e3383701d0e"
+      "hash": "0xfa9311e1e843de59"
     },
     {
       "path": "doc/guides/code-guide-dart.md",
@@ -291,11 +291,11 @@
     },
     {
       "path": "doc/guides/develop-guide.md",
-      "hash": "0xed4328d138fe76ef"
+      "hash": "0x4c378a55b3c4773b"
     },
     {
       "path": "doc/guides/develop-without-ai-guide.md",
-      "hash": "0xe74449f72357f23c"
+      "hash": "0x88551202636c10c0"
     },
     {
       "path": "doc/guides/dna-guides-guide.md",
@@ -307,7 +307,7 @@
     },
     {
       "path": "doc/guides/for-ai/ai-dev-guide.md",
-      "hash": "0xe8182903f11a1766"
+      "hash": "0x66658aeee6353ced"
     },
     {
       "path": "doc/guides/for-ai/ai-review-guide.md",
@@ -399,7 +399,7 @@
     },
     {
       "path": "doc/guides/translate-guide.md",
-      "hash": "0x9ed294693fdcea87"
+      "hash": "0xa677037143b642e7"
     },
     {
       "path": "doc/guides/vscode-guide.md",

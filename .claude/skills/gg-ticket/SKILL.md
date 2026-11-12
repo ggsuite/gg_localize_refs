@@ -90,6 +90,12 @@ After the confirmation:
 gg do add repo1 repo2
 ```
 
+Name all code repos in this one call, never one `gg do add` per repo —
+not even for repos you find one after the other. Every call refreshes
+the ocean and builds the dependency graph again, and a ticket repo that
+depends on several new repos is resolved again for each call. The same
+goes for repos you find later, while implementing: add them together.
+
 ## 5. Open the workspace only on request
 
 Do not open VS Code on your own — many tickets need no editor. Tell the
@@ -103,8 +109,9 @@ Run it only when the user asks for it.
 
 ## 6. Plan or implement
 
-If the project management repo keeps requirements (`doc/requirements`)
-and no accepted requirement covers the ticket, engineer them with the user
+If the project management repo keeps requirements
+(`doc/<yyyy>-Q<n>/requirements`, in the newest quarter folder) and no
+accepted requirement covers the ticket, engineer them with the user
 first — with `/gg-plan-requirements` if the repo has it — before any plan or
 code. Bug tickets are the exception, they name their bug file.
 
@@ -135,7 +142,8 @@ not fit the repo it is in or is about to land in:
 
 - **Split a repo** that has grown a second scope into two repos
 - **Add a new repo** with `gg do create repo` for a domain no repo covers
-- **Add an existing repo** with `gg do add` when the code belongs there
+- **Add an existing repo** with `gg do add` when the code belongs there;
+  several repos in one call
 - **Move code**, existing or just written, into the repo whose scope it fits
 
 Name the code, the repo it is in, the repo it should go to and why. Let the

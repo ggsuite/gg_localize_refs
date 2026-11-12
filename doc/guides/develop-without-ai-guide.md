@@ -22,11 +22,14 @@ If you have not done that yet:
 cd ~/dev/
 ```
 
-## Add tickets
+## Add repos to the ticket
 
 ```bash
 gg do add repo1 repo2
 ```
+
+Name all repos in one call: every call refreshes the ocean and builds
+the dependency graph again.
 
 ## Open the workspace in Vscode
 
@@ -58,6 +61,12 @@ gg do review
 
 ## Publish
 
+Publish from the workspace root and name the ticket with `-i`:
+
 ```bash
-gg do publish
+cd ~/dev/
+gg do publish -i <ticket>
 ```
+
+At the end gg moves the ticket folder to the trash. On Windows this fails
+while a terminal sits in the ticket folder ("used by another process").
