@@ -11,18 +11,18 @@ dependencies:
   gg_args: ^3.2.0
   gg_console_colors: ^2.5.0
   gg_log: ^1.2.0
-  gg_process: ^1.4.0
+  gg_process: ^1.4.1
   path: ^1.9.1
   yaml: ^3.1.4
   yaml_edit: ^2.2.4
-  gg_project_root: ^2.2.3
+  gg_project_root: ^2.2.4
   pubspec_parse: ^1.7.0
   pub_semver: ^2.2.1
   glob: ^2.2.0
-  gg_git: ^4.8.0
-  gg_publish: ^4.10.2
+  gg_git: ^4.8.1
+  gg_publish: ^4.10.3
 dev_dependencies:
-  dna_ggsuite: ^1.0.1
+  dna_ggsuite: ^1.0.2
   gg_capture_print: ^1.2.1
   helix: ^1.14.0
   lints: ^6.1.0
