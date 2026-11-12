@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+### Added
+
+- Add a blog post about overrides reached through the ocean
+
 ### Changed
 
 - Override workspace projects reached through the ocean
