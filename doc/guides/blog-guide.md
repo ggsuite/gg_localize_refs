@@ -8,34 +8,18 @@ found in the LICENSE file in the root of this package.
 
 # Blog Guide
 
-## Know which repos get a post
+## General rules
 
-- Every repo of a ticket that has this guide gets its own post
-- Write the post before publishing
+- For each ticket:
+- Create a blog post before publishing
 - Follow the [Publish Guide](./publish-guide.md) if it exists
-
-## Keep the post to this repo
-
-- Write from the view of this repo alone
-- Describe only what changed in this repo
-- When dependencies were updated, name only the changes in them that
-  matter for the work in this repo
-- Never mention the repos that use this repo: a repo can be used by many
-  parents and knows none of them
-- Reference tickets and plans only if they belong to the organization of
-  this repo
 
 ## Copy the template
 
-- Create a year folder `doc/blog/<yyyy>`, if not present. A project
-  management repo files its posts in the current quarter folder instead:
-  `doc/<yyyy>-Q<n>/blog`, see its PM repo guide
+- Create a year folder `blog/2026`, if not present
 - Come up with a summarizing title for the ticket
 - Derive a file name title from it, in english kebab case
-- Copy `doc/templates/blog-template.md` to
-  `doc/blog/<yyyy>/<yyyy>-<mm>-<dd>-<title-in-english-kebab-case>.md`,
-  in a project management repo to
-  `doc/<yyyy>-Q<n>/blog/<yyyy>-<mm>-<dd>-<title-in-english-kebab-case>.md`
+- Copy `doc/templates/blog-template.md` to `<yyyy>-<mm>-<dd>-title-en-kebab-case`
 
 ## Content
 
@@ -52,5 +36,5 @@ found in the LICENSE file in the root of this package.
 
 - This guide writes english posts only
 - Posts in other languages are the job of the
-  [Translate Guide](./translate-guide.md)
+  [Translate Guide](doc/guides/translate-guide.md)
 - Write english only, if that guide does not exist

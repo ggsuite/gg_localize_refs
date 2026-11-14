@@ -14,11 +14,10 @@ import { green, yellow } from './colors.js';
 // Convert exec to return a Promise for async/await usage
 const execAsync = promisify(exec);
 
-export async function getRepoUrls(org) {
-  if (!org) {
-    throw Error('getRepoUrls: an organization or user name is required.');
-  }
+// GitHub organization or user
+const org = 'rljson';
 
+export async function getRepoUrls() {
   try {
     // Use the GitHub CLI to list repositories in JSON format
     const { stdout } = await execAsync(
@@ -31,7 +30,7 @@ export async function getRepoUrls(org) {
     // Map to name + URL and print to console
     return repos.map((repo) => repo.url);
   } catch (error) {
-    if (error.message.includes('gh auth login')) {
+    if (error.message.match('gh auth login').length == 1) {
       throw Error(
         [yellow('Not yet logged in. Please run:'), green('gh auth login')].join(
           '\n',
