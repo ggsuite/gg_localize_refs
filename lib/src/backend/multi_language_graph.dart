@@ -17,10 +17,20 @@ import 'package:gg_localize_refs/src/backend/languages/project_language.dart';
 /// different languages.
 class MultiLanguageGraph {
   /// Creates a multi language graph.
-  MultiLanguageGraph({required this.languages});
+  ///
+  /// With [reuseWorkspaces] the projects of a workspace are read once per
+  /// language and instance: [buildGraph] for another project of the same
+  /// workspace answers from the nodes it already has. For read-only passes
+  /// over many projects of one workspace — reading the workspace and its
+  /// ocean again for each of them makes such a pass quadratic. Never while
+  /// manifests change: the nodes would be the ones from before.
+  MultiLanguageGraph({required this.languages, this.reuseWorkspaces = false});
 
   /// The supported project languages.
   final List<ProjectLanguage> languages;
+
+  /// Whether the projects of a workspace are read only once per language.
+  final bool reuseWorkspaces;
 
   /// Builds the graph starting at [directory].
   ///
@@ -46,7 +56,64 @@ class MultiLanguageGraph {
     final rootDir = rootInfo.$1;
     final language = rootInfo.$2;
 
-    final workspaceRoot = workspaceRootOf(rootDir);
+    final nodes = await _workspaceNodes(
+      workspaceRoot: workspaceRootOf(rootDir),
+      language: language,
+      ggLog: ggLog,
+    );
+
+    ProjectNode? rootNode;
+    final normalizedRoot = _correctDir(rootDir).path;
+    for (final node in nodes.values) {
+      if (_correctDir(node.directory).path == normalizedRoot) {
+        rootNode = node;
+        break;
+      }
+    }
+
+    if (rootNode == null) {
+      throw Exception(
+        'The node for the package '
+        '${rootDir.path.split(ggPlatform.pathSeparator).last} was not found.',
+      );
+    }
+
+    return (rootNode: rootNode, allNodes: nodes);
+  }
+
+  /// The nodes of [language] in [workspaceRoot], read once per workspace and
+  /// language when [reuseWorkspaces] is set.
+  Future<Map<String, ProjectNode>> _workspaceNodes({
+    required Directory workspaceRoot,
+    required ProjectLanguage language,
+    required GgLog? ggLog,
+  }) {
+    if (!reuseWorkspaces) {
+      return _readWorkspace(
+        workspaceRoot: workspaceRoot,
+        language: language,
+        ggLog: ggLog,
+      );
+    }
+
+    final key = '${language.id.name}:${p.canonicalize(workspaceRoot.path)}';
+    return _workspaces[key] ??= _readWorkspace(
+      workspaceRoot: workspaceRoot,
+      language: language,
+      ggLog: ggLog,
+    );
+  }
+
+  /// The workspaces read so far, by language and path.
+  final Map<String, Future<Map<String, ProjectNode>>> _workspaces = {};
+
+  /// Reads the projects of [language] in [workspaceRoot] and links them by
+  /// their dependencies.
+  Future<Map<String, ProjectNode>> _readWorkspace({
+    required Directory workspaceRoot,
+    required ProjectLanguage language,
+    required GgLog? ggLog,
+  }) async {
     final allDirs = projectCandidateDirs(workspaceRoot);
 
     final nodes = <String, ProjectNode>{};
@@ -102,23 +169,7 @@ class MultiLanguageGraph {
       );
     }
 
-    ProjectNode? rootNode;
-    final normalizedRoot = _correctDir(rootDir).path;
-    for (final node in nodes.values) {
-      if (_correctDir(node.directory).path == normalizedRoot) {
-        rootNode = node;
-        break;
-      }
-    }
-
-    if (rootNode == null) {
-      throw Exception(
-        'The node for the package '
-        '${rootDir.path.split(ggPlatform.pathSeparator).last} was not found.',
-      );
-    }
-
-    return (rootNode: rootNode, allNodes: nodes);
+    return nodes;
   }
 
   /// Finds the nearest ancestor of [directory] (including itself) that is a

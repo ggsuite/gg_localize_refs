@@ -172,7 +172,7 @@ void main() {
     group('run()', () {
       group('should print a usage description', () {
         test('when called args=[--help]', () async {
-          capturePrint(
+          await capturePrint(
             ggLog: messages.add,
             code: () => runner.run(<String>['change-refs-to-local', '--help']),
           );

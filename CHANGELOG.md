@@ -1,5 +1,15 @@
 # Changelog
 
+## 5.4.0 - 2026-11-14
+
+### Added
+
+- Add the blog post and describe getAll
+
+### Changed
+
+- Check the refs of many projects with one read
+
 ## 5.3.0 - 2026-11-12
 
 ### Added

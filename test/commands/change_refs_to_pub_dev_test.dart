@@ -197,7 +197,7 @@ void main() {
       // .....................................................................
       group('should print a usage description', () {
         test('when called args=[--help]', () async {
-          capturePrint(
+          await capturePrint(
             ggLog: messages.add,
             code: () =>
                 runner.run(<String>['change-refs-to-pub-dev', '--help']),

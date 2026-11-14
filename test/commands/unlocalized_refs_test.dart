@@ -332,6 +332,100 @@ void main() {
       });
     });
 
+    group('getAll()', () {
+      /// The refs of [projects] as their `toString` lines, per project.
+      Future<List<List<String>>> allRefsOf(List<Directory> projects) async {
+        final refs = await UnlocalizedRefs(ggLog: messages.add)
+            .getAll(directories: projects, ggLog: messages.add);
+        return <List<String>>[
+          for (final projectRefs in refs)
+            projectRefs.map((ref) => ref.toString()).toList(),
+        ];
+      }
+
+      /// The projects of the workspace [project1] lies in.
+      List<Directory> siblingsOf(Directory project1, int count) => <Directory>[
+        for (var i = 1; i <= count; i++)
+          Directory(p.join(project1.parent.path, 'project$i')),
+      ];
+
+      test('returns nothing for no projects', () async {
+        expect(await allRefsOf(<Directory>[]), isEmpty);
+      });
+
+      test('answers for every project what get() answers', () async {
+        final projects = siblingsOf(scenario('transitive'), 3);
+
+        final all = await allRefsOf(projects);
+
+        expect(all, <List<String>>[
+          <String>[
+            'test1 uses the published test2 instead of its checkout',
+            'test1 uses the published test3 instead of its checkout',
+          ],
+          <String>['test2 uses the published test3 instead of its checkout'],
+          <String>[],
+        ]);
+        for (var i = 0; i < projects.length; i++) {
+          expect(all[i], await refsOf(projects[i]), reason: 'project${i + 1}');
+        }
+      });
+
+      test('answers in the order of the projects', () async {
+        final projects = siblingsOf(scenario('transitive'), 3);
+
+        final all = await allRefsOf(projects.reversed.toList());
+
+        expect(all.first, isEmpty);
+        expect(all.last, hasLength(2));
+      });
+
+      test('follows the ocean like get()', () async {
+        final project1 = Directory(
+          p.join(scenario('through_ocean').parent.path, 'ticket', 'project1'),
+        );
+        final projects = siblingsOf(project1, 7);
+
+        final all = await allRefsOf(projects);
+
+        for (var i = 0; i < projects.length; i++) {
+          expect(all[i], await refsOf(projects[i]), reason: 'project${i + 1}');
+        }
+        expect(all.expand((refs) => refs), isNotEmpty);
+      });
+
+      test('sees what change-refs-to-local wrote in between', () async {
+        final projects = siblingsOf(scenario('transitive'), 3);
+        expect((await allRefsOf(projects)).first, isNotEmpty);
+
+        for (final project in projects) {
+          await localize(project);
+        }
+
+        expect(await allRefsOf(projects), <List<String>>[
+          <String>[],
+          <String>[],
+          <String>[],
+        ]);
+      });
+
+      test('throws when a project has no root', () async {
+        final dir = createTempDir('unlocalized_refs_all_no_root');
+        workspaces.add(dir);
+
+        await expectLater(
+          allRefsOf(<Directory>[dir]),
+          throwsA(
+            isA<Exception>().having(
+              (e) => e.toString(),
+              'message',
+              contains('No project root found'),
+            ),
+          ),
+        );
+      });
+    });
+
     group('exec()', () {
       late CommandRunner<void> runner;
 

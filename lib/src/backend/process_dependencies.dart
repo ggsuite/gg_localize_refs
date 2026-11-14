@@ -54,14 +54,17 @@ Future<void> processProject({
 /// Builds the workspace graph of the project root in [directory] once per
 /// language the root supports: a cross-language bridge gets one for its Dart
 /// and one for its TypeScript manifest, a single-language repo exactly one.
+///
+/// Pass the [graph] of [workspaceGraph] to check several projects of one
+/// workspace: with `reuseWorkspaces` it reads the workspace once for all of
+/// them.
 Future<List<({ProjectNode rootNode, Map<String, ProjectNode> allNodes})>>
-buildRootGraphs({required Directory directory, required GgLog ggLog}) async {
-  final graph = MultiLanguageGraph(
-    languages: <ProjectLanguage>[
-      DartProjectLanguage(),
-      TypeScriptProjectLanguage(),
-    ],
-  );
+buildRootGraphs({
+  required Directory directory,
+  required GgLog ggLog,
+  MultiLanguageGraph? graph,
+}) async {
+  graph ??= workspaceGraph();
 
   final root = await graph.findRootAndLanguages(directory);
   if (root == null) {
@@ -78,6 +81,18 @@ buildRootGraphs({required Directory directory, required GgLog ggLog}) async {
       ),
   ];
 }
+
+// ...........................................................................
+/// The graph builder of every language this package supports. See
+/// [MultiLanguageGraph.reuseWorkspaces] for [reuseWorkspaces].
+MultiLanguageGraph workspaceGraph({bool reuseWorkspaces = false}) =>
+    MultiLanguageGraph(
+      languages: <ProjectLanguage>[
+        DartProjectLanguage(),
+        TypeScriptProjectLanguage(),
+      ],
+      reuseWorkspaces: reuseWorkspaces,
+    );
 
 // ...........................................................................
 /// Find a node by package name in the dependency graph
