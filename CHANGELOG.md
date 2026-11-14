@@ -2,13 +2,17 @@
 
 ## Unreleased
 
+### Added
+
+- Add the blog post and describe getAll
+
+Add the blog post of the change
+README: UnlocalizedRefs.getAll
+Tighten the dependencies
+
 ### Changed
 
 - Check the refs of many projects with one read
-
-UnlocalizedRefs.getAll reads a workspace and its ocean once for all of its projects
-MultiLanguageGraph takes reuseWorkspaces
-Await capturePrint in the tests
 
 ## 5.3.0 - 2026-11-12
 

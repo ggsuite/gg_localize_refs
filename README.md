@@ -87,7 +87,9 @@ every embedded package it would add to the pub workspace
 (`notWorkspaceMember`).
 Run on the command line, it prints one line per ref and fails when there is
 any; an empty result means `change-refs-to-local` would change nothing. A
-dependency added to `pubspec.yaml`/`package.json` by hand shows up here.
+dependency added to `pubspec.yaml`/`package.json` by hand shows up here. From
+Dart, `UnlocalizedRefs.getAll(directories:)` checks several projects in one
+pass and reads a workspace and its ocean only once.
 
 pnpm-managed TypeScript/JavaScript projects get the same architecture:
 `package.json` keeps its published constraints and the `link:` specs (or the

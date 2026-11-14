@@ -15,6 +15,7 @@ build
 # descends into an excluded directory, so the »!«-negations below would
 # have no effect and .gg/gg.json would never reach CI.
 .gg/*
+!.gg/gg_rc
 !.gg/gg.json
 !.gg/ticket.json
 .gg/gg-publish.json
