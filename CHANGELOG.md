@@ -1,14 +1,10 @@
 # Changelog
 
-## Unreleased
+## 5.4.0 - 2026-11-14
 
 ### Added
 
 - Add the blog post and describe getAll
-
-Add the blog post of the change
-README: UnlocalizedRefs.getAll
-Tighten the dependencies
 
 ### Changed
 
