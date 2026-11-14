@@ -39,7 +39,7 @@ void main() {
 
   group('SetRefVersion', () {
     test('shows help', () async {
-      capturePrint(
+      await capturePrint(
         ggLog: messages.add,
         code: () => runner.run(<String>['set-ref-version', '--help']),
       );

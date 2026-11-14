@@ -11,6 +11,7 @@ import 'package:gg_console_colors/gg_console_colors.dart';
 import 'package:gg_localize_refs/src/backend/languages/project_language.dart';
 import 'package:gg_localize_refs/src/backend/local_overrides.dart';
 import 'package:gg_localize_refs/src/backend/manifest_command_support.dart';
+import 'package:gg_localize_refs/src/backend/multi_language_graph.dart';
 import 'package:gg_localize_refs/src/backend/pnpm_workspace_io.dart';
 import 'package:gg_localize_refs/src/backend/process_dependencies.dart';
 import 'package:gg_localize_refs/src/backend/pub_workspace_io.dart';
@@ -82,13 +83,38 @@ class UnlocalizedRefs extends DirCommand<List<UnlocalizedRef>> {
   Future<List<UnlocalizedRef>> get({
     required Directory directory,
     required GgLog ggLog,
+  }) => _get(directory: directory, ggLog: ggLog, graph: null);
+
+  // ...........................................................................
+  /// The unlocalized refs of each of [directories], in their order.
+  ///
+  /// Same answers as [get] for each of them, but projects that share a
+  /// workspace share one reading of it: [get] reads the whole workspace and
+  /// its ocean for every project again.
+  Future<List<List<UnlocalizedRef>>> getAll({
+    required List<Directory> directories,
+    required GgLog ggLog,
+  }) async {
+    final graph = workspaceGraph(reuseWorkspaces: true);
+    return <List<UnlocalizedRef>>[
+      for (final directory in directories)
+        await _get(directory: directory, ggLog: ggLog, graph: graph),
+    ];
+  }
+
+  // ...........................................................................
+  Future<List<UnlocalizedRef>> _get({
+    required Directory directory,
+    required GgLog ggLog,
+    required MultiLanguageGraph? graph,
   }) async {
     final result = <UnlocalizedRef>[];
-    for (final graph in await buildRootGraphs(
+    for (final rootGraph in await buildRootGraphs(
       directory: directory,
       ggLog: ggLog,
+      graph: graph,
     )) {
-      result.addAll(await _check(graph.rootNode));
+      result.addAll(await _check(rootGraph.rootNode));
     }
     return result;
   }

@@ -416,6 +416,81 @@ void main() {
       });
     });
 
+    group('reuseWorkspaces', () {
+      // The three projects of the »transitive« scenario, in one workspace.
+      List<Directory> projects() {
+        final workspace = createWorkspace('mlg_reuse');
+        copyDirectory(
+          Directory(
+            p.join('test', 'sample_folder', 'localize_refs', 'transitive'),
+          ),
+          workspace,
+        );
+        return <Directory>[
+          for (final name in <String>['project1', 'project2', 'project3'])
+            Directory(p.join(workspace.path, name)),
+        ];
+      }
+
+      test('reads a workspace once for all of its projects', () async {
+        final graph = MultiLanguageGraph(
+          languages: <ProjectLanguage>[DartProjectLanguage()],
+          reuseWorkspaces: true,
+        );
+        final [project1, project2, project3] = projects();
+
+        final first = await graph.buildGraph(directory: project1);
+        final second = await graph.buildGraph(directory: project2);
+        final third = await graph.buildGraph(directory: project3);
+
+        // The very same nodes, each time with another root.
+        expect(second.allNodes, same(first.allNodes));
+        expect(third.allNodes, same(first.allNodes));
+        expect(first.rootNode.name, 'test1');
+        expect(second.rootNode.name, 'test2');
+        expect(third.rootNode.name, 'test3');
+        expect(second.rootNode, same(first.allNodes['test2']));
+      });
+
+      test('reads a workspace again for another language', () async {
+        final bridge = createBridge('mlg_reuse_bridge');
+        final graph = MultiLanguageGraph(
+          languages: <ProjectLanguage>[
+            DartProjectLanguage(),
+            TypeScriptProjectLanguage(),
+          ],
+          reuseWorkspaces: true,
+        );
+
+        final dart = await graph.buildGraph(
+          directory: bridge,
+          forLanguage: DartProjectLanguage(),
+        );
+        final typeScript = await graph.buildGraph(
+          directory: bridge,
+          forLanguage: TypeScriptProjectLanguage(),
+        );
+
+        expect(dart.rootNode.language.id, ProjectLanguageId.dart);
+        expect(typeScript.rootNode.language.id, ProjectLanguageId.typescript);
+        expect(typeScript.allNodes, isNot(same(dart.allNodes)));
+      });
+
+      test('is off by default: every graph is read anew', () async {
+        final graph = MultiLanguageGraph(
+          languages: <ProjectLanguage>[DartProjectLanguage()],
+        );
+        final [project1, project2, _] = projects();
+
+        final first = await graph.buildGraph(directory: project1);
+        final second = await graph.buildGraph(directory: project2);
+
+        expect(graph.reuseWorkspaces, isFalse);
+        expect(second.allNodes, isNot(same(first.allNodes)));
+        expect(second.allNodes.keys, first.allNodes.keys);
+      });
+    });
+
     test('builds the graph for an explicit language (forLanguage)', () async {
       final bridge = createBridge('mlg_for_language');
 
