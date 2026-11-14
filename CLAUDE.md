@@ -157,4 +157,7 @@ Mode-related scenarios under `test/sample_folder/localize_refs/`: `already_local
 - **Const**: prefer const constructors, declarations, and literals where applicable.
 
 <!-- helix:claude_md:start -->
+
+@.claude/CLAUDE_dna_gg.md
+
 <!-- helix:claude_md:end -->
