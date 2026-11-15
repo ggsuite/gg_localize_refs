@@ -121,22 +121,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "0.4.0"
-  dna_gg:
-    dependency: transitive
-    description:
-      name: dna_gg
-      sha256: fe0e9f273b7fb3ff126f0ed0b285a2a24dd57756ec9d7d175761785aba283dae
-      url: "https://pub.dev"
-    source: hosted
-    version: "1.6.0"
   dna_ggsuite:
     dependency: "direct dev"
     description:
       name: dna_ggsuite
-      sha256: "11610f633b5547a5f324a8b7218c003cc13d05e75ece92bea1f26fa1ee221cd9"
+      sha256: "3897b2632e7af7180383a20ba3b1494ca994272467c823816a11b27fdb2bfb4f"
       url: "https://pub.dev"
     source: hosted
-    version: "1.0.2"
+    version: "2.0.0"
   dna_github:
     dependency: transitive
     description:
@@ -269,10 +261,10 @@ packages:
     dependency: transitive
     description:
       name: gg_is_flutter
-      sha256: b93b62e0e46ba1ea1165c3813cc306c41f687d8ca99d7b5cb4986832a6d3f6c1
+      sha256: dae6905a70431511cf9755dc492191082368c2b0f7374037680e469a4284953a
       url: "https://pub.dev"
     source: hosted
-    version: "2.2.5"
+    version: "2.3.0"
   gg_is_github:
     dependency: transitive
     description:
@@ -357,10 +349,10 @@ packages:
     dependency: "direct dev"
     description:
       name: helix
-      sha256: ef8f11569ff5d8e3c86b569c7a20598e266ea5d7ae8d8b24d82fbc1ad1c0e43a
+      sha256: b4751fde19f6e9fd3ec930213b0cb868859a3eb85fe75d67bcb2a76e4d026490
       url: "https://pub.dev"
     source: hosted
-    version: "1.14.0"
+    version: "1.15.2"
   http:
     dependency: transitive
     description:
@@ -690,4 +682,4 @@ packages:
     source: hosted
     version: "2.2.4"
 sdks:
-  dart: ">=3.13.0 <4.0.0"
+  dart: ">=3.14.0 <4.0.0"
