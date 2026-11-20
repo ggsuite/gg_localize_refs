@@ -2,7 +2,7 @@
   "do": {
     "upgrade": {
       "deps": {
-        "majorVersions": true
+        "majorVersions": false
       }
     }
   },
