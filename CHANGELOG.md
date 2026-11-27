@@ -5,6 +5,7 @@
 ### Changed
 
 - Upgrade the SDK, the dependencies and the DNA
+- Upgrade the SDK and the DNA and run migrate_doc_structure.dart
 
 ## 5.4.0 - 2026-11-14
 
